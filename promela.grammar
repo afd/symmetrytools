@@ -1,0 +1,403 @@
+/* Promela grammar, taken from Holzmann's SPIN book */
+Package src.promela;
+
+Helpers
+
+  // letters and digits
+  alpha = [['a' .. 'z'] + ['A' .. 'Z']];
+  digit = ['0' .. '9'] ;
+  byterange = [0 .. 255];
+  any_ascii_char = [[0 .. 0xffff] - '"']; /* THIS IS ACTUALLY ANY UNICODE CHARACTER */
+    unicode_input_character = [0..0xffff];
+    ht  = 0x0009;
+    lf  = 0x000a;
+    ff  = 0x000c;
+    cr  = 0x000d;
+    sp  = ' ';
+    line_terminator = lf | cr | cr lf;
+    input_character = [unicode_input_character - [cr + lf]];
+    not_star =    [input_character - '*'] | line_terminator;
+    not_star_not_slash = [input_character - ['*' + '/']] | line_terminator;
+
+Tokens
+    white_space = (sp | ht | ff | line_terminator)*;
+    traditional_comment = '/*' not_star+ '*'+ (not_star_not_slash not_star* '*'+)* '/';
+    end_of_line_comment = '//' input_character* line_terminator?;
+
+    number = digit+;
+ 
+    bang = '!';
+
+    complement = '~';
+    multop = '*' | '/' | '%';
+    plus = '+';
+    minus = '-';
+    shiftop = '<<' | '>>';
+    eqop = '==' | '!=';
+    bitand = '&';
+    bitor = '|';
+    bitxor = '^';
+    and = '&&';
+    or = '||';
+
+    lt = '<';
+    gt = '>';
+
+    relop = '<=' | '>=';
+
+
+    l_parenthese = '(';
+    r_parenthese = ')';
+
+    l_brace = '{';
+    r_brace = '}';
+
+    l_bracket = '[';
+    r_bracket = ']';
+
+    separator = ';' | '->';
+
+    comma = ',';
+    dot = '.';
+    assign = '=';
+    colon_colon = '::';
+    colon = ':';
+    plus_plus = '++';
+    minus_minus = '--';
+    rightarrow = '->';
+
+    bang_bang = '!!';
+
+    query_query = '??';
+    query = '?';
+    underscore = '_';
+    quotes = '"';
+    at = '@';
+
+    activetok = 'active';
+    assert = 'assert';
+    atomic = 'atomic';
+    bit = 'bit';
+    bool = 'bool';
+    break = 'break';
+    byte = 'byte';
+    chanop = 'full' | 'empty' | 'nfull' | 'nempty';
+    chan = 'chan';
+    d_step = 'd_step';
+    do = 'do';
+    else = 'else';
+    enabled ='enabled';
+    eval = 'eval';
+    false = 'false';
+    fi = 'fi';
+    goto ='goto';
+    hidden = 'hidden';
+    if = 'if';
+    inittok = 'init';
+    inlinetok = 'inline';
+    int = 'int';
+    len = 'len';
+    mtypetok = 'mtype';
+    nevertok = 'never';
+    notrace = 'notrace';
+    np = 'np_';
+    od = 'od';
+    of = 'of';
+    pc_value = 'pc_value';
+    pid = 'pid';
+    print = 'printf' | 'printm';
+    prioritytok = 'priority';
+    processid = '_pid';
+    proctypetok = 'proctype';
+    provided = 'provided';
+    run = 'run';
+    short = 'short';
+    show = 'show';
+    skip = 'skip';
+    timeout = 'timeout';
+    tracetok = 'trace';
+    true = 'true';
+    typedef = 'typedef';
+    unless = 'unless';
+    xr = 'xr';
+    xs = 'xs';
+
+    /* New tokens for template approach */
+    templatetok = 'template';
+    for = 'for';
+    over = 'over';
+
+    name = alpha (alpha | digit | '_')*;  /* NEED TO CHECK THAT THIS CORRECTLY DEFINES NAMES - ADD _pid as special case */
+   byteliteral = byterange;
+    string = '"' any_ascii_char* '"';
+
+/*******************************************************************
+ * Ignored Tokens                                                  *
+ *******************************************************************/
+Ignored Tokens
+
+  white_space,
+  traditional_comment,
+  end_of_line_comment;
+
+/*******************************************************************
+ * Productions                                                     *
+ *******************************************************************/
+Productions
+
+  spec = 
+    {normal} module+ |
+    {template} template ;
+
+  template =
+    name templatetok colon sequence ;
+
+  module =
+   {utype} utype separator? |		/* user defined types */
+   {mtype} mtype separator? |		/* mtype declaration */
+   {varschans} decl_lst | 		/* global vars, chans */
+   {proctype} proctype | 	/* proctype declaration */
+   {init} init |		/* init process - max 1 per model */
+   {never} never |		/* never claim - max 1 per model */
+   {trace} trace |		/* event trace - max 1 per model */
+   {inline} inline;
+
+  proctype =
+   active? proctypetok name l_parenthese decl_lst? r_parenthese priority? enabler? l_brace sequence r_brace ;
+
+  init =
+   inittok priority? l_brace sequence r_brace ;
+
+  never =
+   nevertok l_brace sequence r_brace ;
+
+  trace =
+   {trace} tracetok l_brace sequence r_brace |
+   {notrace} notrace l_brace sequence r_brace ;
+
+  utype =
+   typedef name l_brace decl_lst r_brace ;
+
+  mtype =
+   mtypetok assign? l_brace name_lst r_brace ;
+
+  inline =
+   inlinetok name l_parenthese name_lst? r_parenthese l_brace sequence r_brace ;
+
+  name_lst =
+   {one} name |
+   {many} name comma name_lst ;
+
+  expr_lst =
+   {one} expr |
+   {many} expr comma expr_lst ;
+
+  decl_lst =
+   {one} one_decl |
+   {many} one_decl separator decl_lst ;
+
+  one_decl =
+   visible? typename ivar_lst ;
+
+  ivar_lst =
+   {one} ivar |
+   {many} ivar comma ivar_lst ;
+
+  typename =
+   {bit} bit |
+   {bool} bool |
+   {byte} byte |
+   {pid} pid |
+   {short} short |
+   {int} int |
+   {mtype} mtypetok |
+   {chan} chan |
+   {uname} name;		/* user defined typenames (see utype) */
+
+  typenamelst =
+   {one} typename |
+   {many} typename comma typenamelst ;
+
+  active =
+   {one} activetok |
+   {many} activetok l_bracket const r_bracket ;	/* instantiation */
+
+  priority =
+   prioritytok const ;		/* simulation only */
+
+  enabler =
+   provided l_parenthese expr r_parenthese ;	/* constraint */
+
+  visible =
+   {hidden} hidden |
+   {show} show ;
+
+  sequence =
+   {null}  |
+   {one} step |
+   {many} step separator sequence ;
+
+  step =
+   {declaration} one_decl |
+   {stmnt} stmnt |
+   {unless} [main]:stmnt unless [escape]:stmnt |
+   {exreceive} xr varreflst |
+   {exsend} xs varreflst ;
+
+  varreflst =
+   {one} varref |
+   {many} varref comma varreflst ;
+
+  ivar =
+   {single} name ivarassignment? |
+   {array} name l_bracket const r_bracket ivarassignment? ;
+
+  ivarassignment =
+   {variable} assign expr |
+   {channel} assign l_bracket const r_bracket of l_brace typenamelst r_brace;
+
+  varref =
+   {single} name arrayref? |
+   {record} varref dot name arrayref? ;
+
+  arrayref =
+   l_bracket expr r_bracket ;
+
+  recordref =
+   dot varref ;
+
+  send =
+   {fifo} varref bang send_args |	/* fifo send */
+   {sorted} varref bang_bang send_args ;	/* sorted send */
+
+  receive =
+   {fifo} varref query recv_args |	/* fifo receive */
+   {random} varref query_query recv_args |	/* random receive */
+   {fifopoll} varref query lt recv_args gt |	/* poll */
+   {randompoll} varref query_query lt recv_args gt ;
+
+  recv_poll =
+   {fifo} varref query l_bracket recv_args r_bracket | 	/* test */
+   {random} varref query_query l_bracket recv_args r_bracket ;
+
+  send_args =
+   {list} arg_lst |
+   {headedlist} expr l_parenthese arg_lst r_parenthese ;
+
+  arg_lst =
+   {one} expr |
+   {many} expr comma arg_lst ;
+
+  recv_args =
+   {one} recv_arg |
+   {many} recv_arg comma recv_args |
+   {manyheaded} recv_arg l_parenthese recv_args r_parenthese ;
+
+  recv_arg =
+   {var} varref |
+   {eval} eval l_parenthese expr r_parenthese |
+   {const} const ;
+
+  assignment =
+   {assignment} varref assign expr |	/* assignment */
+   {increment} varref plus_plus |		/* increment */
+   {decrement} varref minus_minus ;		/* decrement */
+
+  stmnt =
+   {if} if options fi |			/* selection */
+   {do} do options od |			/* iteration */
+   {atomic} atomic l_brace sequence r_brace |
+   {dstep} d_step l_brace sequence r_brace |
+   {braces} l_brace sequence r_brace |
+   {send} send |
+   {receive} receive |
+   {assign} assignment |
+   {else} else |					/* guard statement */
+   {break} break |					/* only inside loops */
+   {goto} goto name |					/* anywhere */
+   {label} name colon stmnt |				
+   {print} print l_parenthese string r_parenthese |
+   {printwithargs} print l_parenthese string comma arg_lst r_parenthese |
+   {assert} assert expr |
+   {expression} expr |					/* condition */
+   {inline} name l_parenthese expr_lst? r_parenthese ;
+
+  options =
+   {normal} colon_colon sequence options? |
+   {template} colon_colon for [variable]:name over [proctype]:name l_brace sequence r_brace options? ;
+
+  factor =
+   {parenthese} l_parenthese expr r_parenthese |
+   {length} len l_parenthese varref r_parenthese |	 /* nr of messages in chan */ 
+   {recv_poll} recv_poll |
+   {varref} varref |
+   {const} const |
+   {timeout} timeout |				 /* hang system state */ 
+   {nonprogress} np |			 	 /* non-progress system state */ 
+   {enabled} enabled l_parenthese expr r_parenthese |
+   {pc_value} pc_value l_parenthese expr r_parenthese |
+   {remoteref} [process]:name l_bracket expr r_bracket at [label]:name |
+   {run} run name l_parenthese arg_lst? r_parenthese priority? |
+   {chanop} chanop l_parenthese varref r_parenthese ;
+
+  un_expr =
+    {simple} factor |
+    {not} bang factor |
+    {complement} complement factor ;
+
+  mult_expr =
+    {simple} un_expr |
+    {compound} un_expr multop mult_expr ;
+
+  add_expr =
+    {simple} mult_expr |
+    {compoundplus} mult_expr plus add_expr |
+    {compoundminus} mult_expr minus add_expr ;
+
+  shift_expr =
+    {simple} add_expr |
+    {compound} add_expr shiftop shift_expr ;
+
+  rel_expr =
+    {simple} shift_expr |
+    {compoundrelop} shift_expr relop rel_expr |
+    {compoundgt} shift_expr gt rel_expr |
+    {compoundlt} shift_expr lt rel_expr ;
+
+  eq_expr =
+    {simple} rel_expr |
+    {compound} rel_expr eqop eq_expr ;
+
+  bitand_expr =
+    {simple} eq_expr |
+    {compound} eq_expr bitand bitand_expr ;
+
+  bitxor_expr =
+    {simple} bitand_expr |
+    {compound} bitand_expr bitxor bitxor_expr ;
+
+  bitor_expr =
+    {simple} bitxor_expr |
+    {compound} bitxor_expr bitor bitor_expr ;
+
+  and_expr =
+    {simple} bitor_expr |
+    {compound} bitor_expr and and_expr ;
+
+  or_expr =
+    {simple} and_expr |
+    {compound} and_expr or or_expr ;
+
+  expr = /* This is a conditional */
+    {simple} or_expr |
+    {conditional} l_parenthese [if]:or_expr rightarrow [then]:or_expr colon [else]:or_expr r_parenthese ;
+
+  const =
+   {true} true |
+   {false} false |
+   {skip} skip |
+   {number} minus? number |
+   {pid} processid |
+   {underscore} underscore ;
+
+// end of grammar

@@ -1,0 +1,5 @@
+package src.utilities;
+
+public enum Strategy {
+	FAST, ENUMERATE, HILLCLIMBING, SEGMENT, FLATTEN, EXACTMARKERS, APPROXMARKERS
+}

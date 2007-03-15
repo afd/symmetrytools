@@ -1,0 +1,36 @@
+!SESSION Jan 12, 2006 17:21:52.412 ---------------------------------------------
+java.fullversion=GNU libgcj 3.5-tree-ssa 20030617 (Red Hat Linux Rawhide 3.5ssa-48)
+BootLoader constants: OS=linux, ARCH=x86, WS=gtk, NL=en_US
+Command-line arguments: -os linux -ws gtk -arch x86 -install file:/usr/lib/eclipse/
+!ENTRY org.eclipse.core.runtime 2 1 Jan 12, 2006 17:21:52.412
+!MESSAGE Problems encountered loading the plug-in registry.
+!SUBENTRY 1 org.eclipse.core.runtime 2 1 Jan 12, 2006 17:21:52.412
+!MESSAGE Unknown extension point "org.eclipse.ui.capabilities" specified in plug-in "org.eclipse.jdt.ui".
+!SESSION ----------------------------------------------------------------------
+!ENTRY org.eclipse.core.launcher 4 0 Jan 12, 2006 17:21:58.629
+!MESSAGE Exception launching the Eclipse Platform:
+!STACK
+java.lang.reflect.InvocationTargetException
+   at _Jv_CallAnyMethodA(java.lang.Object, java.lang.Class, _Jv_Method, boolean, java.lang.Class[], jvalue, jvalue) (/lib/ssa/libgcj.so.4.0.0)
+   at _Jv_CallAnyMethodA(java.lang.Object, java.lang.Class, _Jv_Method, boolean, java.lang.Class[], java.lang.Object[]) (/lib/ssa/libgcj.so.4.0.0)
+   at java.lang.reflect.Method.invoke(java.lang.Object, java.lang.Object[]) (/lib/ssa/libgcj.so.4.0.0)
+   at org.eclipse.core.launcher.Main.basicRun(java.lang.String[]) (/usr/lib/eclipse/libstartup.so)
+   at org.eclipse.core.launcher.Main.run(java.lang.String[]) (/usr/lib/eclipse/libstartup.so)
+   at org.eclipse.core.launcher.Main.main(java.lang.String[]) (/usr/lib/eclipse/libstartup.so)
+Caused by: java.lang.reflect.InvocationTargetException
+   at org.eclipse.core.internal.boot.InternalBootLoader.run(java.lang.String, java.net.URL, java.lang.String, java.lang.String[], java.lang.Runnable) (/usr/lib/eclipse/plugins/org.eclipse.core.boot_2.1.2/libboot.so)
+   at org.eclipse.core.boot.BootLoader.run(java.lang.String, java.net.URL, java.lang.String, java.lang.String[], java.lang.Runnable) (/usr/lib/eclipse/plugins/org.eclipse.core.boot_2.1.2/libboot.so)
+   at _Jv_CallAnyMethodA(java.lang.Object, java.lang.Class, _Jv_Method, boolean, java.lang.Class[], jvalue, jvalue) (/lib/ssa/libgcj.so.4.0.0)
+   ...5 more
+Caused by: org.eclipse.swt.SWTException: Device is disposed
+   at org.eclipse.swt.SWT.error(int, java.lang.Throwable) (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.swt.SWT.error(int) (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.swt.widgets.Display.createDisplay(org.eclipse.swt.graphics.DeviceData) (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.swt.widgets.Display.create(org.eclipse.swt.graphics.DeviceData) (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.swt.graphics.Device.Device(org.eclipse.swt.graphics.DeviceData) (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.swt.widgets.Display.Display(org.eclipse.swt.graphics.DeviceData) (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.swt.widgets.Display.Display() (/usr/lib/eclipse/plugins/org.eclipse.swt.gtk_2.1.2/ws/gtk/libswt.so)
+   at org.eclipse.ui.internal.Workbench.run(java.lang.Object) (/usr/lib/eclipse/plugins/org.eclipse.ui.workbench_2.1.1/libworkbench.so)
+   at org.eclipse.core.internal.boot.InternalBootLoader.run(java.lang.String, java.net.URL, java.lang.String, java.lang.String[], java.lang.Runnable) (/usr/lib/eclipse/plugins/org.eclipse.core.boot_2.1.2/libboot.so)
+   ...7 more
+
