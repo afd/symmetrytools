@@ -54,15 +54,17 @@ public class SymmetryApplierTranspositions extends SymmetryApplier {
 		boolean writtenLt = false;
 		boolean writtenFlatten = false;
 
-		Assert.assertFalse(Config.REDUCTION_STRATEGY==Strategy.APPROXMARKERS);
-		
-		if(Config.REDUCTION_STRATEGY==Strategy.EXACTMARKERS) {
+		if(isMarkersStrategy(Config.REDUCTION_STRATEGY)) {
 			for (int i = 0; i < lines.size(); i++) {
 				if (lines.get(i).indexOf("JAVA") != -1) {
 					writeApplyPrSwapToState(fw);
 				} else if(lines.get(i).indexOf("MARKER") != -1) {
 					writeMarkers(fw);
-				} else {
+				} else if (lines.get(i).indexOf("MARKPIDS") != -1) {
+					Assert.assertEquals(Config.REDUCTION_STRATEGY,Strategy.APPROXMARKERS);
+					writeMarkPID(fw);
+				}
+				else {
 					fw.write((String) lines.get(i) + "\n");
 				}
 			}
@@ -98,6 +100,74 @@ public class SymmetryApplierTranspositions extends SymmetryApplier {
 			}
 		}
 		fw.close();
+	}
+
+	private void writeMarkPID(FileWriter fw) throws IOException {
+		Map<String,EnvEntry> globalVariables = typeInfo.getEnv().getTopEntries();
+
+		String referencePrefix = "s->" ;
+		
+		fw.write("void markPIDs(State* s, int* map) {\n");
+		
+		for(Iterator<String> iter = globalVariables.keySet().iterator(); iter.hasNext();) {
+			String name = iter.next();
+			EnvEntry entry = globalVariables.get(name);
+			if((entry instanceof VarEntry) && !(((VarEntry)entry).isHidden()||entry instanceof ChannelEntry)) {
+				List sensitiveReferences = getSensitiveVariableReferences(name,((VarEntry)entry).getType(),referencePrefix);
+				for(int i=0; i<sensitiveReferences.size(); i++) {
+					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences.get(i);
+					Assert.assertTrue(isPid(reference.getType()));
+					fw.write("   if(" + reference.getReference() + ">0) " + reference.getReference() + " = map[" + reference.getReference() + "-1]+1;\n");
+				}
+			}
+		}
+		
+		String proctypeName = typeInfo.getProctypeNames().get(0);
+		ProctypeEntry proctype = (ProctypeEntry) typeInfo.getEnvEntry(proctypeName);
+		Map<String,EnvEntry> localScope = proctype.getLocalScope();
+		for(String varName : localScope.keySet()) {
+			if(localScope.get(varName) instanceof VarEntry) {
+				Type entryType = ((VarEntry)localScope.get(varName)).getType();
+				Assert.assertFalse(entryType instanceof ProductType);
+				if(entryType instanceof PidType) {
+					for(int j = 1; j<typeInfo.getNoProcesses(); j++) {
+					fw.write("   if(((P"+proctypeId(proctypeName)+" *)SEG(s," + j + "))->" + varName + ">0) " + 
+					"((P"+proctypeId(proctypeName)+" *)SEG(s," + j + "))->" + varName + " = map[ " +
+							"((P"+proctypeId(proctypeName)+" *)SEG(s," + j + "))->" + varName + "-1]+1;\n");
+					}
+				}
+			}
+			
+		}
+
+		List<String> staticChannelNames = typeInfo.getStaticChannelNames();
+		int chanId = 0;
+		for(String chanName : staticChannelNames) {
+			ProductType msgType = (ProductType) ((ChanType) ((ChannelEntry)typeInfo.getEnvEntry(chanName)).getType()).getMessageType();
+			int chanLength = ((ChannelEntry)typeInfo.getEnvEntry(chanName)).getLength();
+			for(int i=0; i<msgType.getArity(); i++) {
+				Type fieldType = msgType.getTypeOfPosition(i);
+
+				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN doesn't allow this
+				
+				if(fieldType instanceof PidType) {
+					for(int j=0; j<chanLength; j++) {
+						fw.write("   if(((Q"+(chanId+1) + "*)QSEG(s," + chanId + "))->contents[" + j + "].fld" + i + ">0) " +
+								"((Q"+(chanId+1) + "*)QSEG(s," + chanId + "))->contents[" + j + "].fld" + i +
+								"=map[((Q"+(chanId+1) + "*)QSEG(s," + chanId + "))->contents[" + j + "].fld" + i + "-1]+1;\n");
+					}
+				}			
+			}
+			chanId++;
+		}
+		fw.write("}\n\n");
+					
+	}
+
+	private boolean isMarkersStrategy(Strategy reductionStrategy) {
+		return reductionStrategy==Strategy.APPROXMARKERS ||
+		reductionStrategy==Strategy.EXACTMARKERS ||
+		reductionStrategy==Strategy.BOSNACKIMARKERS;
 	}
 
 	private void writeFlatten(FileWriter fw) throws IOException {
@@ -350,8 +420,10 @@ public class SymmetryApplierTranspositions extends SymmetryApplier {
 		fw.write("   int slot;\n");
 		
 		swapPrGlobal(fw);
-		swapProctypeLocalPrVariables(fw);
-		swapChannelPrContents(fw);
+		if(!(Config.REDUCTION_STRATEGY==Strategy.APPROXMARKERS)) {
+			swapProctypeLocalPrVariables(fw);
+			swapChannelPrContents(fw);
+		}
 		swapProcesses(fw);
 	}
 
@@ -360,24 +432,22 @@ public class SymmetryApplierTranspositions extends SymmetryApplier {
 
 		String referencePrefix = "s->" ;
 		
-		for(Iterator<String> iter = globalVariables.keySet().iterator(); iter.hasNext();) {
-			String name = iter.next();
+		for(String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
 			if((entry instanceof VarEntry) && !(((VarEntry)entry).isHidden()||entry instanceof ChannelEntry)) {
-				List sensitiveReferences = getSensitiveVariableReferences(name,((VarEntry)entry).getType(),referencePrefix);
-				for(int i=0; i<sensitiveReferences.size(); i++) {
-					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences.get(i);
-					Assert.assertTrue(isPid(reference.getType()));
-					fw.write("   if(" + reference.getReference() + "==a) {\n");
-					fw.write("      " + reference.getReference() + " = b;\n");
-					fw.write("   } else if(" + reference.getReference() + "==b) {\n");
-					fw.write("      " + reference.getReference() + " = a;\n");
-					fw.write("   }\n");
+
+				if(!(Config.REDUCTION_STRATEGY==Strategy.APPROXMARKERS)) {
+					for(SensitiveVariableReference reference : getSensitiveVariableReferences(name,((VarEntry)entry).getType(),referencePrefix)) {
+						Assert.assertTrue(isPid(reference.getType()));
+						fw.write("   if(" + reference.getReference() + "==a) {\n");
+						fw.write("      " + reference.getReference() + " = b;\n");
+						fw.write("   } else if(" + reference.getReference() + "==b) {\n");
+						fw.write("      " + reference.getReference() + " = a;\n");
+						fw.write("   }\n");
+					}
 				}
 				
-				List sensitivelyIndexedArrays = getSensitivelyIndexedArrayReferences(name,((VarEntry)entry).getType(),referencePrefix);
-				for(int i=0; i<sensitivelyIndexedArrays.size(); i++) {
-					PidIndexedArrayReference reference = (PidIndexedArrayReference) sensitivelyIndexedArrays.get(i);
+				for(PidIndexedArrayReference reference : getSensitivelyIndexedArrayReferences(name,((VarEntry)entry).getType(),referencePrefix)) {
 					Assert.assertTrue(isPid(((ArrayType)reference.getType()).getIndexType()));
 					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
@@ -394,8 +464,9 @@ public class SymmetryApplierTranspositions extends SymmetryApplier {
 	private void writeLt(FileWriter fw) throws IOException {
 		fw.write("  int slot;\n\n");
 	
-		for (int j=0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry)typeInfo.getProcessEntries().get(j)).getProctypeName();
+		int j=0;
+		for (ProcessEntry entry : typeInfo.getProcessEntries()) {
+			String proctypeName = entry.getProctypeName();
 			String sPrefix = "((P" + proctypeId(proctypeName) + " *)SEG(s," + j + "))->";
 			String tPrefix = "((P" + proctypeId(proctypeName) + " *)SEG(t," + j + "))->";
 			ProctypeEntry proctype = (ProctypeEntry) typeInfo.getEnvEntry(proctypeName);
@@ -406,21 +477,20 @@ public class SymmetryApplierTranspositions extends SymmetryApplier {
 			List<String> referencesToCompare = new ArrayList<String>();
 			
 			Map<String,EnvEntry> localScope = proctype.getLocalScope();
-			for(Iterator<String> iter = localScope.keySet().iterator(); iter.hasNext();) {
-				String varName = iter.next();
+			for(String varName : localScope.keySet()) {
 				if(localScope.get(varName) instanceof VarEntry) {
 					referencesToCompare.addAll(getInsensitiveVariableReferences(varName,((VarEntry)localScope.get(varName)).getType(),""));
 				}
 			}
 
-			for(ListIterator iter = referencesToCompare.listIterator(); iter.hasNext(); ) {
-				String reference = (String)iter.next();
+			for(String reference : referencesToCompare) {
 				fw.write("  if(" + sPrefix + reference + " < " + tPrefix + reference + ") return 1;\n");
 				fw.write("  if(" + sPrefix + reference + " > " + tPrefix + reference + ") return 0;\n\n");
 			}
+			j++;
 		}
 		
-		for(int j=0; j<typeInfo.getStaticChannelNames().size(); j++) {
+		for(j=0; j<typeInfo.getStaticChannelNames().size(); j++) {
 
 			ChanType type = (ChanType) ((ChannelEntry)typeInfo.getEnvEntry((String)typeInfo.getStaticChannelNames().get(j))).getType();
 			List flattenedFieldTypes = TypeFlattener.flatten(type.getMessageType(),typeInfo);

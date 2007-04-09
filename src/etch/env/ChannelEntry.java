@@ -18,5 +18,8 @@ public class ChannelEntry extends VarEntry {
 		return length + " of " + getType().name();
 	}
 	
+	public int getLength() {
+		return length;
+	}
 	
 }

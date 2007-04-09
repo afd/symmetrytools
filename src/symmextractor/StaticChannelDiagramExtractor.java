@@ -357,7 +357,7 @@ public class StaticChannelDiagramExtractor extends Checker {
 		return Collections.unmodifiableList(proctypeNames);
 	}
 
-	public List getProcessEntries() {
+	public List<ProcessEntry> getProcessEntries() {
 		return Collections.unmodifiableList(processEntries);
 	}
 	

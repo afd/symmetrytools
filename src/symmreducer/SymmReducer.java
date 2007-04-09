@@ -64,6 +64,7 @@ public class SymmReducer extends SymmExtractor {
     		break;
     	case EXACTMARKERS:
     	case APPROXMARKERS:
+    	case BOSNACKIMARKERS:
     		gapWriter.write("H = SymmetricGroup(" + (extractor.getNoProcesses()-1) + ");\n");
     		gapWriter.flush();
     		
@@ -71,7 +72,12 @@ public class SymmReducer extends SymmExtractor {
     			System.out.println("Symmetric markers only work with a full symmetry group, i.e. the group Sym({1,..," + (extractor.getNoProcesses()-1) + ")");
     			System.exit(0);
     		} else {
-    			System.out.println("Full symmetry group detected!  Symmetric markers only partially supported.");
+    			System.out.println("Full symmetry group detected - symmetry markers can be applied");
+    			if(!Config.USE_TRANSPOSITIONS) {
+    				System.out.println("Transpositions must be used with this strategy - switch made automatically");
+    				Config.USE_TRANSPOSITIONS = true;
+    			}
+    		
     		}
     		break;
     	default:
@@ -119,7 +125,7 @@ public class SymmReducer extends SymmExtractor {
 			e.printStackTrace();
 		}
 		
-		if(Config.REDUCTION_STRATEGY==Strategy.EXACTMARKERS || (Config.REDUCTION_STRATEGY!=Strategy.APPROXMARKERS && Config.USE_TRANSPOSITIONS)) {
+		if(Config.USE_TRANSPOSITIONS) {
 			new SymmetryApplierTranspositions(extractor).applySymmetry("sympan.c");
 		} else {
 			new SymmetryApplierBasic(extractor).applySymmetry("sympan.c");

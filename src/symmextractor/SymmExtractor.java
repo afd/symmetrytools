@@ -330,7 +330,6 @@ public class SymmExtractor extends Check {
 		gapWriter.write("0;\n");
 		gapWriter.flush();
 
-
 		while(!gapReader.readLine().equals("0"));
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_END = System.currentTimeMillis(); }
 

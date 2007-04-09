@@ -12,7 +12,9 @@ import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.error.ArithmeticOnPidError;
+import src.etch.error.ArrayWithLengthZeroError;
 import src.etch.error.AssignmentMismatchError;
+import src.etch.error.BadlyFormedInitError;
 import src.etch.error.ElementDoesNotExistError;
 import src.etch.error.EqMismatchError;
 import src.etch.error.Error;
@@ -21,6 +23,7 @@ import src.etch.error.IfCondError;
 import src.etch.error.IfMismatchError;
 import src.etch.error.LiteralValueTooLargeError;
 import src.etch.error.NameAlreadyUsedError;
+import src.etch.error.NoInitError;
 import src.etch.error.NotBoolError;
 import src.etch.error.NotNumericError;
 import src.etch.error.PidIndexedArrayWithWrongLengthError;
@@ -125,7 +128,7 @@ public class Checker extends InlineProcessor {
 		int result = 0;
 		
 		PSequence atomicSequence;
-
+		
 		for(atomicSequence = ((AAtomicStmnt)((AStmntStep)initFirstStep).getStmnt()).getSequence();
 atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomicSequence).getSequence()) {
 			
@@ -167,7 +170,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	private boolean isAtomicStatement(PStep step) {
-		return step.toString().substring(0,7).equals("atomic ");
+		return step.toString().length()>=7 && step.toString().substring(0,7).equals("atomic ");
 	}
 
 	public Checker(boolean checkingSymmetry) {

@@ -38,7 +38,8 @@ public class SymmetryApplierBasic extends SymmetryApplier {
 		}
 
 		Assert.assertFalse(Config.REDUCTION_STRATEGY==Strategy.EXACTMARKERS);
-
+		Assert.assertFalse(Config.REDUCTION_STRATEGY==Strategy.APPROXMARKERS);
+		Assert.assertFalse(Config.REDUCTION_STRATEGY==Strategy.BOSNACKIMARKERS);
 	}
 	
 	public void applySymmetry(String fileName) {
@@ -58,9 +59,6 @@ public class SymmetryApplierBasic extends SymmetryApplier {
 		for (int i = 0; i < lines.size(); i++) {
 			if (lines.get(i).indexOf("JAVA") != -1) {
 				writeApplyPermToState(fw);
-			} else if(lines.get(i).indexOf("MARKER") != -1) {
-				Assert.assertTrue(Config.REDUCTION_STRATEGY==Strategy.APPROXMARKERS);
-				writeMarkers(fw);
 			} else {
 				fw.write((String) lines.get(i) + "\n");
 			}
