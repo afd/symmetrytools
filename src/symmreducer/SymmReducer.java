@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.StringTokenizer;
 
 import junit.framework.Assert;
@@ -13,8 +12,6 @@ import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.SymmExtractor;
 import src.utilities.Config;
 import src.utilities.Profile;
-import src.utilities.Strategy;
-import src.utilities.StringHelper;
 
 public class SymmReducer extends SymmExtractor {
 
@@ -37,7 +34,7 @@ public class SymmReducer extends SymmExtractor {
     	if(extractor==null) {
     		System.exit(0);
     	}
-    	
+
     	if(Config.PROFILE) { Profile.CLASSIFY_START = System.currentTimeMillis(); }
 
     	Assert.assertNotNull(gap);
@@ -64,7 +61,6 @@ public class SymmReducer extends SymmExtractor {
     		break;
     	case EXACTMARKERS:
     	case APPROXMARKERS:
-    	case BOSNACKIMARKERS:
     		gapWriter.write("H = SymmetricGroup(" + (extractor.getNoProcesses()-1) + ");\n");
     		gapWriter.flush();
     		
@@ -105,32 +101,10 @@ public class SymmReducer extends SymmExtractor {
 
     	if(Config.PROFILE) { Profile.CLASSIFY_END = System.currentTimeMillis(); 	}
     	
-    	String command;
-
-    	if(Config.isOSWindows()) {
-    		command = "perl \"" + Config.COMMON + "PreparePan.pl\" \"" + sourceName + "\" " + extractor.getNoProcesses() + " " + extractor.getStaticChannelNames().size() + " groupinfo " + (Config.USE_TRANSPOSITIONS?"true":"false") + " " + (Config.USE_STABILISER_CHAIN?"true":"false") + " " + Config.REDUCTION_STRATEGY + " \"" + StringHelper.doubleUpSlashes(Config.COMMON) + "\" \" " + groupGenerators + "\"";
-    	} else {
-    		command = "perl " + Config.COMMON + "PreparePan.pl " + sourceName + " " + extractor.getNoProcesses() + " " + extractor.getStaticChannelNames().size() + " groupinfo " + (Config.USE_TRANSPOSITIONS?"true":"false") + " " + (Config.USE_STABILISER_CHAIN?"true":"false") + " " + Config.REDUCTION_STRATEGY + " " + Config.COMMON + " \"" + groupGenerators + "\"";
-    	}
-
     	if(Config.PROFILE) { Profile.CODE_GENERATION_START = System.currentTimeMillis(); 	}
 
-    	System.out.println(command);
+    	new SymmetryApplier(sourceName,extractor,groupGenerators).applySymmetry();
     	
-	 	Process perl = Runtime.getRuntime().exec(command);
-	 	
-	 	try {	
-			perl.waitFor();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		
-		if(Config.USE_TRANSPOSITIONS) {
-			new SymmetryApplierTranspositions(extractor).applySymmetry("sympan.c");
-		} else {
-			new SymmetryApplierBasic(extractor).applySymmetry("sympan.c");
-		}
-		
     	if(Config.PROFILE) { Profile.CODE_GENERATION_END = System.currentTimeMillis(); 	}
 
     }

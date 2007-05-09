@@ -21,7 +21,9 @@ public class Config {
 	public static boolean USE_STABILISER_CHAIN = true;
 	public static boolean PROFILE = false;
 	public static boolean DETECT_ONLY = false;
-	
+	public static boolean SIEVE = false;
+	public static int NO_CORES = 0; /* If this is 0, an iteratorclass is used for splitting
+										If > 0 then explicit loops are generated */
 	
 	public static boolean isOSWindows() {
 		return System.getProperty("os.name").length()>="Windows".length() && System.getProperty("os.name").substring(0,7).equals("Windows");
@@ -75,6 +77,8 @@ public class Config {
 	private static boolean profileset = false;
 	private static boolean strategyset = false;
 	private static boolean stabiliserchainset = false;
+	private static boolean sieveset = false;
+	private static boolean coresset = false;
 
 	private static void processConfigurationLine(String line, int n) {
 		try {
@@ -118,6 +122,12 @@ public class Config {
 						System.out.println("Unknown reduction strategy -- defaulting to " + Strategy.FAST);
 						REDUCTION_STRATEGY = Strategy.FAST;
 					}
+				} else if(name.equals("sieve") && !sieveset) {
+					sieveset = true;
+					SIEVE = Boolean.parseBoolean(value.toUpperCase());
+				} else if(name.equals("cores") && !coresset) {
+					coresset = true;
+					NO_CORES = Integer.parseInt(value);
 				} else {
 					System.out.println("Line " + n + " of configuration file redefines a configuration item, or refers to an item which does not exist.");
 				}

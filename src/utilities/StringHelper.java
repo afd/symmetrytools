@@ -17,6 +17,17 @@ public class StringHelper {
 
 	}
 	
+	public static String trimWhitespace(String s) {
+		int beginNonWhitespace;
+		int endNonWhitespace;
+		
+		for(beginNonWhitespace = 0; beginNonWhitespace < s.length() && s.charAt(beginNonWhitespace)==' '; beginNonWhitespace++);
+		for(endNonWhitespace = s.length(); endNonWhitespace > 0 && s.charAt(endNonWhitespace-1)==' '; endNonWhitespace--);
+
+		return s.substring(beginNonWhitespace,endNonWhitespace);
+	}
+	
+	
 	public static String nautyToGap(String nautyGenerators) {
 		if(nautyGenerators=="") {
 			return "Group(());";

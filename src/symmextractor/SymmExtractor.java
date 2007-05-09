@@ -326,7 +326,7 @@ public class SymmExtractor extends Check {
 		
 		gapReader = CommunicatingProcess.getReader(gap);
 		gapWriter = CommunicatingProcess.getWriter(gap);
-		
+
 		gapWriter.write("0;\n");
 		gapWriter.flush();
 
