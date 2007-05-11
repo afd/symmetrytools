@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.HashSet;
@@ -329,10 +330,14 @@ public class SymmExtractor extends Check {
 
 		gapWriter.write("0;\n");
 		gapWriter.flush();
-
+		
 		while(!gapReader.readLine().equals("0"));
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_END = System.currentTimeMillis(); }
 
+	}
+
+	public void printGAPError() throws IOException {
+		System.out.println((new BufferedReader(new InputStreamReader(gap.getErrorStream()))).readLine());
 	}
 
 }

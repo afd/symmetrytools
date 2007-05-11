@@ -552,18 +552,18 @@ public class SymmetryApplier {
 				+ "*sizeof(Marker));\n\n");
 		out.write("   for(i=0; i<" + (procsminus1 - 1) + "; i++) {\n");
 		out.write("      for(j=i+1; j<" + procsminus1 + "; j++) {\n");
-		out.write("         if(lt(&markers[i],&markers[j])) {\n");
+		out.write("         if(lt(markers,i,j,orig_now)) {\n");
 		out.write("            memcpy(&temp,&markers[i],sizeof(Marker));\n");
 		out
 				.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
 		out.write("            memcpy(&markers[j],&temp,sizeof(Marker));\n");
-		out.write("            applyPrSwapToState(&min_now,i+1,j+1);\n");
 		out.write("         }\n");
 		out.write("      }\n");
 		out.write("   }\n\n");
 		out.write("   for(i=0; i<" + procsminus1 + "; i++) {\n");
 		out.write("      for(j=" + (procsminus1 - 1) + "; j>=0; j--) {\n");
 		out.write("         if(eq(&markers[j],&orig_markers[i])) {\n");
+					/* Check the next one....find the smallest */
 		out.write("            map[i] = j;\n");
 		out.write("            break;\n");
 		out.write("         }\n");
@@ -582,7 +582,7 @@ public class SymmetryApplier {
 		out.write("   }\n");
 		out.write("   for(i=0; i<" + (procsminus1 - 1) + "; i++) {\n");
 		out.write("      for(j=i+1; j<" + procsminus1 + "; j++) {\n");
-		out.write("         if(lt(&markers[i],&markers[j])) {\n");
+		out.write("         if(lt(markers,i,j,orig_now)) {\n");
 		out.write("            memcpy(&temp,&markers[i],sizeof(Marker));");
 		out
 				.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
@@ -994,10 +994,8 @@ public class SymmetryApplier {
 		fw.write("   uchar tempPid;\n");
 		fw.write("   int slot;\n");
 		swapPrGlobal(fw);
-		if (!(Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS)) {
-			swapProctypeLocalPrVariables(fw);
-			swapChannelPrContents(fw);
-		}
+		swapProctypeLocalPrVariables(fw);
+		swapChannelPrContents(fw);
 		swapProcesses(fw);
 		fw.write("}\n\n");
 	}
@@ -1446,6 +1444,33 @@ public class SymmetryApplier {
 			}
 			chanId++;
 		}
+		
+		/* NOW SWAP AROUND THE pid-indexed ARRAYS */
+
+		fw.write("   uchar swapper[" + typeInfo.getNoProcesses() + "];\n");
+		fw.write("   swapper[0] = 0;\n");
+		fw.write("   int i;\n");
+		
+		for (Iterator<String> iter = globalVariables.keySet().iterator(); iter
+			.hasNext();) {
+			String name = iter.next();
+			EnvEntry entry = globalVariables.get(name);
+			if ((entry instanceof VarEntry)
+					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
+				if(((VarEntry)entry).getType() instanceof ArrayType && ((ArrayType)((VarEntry)entry).getType()).getIndexType() instanceof PidType) {
+					fw.write("   for(i=1; i<" + typeInfo.getNoProcesses() + "; i++) swapper[i]=0;\n\n");
+					
+					for(int i=1; i<typeInfo.getNoProcesses(); i++) {
+						fw.write("   swapper[map[" + (i-1) + "]+1] = s->" + name + "[" + i + "];\n");
+					}
+
+					fw.write("   memcpy(s->" + name + ",swapper," + typeInfo.getNoProcesses() + ");\n\n");
+				
+				}
+			}
+		}
+			
+		
 		fw.write("}\n\n");
 
 	}
@@ -2020,8 +2045,8 @@ public class SymmetryApplier {
 		return eqMethod + "(m1->" + name + "==m2->" + name + ")&&";
 	}
 
-	private String appendLt(String name, String ltMethod) {
-		return ltMethod + "   if(m1->" + name + "<m2->" + name
+	private String appendLt(String name, String ltMarkersMethod) {
+		return ltMarkersMethod + "   if(m1->" + name + "<m2->" + name
 				+ ") return 1;\n   if(m1->" + name + ">m2->" + name
 				+ ") return 0;\n";
 	}
@@ -2030,20 +2055,23 @@ public class SymmetryApplier {
 		String markerStruct = "#define bitvector unsigned int\n#define SET_1(bv,i) bv=bv|(1<<i)\n\ntypedef struct Marker {\n";
 		String markMethod = "void mark(Marker *marker, State* s, int i) {\n   int j;\n";
 		String eqMethod = "int eq(Marker* m1, Marker* m2) {\n   return ";
-		String ltMethod = "int lt(Marker* m1, Marker* m2) {\n";
-
+		String ltMarkersMethod = "int lt_markers(Marker* m1, Marker* m2) {\n";
+		String ltMethod = "int lt(Marker* markers, int i, int j, State* s) {\n" +
+			"if(lt_markers(&markers[i],&markers[j])) return 1;\n" + 
+			"if(lt_markers(&markers[j],&markers[i])) return 0;\n\n";
+		
 		Map<String, EnvEntry> globalVariables = typeInfo.getEnv()
 				.getTopEntries();
 		for (String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-
+	
 				Type entryType = ((VarEntry) entry).getType();
-
+	
 				Assert.assertFalse(entryType instanceof ChanType);
 				Assert.assertFalse(entryType instanceof ProductType);
-
+	
 				if (entryType instanceof ArrayType) {
 					Assert
 							.assertFalse(((ArrayType) entryType)
@@ -2054,25 +2082,25 @@ public class SymmetryApplier {
 					Assert
 							.assertFalse(((ArrayType) entryType)
 									.getElementType() instanceof ProductType);
-
+	
 					if (((ArrayType) entryType).getElementType() instanceof RecordType) {
 						System.out
 								.println("Markers do not currently support arrays of records");
 						System.exit(0);
 					}
-
+	
 					if (((ArrayType) entryType).getIndexType() instanceof PidType) {
 						if (((ArrayType) entryType).getElementType() instanceof PidType) {
-
+	
 							
 							markerStruct += "   uchar " + name + ";\n";
 							eqMethod = appendEq(name, eqMethod);
-							ltMethod = appendLt(name, ltMethod);
-
+							ltMarkersMethod = appendLt(name, ltMarkersMethod);
+	
 							markerStruct += "   uchar " + name + "_selfloop;\n";
 							eqMethod = appendEq(name + "_selfloop", eqMethod);
-							ltMethod = appendLt(name + "_selfloop", ltMethod);
-
+							ltMarkersMethod = appendLt(name + "_selfloop", ltMarkersMethod);
+	
 							markMethod += "   marker->" + name + " = 0;\n";
 							markMethod += "   for(j=1; j<" + typeInfo.getNoProcesses()
 									+ "; j++) {\n";
@@ -2082,10 +2110,19 @@ public class SymmetryApplier {
 							markMethod += "   if(s->" + name + "[i]==i) marker->"
 									+ name + "_selfloop = 1; else marker->"
 									+ name + "_selfloop = 0;\n";
+							
+							ltMethod += "   if(s->" + name + "[i+1]==0) {\n" +
+								"      if(s->" + name + "[j+1]!=0) { return 1; }\n" +
+								"   } else {" +
+								"      if(lt_markers(&markers[s->" + name + "[i+1]-1],&markers[s->" + name + "[j+1]-1])) return 1;\n" +
+								"      if(lt_markers(&markers[s->" + name + "[j+1]-1],&markers[s->" + name + "[i+1]-1])) return 0;\n  }\n\n";
+
+							// TODO Need to add this code for local pid variables too.  Don't think we need it for non-pid arrays or non-pid locals.
+							
 						} else {
 							markerStruct += "   uchar " + name + ";\n";
 							eqMethod = appendEq(name, eqMethod);
-							ltMethod = appendLt(name, ltMethod);
+							ltMarkersMethod = appendLt(name, ltMarkersMethod);
 							markMethod += "   marker->" + name + " = s->"
 									+ name + "[i];\n";
 						}
@@ -2095,7 +2132,7 @@ public class SymmetryApplier {
 						if (((ArrayType) entryType).getElementType() instanceof PidType) {
 							markerStruct += "   bitvector " + name + ";\n";
 							eqMethod = appendEq(name, eqMethod);
-							ltMethod = appendLt(name, ltMethod);
+							ltMarkersMethod = appendLt(name, ltMarkersMethod);
 							markMethod += "   marker->" + name + "=0;\n";
 							for (int i = 0; i < ((ArrayType) entryType)
 									.getLength(); i++) {
@@ -2105,11 +2142,11 @@ public class SymmetryApplier {
 							}
 						}
 					}
-
+	
 				} else if (entryType instanceof PidType) {
 					markerStruct += "   uchar " + name + " : 1;\n";
 					eqMethod = appendEq(name, eqMethod);
-					ltMethod = appendLt(name, ltMethod);
+					ltMarkersMethod = appendLt(name, ltMarkersMethod);
 					markMethod += "   marker->" + name + " = s->" + name
 							+ "==i ? 1 : 0;\n";
 				} else if (entryType instanceof RecordType) {
@@ -2117,25 +2154,25 @@ public class SymmetryApplier {
 							.println("Markers do not currently support records");
 					System.exit(0);
 				}
-
+	
 			}
 		}
-
+	
 		Assert.assertEquals(typeInfo.getProctypeNames().size(), 2);
-
+	
 		Assert.assertEquals(typeInfo.getProctypeNames().get(1),
 				ProctypeEntry.initProctypeName);
-
+	
 		String proctypeName = typeInfo.getProctypeNames().get(0);
 		ProctypeEntry proctype = (ProctypeEntry) typeInfo
 				.getEnvEntry(proctypeName);
 		Map<String, EnvEntry> localScope = proctype.getLocalScope();
 		eqMethod = appendEq("_p", eqMethod);
-		ltMethod = appendLt("_p", ltMethod);
+		ltMarkersMethod = appendLt("_p", ltMarkersMethod);
 		markerStruct += "   uchar _p;\n";
 		markMethod += "   marker->_p = ((P" + proctypeId(proctypeName)
 				+ " *)SEG(s,i))->_p;\n";
-
+	
 		for (String varName : localScope.keySet()) {
 			if (localScope.get(varName) instanceof VarEntry) {
 				Type entryType = ((VarEntry) localScope.get(varName)).getType();
@@ -2150,16 +2187,16 @@ public class SymmetryApplier {
 							.println("Local record variables not yet supported with markers");
 					System.exit(0);
 				}
-
+	
 				if (entryType instanceof PidType) {
 					markerStruct += "   uchar " + varName + ";\n";
 					eqMethod = appendEq(varName, eqMethod);
-					ltMethod = appendLt(varName, ltMethod);
-
+					ltMarkersMethod = appendLt(varName, ltMarkersMethod);
+	
 					markerStruct += "   uchar " + varName + "_selfloop;\n";
 					eqMethod = appendEq(varName + "_selfloop", eqMethod);
-					ltMethod = appendLt(varName + "_selfloop", ltMethod);
-
+					ltMarkersMethod = appendLt(varName + "_selfloop", ltMarkersMethod);
+	
 					markMethod += "   marker->" + varName + " = 0;\n";
 					markMethod += "   for(j=1; j<" + typeInfo.getNoProcesses()
 							+ "; j++) {\n";
@@ -2174,15 +2211,15 @@ public class SymmetryApplier {
 				} else {
 					markerStruct += "   uchar " + varName + ";\n";
 					eqMethod = appendEq(varName, eqMethod);
-					ltMethod = appendLt(varName, ltMethod);
+					ltMarkersMethod = appendLt(varName, ltMarkersMethod);
 					markMethod += "   marker->" + varName + " = ((P"
 							+ proctypeId(proctypeName) + " *)SEG(s,i))->"
 							+ varName + ";\n";
 				}
 			}
-
+	
 		}
-
+	
 		List<String> staticChannelNames = typeInfo.getStaticChannelNames();
 		int chanId = 0;
 		for (String chanName : staticChannelNames) {
@@ -2192,23 +2229,23 @@ public class SymmetryApplier {
 					.getLength();
 			for (int i = 0; i < msgType.getArity(); i++) {
 				Type fieldType = msgType.getTypeOfPosition(i);
-
+	
 				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
 				// doesn't
 				// allow
 				// this
-
+	
 				if (fieldType instanceof RecordType) {
 					System.out
 							.println("Record fields on channels not yet supported with markers");
 					System.exit(0);
 				}
-
+	
 				if (fieldType instanceof PidType) {
 					markerStruct += "   bitvector " + chanName + "_fld" + i
 							+ ";\n";
 					eqMethod = appendEq(chanName + "_fld" + i, eqMethod);
-					ltMethod = appendLt(chanName + "_fld" + i, ltMethod);
+					ltMarkersMethod = appendLt(chanName + "_fld" + i, ltMarkersMethod);
 				}
 				markMethod += "   marker->" + chanName + "_fld" + i + "=0;\n";
 				for (int j = 0; j < chanLength; j++) {
@@ -2217,23 +2254,25 @@ public class SymmetryApplier {
 							+ "==i) SET_1(marker->" + chanName + "_fld" + i
 							+ "," + j + ");\n";
 				}
-
+	
 			}
 			chanId++;
-
+	
 		}
-
+	
 		markerStruct += "} Marker;\n\n";
 		markMethod += "}\n\n";
-		ltMethod += "   return 0;\n}\n\n";
+		ltMarkersMethod += "   return 0;\n}\n\n";
 		/* Get rid of trailing && from eqMethod */
 		eqMethod = eqMethod.substring(0, eqMethod.length() - 2) + ";\n}\n\n";
-
+	
+		ltMethod += "    return 0;\n\n}\n\n";
+		
 		fw.write(markerStruct);
 		fw.write(markMethod);
-		fw.write(ltMethod);
+		fw.write(ltMarkersMethod);
 		fw.write(eqMethod);
-
+		fw.write(ltMethod);
 	}
 
 	private boolean isRecord(Type varType) {
