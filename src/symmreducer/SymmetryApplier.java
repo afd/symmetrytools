@@ -24,6 +24,7 @@ import src.etch.types.ChanType;
 import src.etch.types.PidType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
+import src.etch.types.SimpleType;
 import src.etch.types.Type;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.Config;
@@ -670,10 +671,10 @@ public class SymmetryApplier {
 		out.write("      if(memcmp(&partialImages[0],s,vsize)<0) {\n");
 		out.write("         memcpy(s,&partialImages[0],vsize);\n");
 		out.write("      }\n");
-		out.write("      int finished = true;\n");
+		out.write("      int finished = 1;\n");
 		out.write("      for(i=noLevels-1; i>=0; i--) {\n");
 		out.write("         if(levelCounters[i]<cosetsPerLevel[i]-1) {\n");
-		out.write("            finished = false;\n");
+		out.write("            finished = 0;\n");
 		out.write("            break;\n");
 		out.write("         }\n");
 		out.write("      }\n\n");
@@ -723,7 +724,7 @@ public class SymmetryApplier {
 				.write("#define CACHE_SIZE (NO_PROCS+NO_CHANS)*(NO_PROCS+NO_CHANS)\n");
 		out.write("int noStabilisers = 0;\n");
 		out.write("char* stabiliserKeys[CACHE_SIZE];\n");
-		out.write("struct perm*** stabiliserValues[CACHE_SIZE];\n");
+		out.write("struct perm** stabiliserValues[CACHE_SIZE];\n");
 		out.write("int stabiliserNoLevels[CACHE_SIZE];\n");
 		out.write("int* stabiliserCosetsPerLevel[CACHE_SIZE];\n\n");
 	}
@@ -1573,27 +1574,30 @@ public class SymmetryApplier {
 	private void writeGlobalVariablesForPartitionConstruction(FileWriter fw)
 			throws IOException {
 		for (int i = 0; i < typeInfo.getProctypeNames().size(); i++) {
-			List<Integer> processIdsOfThisProctype = new ArrayList<Integer>();
-			for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-				ProcessEntry process = (ProcessEntry) typeInfo
-						.getProcessEntries().get(j);
-				if (process.getProctypeName().equals(
-						typeInfo.getProctypeNames().get(i))) {
-					processIdsOfThisProctype.add(new Integer(j + 1));
+			if(!typeInfo.getProctypeNames().get(i).equals(ProctypeEntry.initProctypeName)) {
+				
+				List<Integer> processIdsOfThisProctype = new ArrayList<Integer>();
+				for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
+					ProcessEntry process = (ProcessEntry) typeInfo
+							.getProcessEntries().get(j);
+					if (process.getProctypeName().equals(
+							typeInfo.getProctypeNames().get(i))) {
+						processIdsOfThisProctype.add(j);
+					}
 				}
-			}
-
-			fw.write("int no_P" + i + " = " + processIdsOfThisProctype.size()
-					+ ";\n");
-			fw.write("int P" + i + "_procs[" + processIdsOfThisProctype.size()
-					+ "] = { ");
-			for (int j = 0; j < processIdsOfThisProctype.size(); j++) {
-				fw.write(processIdsOfThisProctype.get(j).toString());
-				if (j < processIdsOfThisProctype.size() - 1) {
-					fw.write(", ");
+	
+				fw.write("int no_P" + i + " = " + processIdsOfThisProctype.size()
+						+ ";\n");
+				fw.write("int P" + i + "_procs[" + processIdsOfThisProctype.size()
+						+ "] = { ");
+				for (int j = 0; j < processIdsOfThisProctype.size(); j++) {
+					fw.write(processIdsOfThisProctype.get(j).toString());
+					if (j < processIdsOfThisProctype.size() - 1) {
+						fw.write(", ");
+					}
 				}
+				fw.write(" };\n\n");
 			}
-			fw.write(" };\n\n");
 		}
 
 		int i = 0;
@@ -1647,27 +1651,29 @@ public class SymmetryApplier {
 		fw.write("   strcat(result,\"ptn:\");\n\n");
 
 		for (int i = 0; i < typeInfo.getProctypeNames().size(); i++) {
-			fw.write("  for(i=0; i<no_P" + i + "; i++) {\n");
-			fw.write("    if(processClasses[P" + i + "_procs[i]]==-1) {\n");
-			fw.write("      sprintf(temp,\"%d\",P" + i + "_procs[i]);\n");
-			fw.write("      strcat(result,\"|\");\n");
-			fw.write("      strcat(result,temp);\n\n");
-
-			fw.write("      processClasses[P" + i
-					+ "_procs[i]]=++noProcessClasses;\n");
-			fw.write("      int j;\n");
-			fw.write("      for(j=i+1; j<no_P" + i + "; j++) {\n");
-			fw.write("        if(equalProcesses(SEG(s,P" + i
-					+ "_procs[i]),SEG(s,P" + i + "_procs[j])," + i + ")) {\n");
-			fw.write("          processClasses[P" + i
-					+ "_procs[j]] = noProcessClasses;\n");
-			fw.write("          strcat(result,\",\");\n");
-			fw.write("          sprintf(temp,\"%d\",P" + i + "_procs[j]);\n");
-			fw.write("          strcat(result,temp);\n");
-			fw.write("        }\n");
-			fw.write("      }\n");
-			fw.write("    }\n");
-			fw.write("  }\n\n");
+			if(!typeInfo.getProctypeNames().get(i).equals(ProctypeEntry.initProctypeName)) {
+				fw.write("  for(i=0; i<no_P" + i + "; i++) {\n");
+				fw.write("    if(processClasses[P" + i + "_procs[i]]==-1) {\n");
+				fw.write("      sprintf(temp,\"%d\",P" + i + "_procs[i]);\n");
+				fw.write("      strcat(result,\"|\");\n");
+				fw.write("      strcat(result,temp);\n\n");
+	
+				fw.write("      processClasses[P" + i
+						+ "_procs[i]]=++noProcessClasses;\n");
+				fw.write("      int j;\n");
+				fw.write("      for(j=i+1; j<no_P" + i + "; j++) {\n");
+				fw.write("        if(equalProcesses(SEG(s,P" + i
+						+ "_procs[i]),SEG(s,P" + i + "_procs[j]),P" + i + "_procs[i],P" + i + "_procs[j]," + i + ",s)) {\n");
+				fw.write("          processClasses[P" + i
+						+ "_procs[j]] = noProcessClasses;\n");
+				fw.write("          strcat(result,\",\");\n");
+				fw.write("          sprintf(temp,\"%d\",P" + i + "_procs[j]);\n");
+				fw.write("          strcat(result,temp);\n");
+				fw.write("        }\n");
+				fw.write("      }\n");
+				fw.write("    }\n");
+				fw.write("  }\n\n");
+			}
 		}
 
 		for (int i = 0; i < typeInfo.getDistinctChannelSignatures().size(); i++) {
@@ -1747,7 +1753,25 @@ public class SymmetryApplier {
 	}
 
 	private void writeEqualProcesses(FileWriter fw) throws IOException {
-		fw.write("int equalProcesses(void* p1, void* p2, int pt) {");
+		fw.write("int equalProcesses(void* p1, void* p2, int i, int j, int pt, State* s) {\n\n");
+
+		Map<String, EnvEntry> globalVariables = typeInfo.getEnv()
+		.getTopEntries();
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if (entry instanceof VarEntry) {
+				Type entryType = ((VarEntry)entry).getType();
+				if(entryType instanceof ArrayType && isPid(((ArrayType)entryType).getIndexType()) &&
+						(((ArrayType)entryType).getElementType() instanceof SimpleType)) {
+					if(isPid(((ArrayType)entryType).getElementType())) {
+						fw.write("   if((s->" + name + "[i]==0 && s->" + name + "[j]!=0)||(s->" + name + "[i]!=0 && s->" + name + "[j]==0)) return 0;\n");
+					} else {
+						fw.write("   if(s->" + name + "[i]!=s->" + name + "[j]) return 0;\n");
+					}
+				}
+			}
+		}
+		
 		fw.write("   switch(pt) {\n");
 		for (int i = 0; i < typeInfo.getProctypeNames().size(); i++) {
 			fw.write("      case " + i + ": return ((P" + i + "*)p1)->_p==((P"
@@ -1792,37 +1816,62 @@ public class SymmetryApplier {
 		fw.write("int lt(State *s, State *t) {\n");
 		fw.write("  int slot;\n\n");
 
-		int j = 0;
-		for (ProcessEntry entry : typeInfo.getProcessEntries()) {
-			String proctypeName = entry.getProctypeName();
-			String sPrefix = "((P" + proctypeId(proctypeName) + " *)SEG(s," + j
-					+ "))->";
-			String tPrefix = "((P" + proctypeId(proctypeName) + " *)SEG(t," + j
-					+ "))->";
-			ProctypeEntry proctype = (ProctypeEntry) typeInfo
-					.getEnvEntry(proctypeName);
-
-			fw.write("  if(" + sPrefix + "_p < " + tPrefix + "_p) return 1;\n");
-			fw.write("  if(" + sPrefix + "_p > " + tPrefix
-					+ "_p) return 0;\n\n");
-
-			List<String> referencesToCompare = new ArrayList<String>();
-
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (String varName : localScope.keySet()) {
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToCompare
-							.addAll(getInsensitiveVariableReferences(varName,
-									((VarEntry) localScope.get(varName))
-											.getType(), ""));
+		Map<String, EnvEntry> globalVariables = typeInfo.getEnv()
+		.getTopEntries();
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if (entry instanceof VarEntry) {
+				Type entryType = ((VarEntry)entry).getType();
+				if(entryType instanceof ArrayType && isPid(((ArrayType)entryType).getIndexType()) &&
+						(((ArrayType)entryType).getElementType() instanceof SimpleType)) {
+					for(int i=1; i<typeInfo.getNoProcesses(); i++) {
+					
+						if(isPid(((ArrayType)entryType).getElementType())) {
+							fw.write("   if(s->" + name + "[" + i + "]==0 && t->" + name + "[" + i + "]!=0) return 1;\n");
+							fw.write("   if(s->" + name + "[" + i + "]!=0 && t->" + name + "[" + i + "]==0) return 0;\n");
+						} else {
+							fw.write("   if(s->" + name + "[" + i + "]<t->" + name + "[" + i + "]) return 1;\n");
+							fw.write("   if(s->" + name + "[" + i + "]>t->" + name + "[" + i + "]) return 0;\n");
+						}
+					}
 				}
 			}
-
-			for (String reference : referencesToCompare) {
-				fw.write("  if(" + sPrefix + reference + " < " + tPrefix
-						+ reference + ") return 1;\n");
-				fw.write("  if(" + sPrefix + reference + " > " + tPrefix
-						+ reference + ") return 0;\n\n");
+		}
+		
+		int j = 0;
+		
+		for (ProcessEntry entry : typeInfo.getProcessEntries()) {
+			String proctypeName = entry.getProctypeName();
+			if(!proctypeName.equals(ProctypeEntry.initProctypeName)) {
+				String sPrefix = "((P" + proctypeId(proctypeName) + " *)SEG(s," + j
+						+ "))->";
+				String tPrefix = "((P" + proctypeId(proctypeName) + " *)SEG(t," + j
+						+ "))->";
+				ProctypeEntry proctype = (ProctypeEntry) typeInfo
+						.getEnvEntry(proctypeName);
+		
+				fw.write("  if(" + sPrefix + "_p < " + tPrefix + "_p) return 1;\n");
+				fw.write("  if(" + sPrefix + "_p > " + tPrefix
+						+ "_p) return 0;\n\n");
+		
+				List<String> referencesToCompare = new ArrayList<String>();
+		
+				Map<String, EnvEntry> localScope = proctype.getLocalScope();
+				for (String varName : localScope.keySet()) {
+					if (localScope.get(varName) instanceof VarEntry) {
+						referencesToCompare
+								.addAll(getInsensitiveVariableReferences(varName,
+										((VarEntry) localScope.get(varName))
+												.getType(), ""));
+					}
+				}
+		
+				for (String reference : referencesToCompare) {
+					fw.write("  if(" + sPrefix + reference + " < " + tPrefix
+							+ reference + ") return 1;\n");
+					fw.write("  if(" + sPrefix + reference + " > " + tPrefix
+							+ reference + ") return 0;\n\n");
+				}
 			}
 			j++;
 		}
