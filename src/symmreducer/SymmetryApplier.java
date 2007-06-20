@@ -420,40 +420,55 @@ public class SymmetryApplier {
 			FileWriter out, int groupInfoCounter, int setCounter, int setSize)
 			throws IOException {
 
-		out.write("   {\n");
-		out.write("      State ");
-		for(int i=1; i<=Config.NO_CORES; i++) {
-			out.write("min" + i + ", ");
-		}
-		out.write("*minptr;\n");
-		out.write("      sieve {\n");
-		for(int i=1; i<=Config.NO_CORES; i++) {
-			out.write("         {\n");
-			out.write("            State tmp_now, current_min;\n");
-			out.write("            outer_memcpy(&tmp_now, &min_now, vsize);\n");
-			out.write("            imm_memcpy(&current_min, &tmp_now, vsize);\n");
-			out.write("            for(int j=" + ((i-1)*setSize/Config.NO_CORES) + "; j<" + (i*setSize/Config.NO_CORES) + "; j++) {\n");
-			out.write("               applyPermToState(&tmp_now,&(elementset_" + setCounter + "[j]));\n");
-			out.write("               if(imm_memcmp(&tmp_now,&current_min,vsize)<0) {\n");
-			out.write("                  imm_memcpy(&current_min,&tmp_now,vsize);\n");
-			out.write("               }\n");
-			out.write("               outer_memcpy(&tmp_now,&min_now,vsize);\n");
-			out.write("            }\n");
-			out.write("            delayed_memcpy(&min" + i + ",&current_min,vsize);\n");
-			out.write("         }\n");
-			if(i<Config.NO_CORES) {
-				out.write("         splithere;\n");
+		if(Config.NO_CORES == 0) {
+			// Use iterator and accumulator
+			
+
+			
+			
+			
+			
+		} else {
+			
+			
+			
+			
+			
+			out.write("   {\n");
+			out.write("      State ");
+			for(int i=1; i<=Config.NO_CORES; i++) {
+				out.write("min" + i + ", ");
 			}
-		}
-		out.write("      }\n");
-		out.write("      minptr = &min1;\n");
-		for (int i = 2; i <= Config.NO_CORES; i++) {
-			out.write("      if(memcmp(&min" + i + ",minptr,vsize)<0) {\n");
-			out.write("         minptr = &min" + i + ";\n");
+			out.write("*minptr;\n");
+			out.write("      sieve {\n");
+			for(int i=1; i<=Config.NO_CORES; i++) {
+				out.write("         {\n");
+				out.write("            State tmp_now, current_min;\n");
+				out.write("            outer_memcpy(&tmp_now, &min_now, vsize);\n");
+				out.write("            imm_memcpy(&current_min, &tmp_now, vsize);\n");
+				out.write("            for(int j=" + ((i-1)*setSize/Config.NO_CORES) + "; j<" + (i*setSize/Config.NO_CORES) + "; j++) {\n");
+				out.write("               applyPermToState(&tmp_now,&(elementset_" + setCounter + "[j]));\n");
+				out.write("               if(imm_memcmp(&tmp_now,&current_min,vsize)<0) {\n");
+				out.write("                  imm_memcpy(&current_min,&tmp_now,vsize);\n");
+				out.write("               }\n");
+				out.write("               outer_memcpy(&tmp_now,&min_now,vsize);\n");
+				out.write("            }\n");
+				out.write("            delayed_memcpy(&min" + i + ",&current_min,vsize);\n");
+				out.write("         }\n");
+				if(i<Config.NO_CORES) {
+					out.write("         splithere;\n");
+				}
+			}
 			out.write("      }\n");
+			out.write("      minptr = &min1;\n");
+			for (int i = 2; i <= Config.NO_CORES; i++) {
+				out.write("      if(memcmp(&min" + i + ",minptr,vsize)<0) {\n");
+				out.write("         minptr = &min" + i + ";\n");
+				out.write("      }\n");
+			}
+			out.write("      memcpy(&min_now,minptr,vsize);\n");
+			out.write("   }\n");
 		}
-		out.write("      memcpy(&min_now,minptr,vsize);\n");
-		out.write("   }\n");
 		
 	}
 
