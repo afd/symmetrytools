@@ -1,5 +1,7 @@
 package src.etch.types;
 
+import src.etch.checker.SymmetrySettings;
+
 public class ByteType extends NumericType {
 	
 	public ByteType(boolean isTypeOfConstant, boolean isPidLiteral) {
@@ -20,8 +22,8 @@ public class ByteType extends NumericType {
 	}
 
 	public boolean isSubtype(Type t) {
-		return (!checkingSymmetry() && t instanceof PidType) ||
-			(checkingSymmetry() && t instanceof PidType && isPidLiteral) || t instanceof ByteType || t instanceof ShortType || t instanceof IntType;
+		return (!SymmetrySettings.CHECKING_SYMMETRY && t instanceof PidType) ||
+			(SymmetrySettings.CHECKING_SYMMETRY && t instanceof PidType && isPidLiteral) || t instanceof ByteType || t instanceof ShortType || t instanceof IntType;
 	}
 	
 }

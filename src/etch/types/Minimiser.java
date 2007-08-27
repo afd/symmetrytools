@@ -36,7 +36,7 @@ public class Minimiser {
 			
 			previousAssignments.put(classNo,result);
 		
-			result.setElementType(minimalForm(((ArrayType)representativeType).getElementType(),classes,nodeNumbers,previousAssignments));
+			result.setElementType((VisibleType) minimalForm(((ArrayType)representativeType).getElementType(),classes,nodeNumbers,previousAssignments));
 
 			return result;
 		}
@@ -47,7 +47,7 @@ public class Minimiser {
 			
 			previousAssignments.put(classNo,result);
 		
-			result.setMessageType(minimalForm(((ChanType)representativeType).getMessageType(),classes,nodeNumbers,previousAssignments));
+			result.setMessageType((InternalType) minimalForm(((ChanType)representativeType).getMessageType(),classes,nodeNumbers,previousAssignments));
 
 			return result;
 		}
@@ -74,7 +74,7 @@ public class Minimiser {
 	}
 
 	private static List<Type> assignNumbers(Type t, List<Type> l) {
-		if (l.contains(t) || isSimpleType(t)) {
+		if (l.contains(t) || (t instanceof SimpleType &&(!(t instanceof TypeVariableType)))) {
 			return l;
 		}
 		
@@ -93,13 +93,10 @@ public class Minimiser {
 			return l;
 		}
 		
-		Assert.assertTrue(false);
-		return null;
+		Assert.assertTrue(t instanceof TypeVariableType);
+		return l;
 	}
 
-	private static boolean isSimpleType(Type t) {
-		return t instanceof MtypeType || t instanceof NumericType || t instanceof PidType || t instanceof BoolType || t instanceof RecordType || t instanceof TypeVariableType;
-	}
 
 	private static int[] mark(Type t, List<Type> nodeNumbers) {
 		boolean[][] distinguishable = markImmediatelyDistinguishableNodes(nodeNumbers,t);
@@ -155,7 +152,8 @@ public class Minimiser {
 						}
 										
 					}
-				
+				} else if(iType instanceof TypeVariableType) {
+					distinguishable[i][j] = !(jType instanceof TypeVariableType && jType.equal(iType));
 				} else {
 					Assert.assertTrue(false);
 				}
@@ -174,7 +172,6 @@ public class Minimiser {
 				for (int j = i + 1; j < nodeNumbers.size(); j++) {
 					if (!distinguishable[i][j]) {
 
-						
 						Type iType = nodeNumbers.get(i);
 						Type jType = nodeNumbers.get(j);
 

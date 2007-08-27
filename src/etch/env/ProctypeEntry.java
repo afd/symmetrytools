@@ -1,30 +1,37 @@
 package src.etch.env;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import src.etch.types.Type;
+import junit.framework.Assert;
+import src.etch.types.VisibleType;
 import src.utilities.StringHelper;
 
 public class ProctypeEntry extends EnvEntry {
 
-	private List<Type> argTypes;
+	private List<VisibleType> argTypes;
 	private List<String> argNames;
 	private Set<String> outChannels;
 	private Set<String> inChannels;	
 
 	private Map<String,EnvEntry> localScope;
 
-	public static final ProctypeEntry initProctypeEntry = new ProctypeEntry(new ArrayList<Type>(),new ArrayList<String>());
+	public static final ProctypeEntry initProctypeEntry = new ProctypeEntry(new ArrayList<VisibleType>(),new ArrayList<String>(),-1);
 	public static final String initProctypeName = "init_proctype";
 
-	public ProctypeEntry(List<Type> argTypes, List<String> argNames) {
+	public ProctypeEntry(List<VisibleType> argTypes, List<String> argNames, int lineOfDeclaration) {
+		super(lineOfDeclaration);
 		this.argTypes = argTypes;
 		this.argNames = argNames;
 		outChannels = new HashSet<String>();
 		inChannels = new HashSet<String>();
 	}
 	
-	public List<Type> getArgTypes() {
+	public List<VisibleType> getArgTypes() {
 		return Collections.unmodifiableList(argTypes);
 	}
 
@@ -59,5 +66,17 @@ public class ProctypeEntry extends EnvEntry {
 	public Map<String,EnvEntry> getLocalScope() {
 		return localScope;
 	}
-	
+
+	public String getEntryKind() {
+		return "proctype";
+	}
+
+	public int getLineOfDeclaration()
+	{
+		if(this.equals(initProctypeEntry) && super.getLineOfDeclaration()==-1)
+		{
+			Assert.assertTrue(false);
+		}
+		return super.getLineOfDeclaration();
+	}
 }

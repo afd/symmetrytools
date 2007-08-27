@@ -12,7 +12,7 @@ import src.etch.types.ChanType;
 import src.etch.types.PidType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
-import src.etch.types.Type;
+import src.etch.types.VisibleType;
 import src.promela.analysis.DepthFirstAdapter;
 import src.promela.node.AArrayref;
 import src.promela.node.AAssignmentAssignment;
@@ -78,7 +78,7 @@ public class Permuter extends DepthFirstAdapter {
 
 	private Permutation alpha;
 	private StaticChannelDiagramExtractor typeInfo;
-	private Type typename;
+	private VisibleType typename;
 	
 	public Permuter(Permutation alpha, StaticChannelDiagramExtractor typeInfo) {
 		this.typeInfo = typeInfo;
@@ -108,7 +108,7 @@ public class Permuter extends DepthFirstAdapter {
 
 		Assert.assertTrue(typeInfo.getEnvEntry(getVariableName(temp)) instanceof VarEntry);
 
-		Type t = ((VarEntry)typeInfo.getEnvEntry(getVariableName(temp))).getType();
+		VisibleType t = ((VarEntry)typeInfo.getEnvEntry(getVariableName(temp))).getType();
 		
 		while(!fieldNamesStack.isEmpty()) {
 			Assert.assertTrue(t instanceof RecordType || (t instanceof ArrayType && ((ArrayType)t).getElementType() instanceof RecordType));
@@ -140,7 +140,7 @@ public class Permuter extends DepthFirstAdapter {
 	}
 
 	public void inAOneDecl(AOneDecl node) {
-		typename = (Type) typeInfo.getOut(node.getTypename());
+		typename = (VisibleType) typeInfo.getOut(node.getTypename());
 	}
 
 	public void outAOneDecl(AOneDecl node) {
@@ -164,8 +164,8 @@ public class Permuter extends DepthFirstAdapter {
 	}
 
 	public void outACompoundEqExpr(ACompoundEqExpr node) {
-		Type leftType = (Type) typeInfo.getOut(node.getRelExpr());
-		Type rightType = (Type) typeInfo.getOut(node.getEqExpr());
+		VisibleType leftType = (VisibleType) typeInfo.getOut(node.getRelExpr());
+		VisibleType rightType = (VisibleType) typeInfo.getOut(node.getEqExpr());
 
 		if (isPid(leftType) && isNumericNode(node.getEqExpr())) {
 			permuteToken(((ANumberConst) ((AConstFactor) ((ASimpleUnExpr) ((ASimpleMultExpr) ((ASimpleAddExpr) ((ASimpleShiftExpr) ((ASimpleRelExpr) ((ASimpleEqExpr) node
@@ -188,7 +188,7 @@ public class Permuter extends DepthFirstAdapter {
 	}
 
 	public void outAAssignmentAssignment(AAssignmentAssignment node) {
-		Type leftType = (Type) typeInfo.getOut(node.getVarref());
+		VisibleType leftType = (VisibleType) typeInfo.getOut(node.getVarref());
 
 		if (isPid(leftType) && isNumericNode(node.getExpr())) {
 			permuteNumericExpression(node.getExpr());
@@ -209,7 +209,8 @@ public class Permuter extends DepthFirstAdapter {
 		PArgLst arglst;
 
 		if (args instanceof AHeadedlistSendArgs) {
-			if (isPid(argTypes.getTypeOfPosition(i))
+			Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+			if (isPid((VisibleType) argTypes.getTypeOfPosition(i))
 					&& (isNumericNode(((AHeadedlistSendArgs) args).getExpr()))) {
 				permuteNumericExpression(((AHeadedlistSendArgs) args).getExpr());
 			}
@@ -220,12 +221,13 @@ public class Permuter extends DepthFirstAdapter {
 		}
 		
 		while (arglst instanceof AManyArgLst) {
-			permuteArgument(((AManyArgLst)arglst).getExpr(), argTypes.getTypeOfPosition(i));
+			Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+			permuteArgument(((AManyArgLst)arglst).getExpr(), (VisibleType) argTypes.getTypeOfPosition(i));
 			arglst = ((AManyArgLst) arglst).getArgLst();
 			i++;
 		}
-
-		permuteArgument(((AOneArgLst)arglst).getExpr(),argTypes.getTypeOfPosition(i));
+		Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+		permuteArgument(((AOneArgLst)arglst).getExpr(),(VisibleType) argTypes.getTypeOfPosition(i));
 	}
 
 	public void outAFifoSend(AFifoSend node) {
@@ -263,18 +265,18 @@ public class Permuter extends DepthFirstAdapter {
 	public void outARunFactor(ARunFactor node) {
 		if (node.getArgLst() != null) {
 			
-			List argTypes = ((ProctypeEntry)typeInfo.getEnvEntry(node.getName().getText())).getArgTypes();
+			List<VisibleType> argTypes = ((ProctypeEntry)typeInfo.getEnvEntry(node.getName().getText())).getArgTypes();
 
 			PArgLst args;
 
 			int i = 0;
 			for(args = node.getArgLst(); args instanceof AManyArgLst; args = ((AManyArgLst) args).getArgLst())
 			{
-				permuteArgument(((AManyArgLst) args).getExpr(),(Type)argTypes.get(i));
+				permuteArgument(((AManyArgLst) args).getExpr(),argTypes.get(i));
 				i++;
 			}
 
-			permuteArgument(((AOneArgLst) args).getExpr(),(Type)argTypes.get(i));
+			permuteArgument(((AOneArgLst) args).getExpr(),argTypes.get(i));
 		}
 	
 		// TODO Sort things out so that RUN statements are permuted
@@ -289,7 +291,8 @@ public class Permuter extends DepthFirstAdapter {
 		
 		int i = 0;
 		while (!(args instanceof AOneRecvArgs)) {
-			if (isPid(argTypes.getTypeOfPosition(i))) {
+			Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+			if (isPid((VisibleType) argTypes.getTypeOfPosition(i))) {
 				PRecvArg arg;
 				if (args instanceof AManyRecvArgs) {
 					arg = ((AManyRecvArgs) args).getRecvArg();
@@ -376,7 +379,7 @@ public class Permuter extends DepthFirstAdapter {
 		return result;
 	}
 
-	private void permuteArgument(PExpr expr, Type argType) {
+	private void permuteArgument(PExpr expr, VisibleType argType) {
 		if (isPid(argType) && isNumericNode(expr)) {
 			permuteNumericExpression(expr);
 		}
@@ -397,7 +400,7 @@ public class Permuter extends DepthFirstAdapter {
 		t.setText((String)alpha.apply(t.getText()));
 	}
 
-	private boolean isPid(Type t) {
+	private boolean isPid(VisibleType t) {
 		return t instanceof PidType;
 	}
 }

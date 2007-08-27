@@ -1,12 +1,15 @@
 package src.etch.checker;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 
 import junit.framework.Assert;
 import src.etch.env.ChannelEntry;
-import src.etch.env.Env;
 import src.etch.env.EnvEntry;
+import src.etch.env.Environment;
 import src.etch.env.MtypeEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
@@ -19,6 +22,8 @@ import src.etch.error.Error;
 import src.etch.error.ErrorTable;
 import src.etch.error.IfCondError;
 import src.etch.error.IfMismatchError;
+import src.etch.error.IncomparableTypesException;
+import src.etch.error.JumpToUndefinedLabelError;
 import src.etch.error.LiteralValueTooLargeError;
 import src.etch.error.NameAlreadyUsedError;
 import src.etch.error.NotBoolError;
@@ -29,12 +34,16 @@ import src.etch.error.VariableNotArrayError;
 import src.etch.error.VariableNotChannelError;
 import src.etch.error.VariableNotRecordError;
 import src.etch.error.WrongNumArgsError;
+import src.etch.typeinference.ConstraintSet;
+import src.etch.typeinference.EqualityConstraint;
+import src.etch.typeinference.Substituter;
+import src.etch.typeinference.SubtypingConstraint;
+import src.etch.types.AnyType;
 import src.etch.types.ArrayType;
 import src.etch.types.BitType;
 import src.etch.types.BoolType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
-import src.etch.types.IncomparableTypesException;
 import src.etch.types.IntType;
 import src.etch.types.MtypeType;
 import src.etch.types.NumericType;
@@ -44,17 +53,14 @@ import src.etch.types.ShortType;
 import src.etch.types.Type;
 import src.etch.types.TypeVariableFactory;
 import src.etch.types.TypeVariableType;
-import src.etch.unifier.ConstraintSet;
-import src.etch.unifier.EqualityConstraint;
-import src.etch.unifier.Substituter;
-import src.etch.unifier.SubtypingConstraint;
+import src.etch.types.VisibleType;
 import src.promela.node.*;
 
 public class Checker extends InlineProcessor {
 	
 	private ErrorTable errorTable = new ErrorTable();
 
-	private Env env = new Env();
+	private Environment env = new Environment();
 
 	private ConstraintSet constraintSet = new ConstraintSet();
 
@@ -73,18 +79,20 @@ public class Checker extends InlineProcessor {
 
 	private List<String> typedefFieldNames = new ArrayList<String>();
 
-	private List<Type> typedefFieldTypes = new ArrayList<Type>();
+	private List<VisibleType> typedefFieldTypes = new ArrayList<VisibleType>();
 
+	private Map<String,List<Integer>> gotoDestinations;
+	
 	public void caseANormalSpec(ANormalSpec node) {
 		
-		if(Type.checkingSymmetry()) {
+		if(SymmetrySettings.CHECKING_SYMMETRY) {
 
 			boolean found = false;
 			for(Object module : node.getModule()) {
 
 				if(module instanceof AInitModule) {
 
-					Type.setNoProcesses(findNumberOfRunningProcesses((AInitModule)module));
+					SymmetrySettings.setNoProcesses(findNumberOfRunningProcesses((AInitModule)module));
 					found = true;
 					break;
 
@@ -127,7 +135,7 @@ public class Checker extends InlineProcessor {
 		PSequence atomicSequence;
 		
 		for(atomicSequence = ((AAtomicStmnt)((AStmntStep)initFirstStep).getStmnt()).getSequence();
-atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomicSequence).getSequence()) {
+			atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomicSequence).getSequence()) {
 			
 			if(!isRunStatement(((AManySequence)atomicSequence).getStep())) {
 				if(result==0) {
@@ -171,7 +179,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public Checker(boolean checkingSymmetry) {
-		NumericType.setCheckingSymmetry(checkingSymmetry);
+		SymmetrySettings.CHECKING_SYMMETRY = checkingSymmetry;
 	}
 
 	public ErrorTable getErrorTable() {
@@ -186,7 +194,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		env.put(name,entry);
 	}
 	
-	public Env getEnv() {
+	public Environment getEnv() {
 		return env;
 	}
 	
@@ -209,7 +217,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		if (nameExists(name)) {
 			addError(tok, new NameAlreadyUsedError(name,env.get(name)));
 		} else {
-			env.put(name, new MtypeEntry());
+			env.put(name, new MtypeEntry(tok.getLine()));
 		}
 	}
 
@@ -223,7 +231,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		node.getDeclLst().apply(this);
 		String name = node.getName().getText();
 
-		EnvEntry alreadyExists = env.putGlobal(name, new TypeEntry(typedefFieldNames, typedefFieldTypes));
+		EnvEntry alreadyExists = env.putGlobal(name, new TypeEntry(typedefFieldNames, typedefFieldTypes, node.getName().getLine()));
 		if(alreadyExists != null) {
 			addError(node.getName(), new NameAlreadyUsedError(name,alreadyExists));
 		}
@@ -233,13 +241,12 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 
 	public void outAOneDecl(AOneDecl node) {
 		PIvarLst variables = node.getIvarLst();
+		VisibleType type = getOutVisibleType(node.getTypename());
 		while (variables instanceof AManyIvarLst) {
-			processVar(((AManyIvarLst) variables).getIvar(), getOutType(node
-					.getTypename()),isHidden(node));
+			processVar(((AManyIvarLst) variables).getIvar(), type,isHidden(node));
 			variables = ((AManyIvarLst) variables).getIvarLst();
 		}
-		processVar(((AOneIvarLst) variables).getIvar(), getOutType(node
-				.getTypename()),isHidden(node));
+		processVar(((AOneIvarLst) variables).getIvar(), type,isHidden(node));
 	}
 
 	private boolean isHidden(AOneDecl node) {
@@ -297,12 +304,13 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 	
 	public void outAAssignmentAssignment(AAssignmentAssignment node) {
-		Type leftType = getOutType(node.getVarref());
-		Type rightType = getOutType(node.getExpr());
+		VisibleType leftType = getOutVisibleType(node.getVarref());
+		VisibleType rightType = getOutVisibleType(node.getExpr());
 
 		if ((leftType != null) && (rightType != null)) {
 
-			if (isChan(leftType) || isChan(rightType)) {
+			if (isChan(leftType) && isChan(rightType)) {
+				/* Can we optimise this so that we only post equality constraints between the field types of leftType and rightType? */
 				postEqualityConstraint(leftType, rightType,
 						node.getAssign());
 			} else if (!(rightType.isSubtype(leftType))) {
@@ -313,31 +321,31 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outAIncrementAssignment(AIncrementAssignment node) {
-		if(Type.checkingSymmetry() && getOut(node) instanceof PidType) {
+		if(SymmetrySettings.CHECKING_SYMMETRY && getOut(node) instanceof PidType) {
 			errorTable.add(node.getPlusPlus().getLine(),new ArithmeticOnPidError());
 		}
 		
-		checkForNotNumericError(getOutType(node.getVarref()), node
+		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
 				.getPlusPlus(), Error.UNARY);
 	}
 
 	public void outADecrementAssignment(ADecrementAssignment node) {
-		if(Type.checkingSymmetry() && getOut(node) instanceof PidType) {
+		if(SymmetrySettings.CHECKING_SYMMETRY && getOut(node) instanceof PidType) {
 			errorTable.add(node.getMinusMinus().getLine(),new ArithmeticOnPidError());
 		}
 		
-		checkForNotNumericError(getOutType(node.getVarref()), node
+		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
 				.getMinusMinus(), Error.UNARY);
 	}
 
 	public void outARecordVarref(ARecordVarref node) {
 
-		Type t = getOutType(node.getVarref());
+		VisibleType t = getOutVisibleType(node.getVarref());
 		if (t != null) {
 			if (!(t instanceof RecordType)) {
 				addError(node.getDot(), new VariableNotRecordError(t.name()));
 			} else {
-				Type fieldType = ((TypeEntry)env.get(t.name())).getFieldType(node.getName()
+				VisibleType fieldType = ((TypeEntry)env.get(t.name())).getFieldType(node.getName()
 						.getText());
 				if (fieldType == null) {
 					addError(node.getDot(), new ElementDoesNotExistError(node
@@ -359,6 +367,32 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		}
 	}
 
+	public void inALabelStmnt(ALabelStmnt node) {
+		String name = node.getName().getText();
+		if(nameExists(name)) {
+			/* Maybe this is conservative -- it will give an error if you try to declare
+			 * a label with the same name as a variable.  Not sure whether SPIN would allow
+			 * this.
+			 */
+			addError(node.getName(), new NameAlreadyUsedError(name,env.get(name)));
+		} else {
+			env.put(name, new LabelEntry(node.getName().getLine()));
+		}
+	}
+
+	public void outAGotoStmnt(AGotoStmnt node) {
+		String name = node.getName().getText();
+		List<Integer> destinations;
+		if(gotoDestinations.containsKey(name)) {
+			destinations = gotoDestinations.get(name);
+			destinations.add(node.getName().getLine());
+		} else {
+			destinations = new ArrayList<Integer>();
+			destinations.add(node.getName().getLine());
+		}
+		gotoDestinations.put(name,destinations);
+	}
+	
 	public void outASingleVarref(ASingleVarref node) {
 		EnvEntry entry = env.get(node.getName().getText());
 		if ((entry instanceof MtypeEntry) && (node.getArrayref() == null)) {
@@ -367,7 +401,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 			addError(node.getName(), new ElementDoesNotExistError(node
 					.getName().getText(),VARIABLE));
 		} else {
-			Type t = ((VarEntry) entry).getType();
+			VisibleType t = ((VarEntry) entry).getType();
 			
 			if (isArray(t) && hasArrayReference(node)) {
 				
@@ -376,14 +410,14 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 					postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
 							.getIndexType(), node
 							.getName());
-					if(Type.checkingSymmetry() && getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(Type.noProcesses()+1) && ((ArrayType)t).getLength()!=0) {
+					if(SymmetrySettings.CHECKING_SYMMETRY && getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(SymmetrySettings.noProcesses()+1) && ((ArrayType)t).getLength()!=0) {
 						// The length of a pid-indexed array should be n+1, where n is the number of running processes.
 						// This is so that it can be indexed by the process identifiers 1, 2, ... , n.  Unfortunately, index
 						// 0 is usually wasted (unless the init process uses it).
 						// We don't add an error if the length is zero.  An error has either already
 						// been reported about this, or the length has been set to zero by default as
 						// there was an error with the initialiser.
-						addError(node.getName(), new PidIndexedArrayWithWrongLengthError(node.getName().getText(),((ArrayType)t).getLength(),Type.noProcesses()));
+						addError(node.getName(), new PidIndexedArrayWithWrongLengthError(node.getName().getText(),((ArrayType)t).getLength(),SymmetrySettings.noProcesses()));
 						((ArrayType)t).zeroLength(); // Do this so that the error will not be reported again
 					}
 				}
@@ -418,6 +452,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		return exprType.isSubtype(new ByteType()) || exprType.isSubtype(new PidType());
 	}
 
+	@SuppressWarnings("unchecked")
 	public void outARunFactor(ARunFactor node) {
 
 		EnvEntry entry = env.get(node.getName().getText());
@@ -426,20 +461,20 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 					.getText(),PROCTYPE));
 		} else {
 			if (node.getArgLst() == null) {
-				typeCheckRunArguments(proctypeFormalArgs(entry), new ArrayList(),
+				typeCheckRunArguments(proctypeFormalArgs(entry), new ArrayList<VisibleType>(),
 						node.getName());
 			} else {
 				typeCheckRunArguments(proctypeFormalArgs(entry),
-						(List) getOut(node.getArgLst()), node.getName());
+						(List<VisibleType>) getOut(node.getArgLst()), node.getName());
 			}
 		}
 	}
 
-	private List proctypeFormalArgs(EnvEntry entry) {
+	private List<VisibleType> proctypeFormalArgs(EnvEntry entry) {
 		return ((ProctypeEntry) entry).getArgTypes();
 	}
 
-	private void typeCheckRunArguments(List formalArgTypes, List actualArgTypes,
+	private void typeCheckRunArguments(List<VisibleType> formalArgTypes, List<VisibleType> actualArgTypes,
 			TName proctypeName) {
 
 		checkCorrectNumberOfActualArgs(formalArgTypes, actualArgTypes, proctypeName);
@@ -447,8 +482,9 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		for (int i = 0; i < minSize(formalArgTypes, actualArgTypes); i++) {
 			if ((actualArgTypes.get(i) != null)
 					&& (formalArgTypes.get(i) != null)) {
-				postSubtypingConstraint((Type) actualArgTypes
-						.get(i), (Type) formalArgTypes.get(i), proctypeName);
+
+				postSubtypingConstraint(actualArgTypes.get(i),
+						formalArgTypes.get(i), proctypeName);
 			}
 		}
 	}
@@ -466,9 +502,9 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outAConditionalExpr(AConditionalExpr node) {
-		Type condType = getOutType(node.getIf());
-		Type thenType = getOutType(node.getThen());
-		Type elseType = getOutType(node.getElse());
+		VisibleType condType = getOutVisibleType(node.getIf());
+		VisibleType thenType = getOutVisibleType(node.getThen());
+		VisibleType elseType = getOutVisibleType(node.getElse());
 
 		if ((condType != null) && (!isBoolSubtype(condType))) {
 			addError(node.getRightarrow(), new IfCondError(condType.name()));
@@ -482,8 +518,8 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 				setOut(node, thenType);
 			} else {
 				try {
-					setOut(node, Type.max(thenType, elseType));
-				} catch (IncomparableTypesException e) {
+					setOut(node, AnyType.max(thenType, elseType));
+				} catch(IncomparableTypesException e) {
 					addError(node.getRightarrow(), new IfMismatchError(thenType
 							.name(), elseType.name()));
 				}
@@ -492,8 +528,8 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outACompoundOrExpr(ACompoundOrExpr node) {
-		Type leftType = getOutType(node.getAndExpr());
-		Type rightType = getOutType(node.getOrExpr());
+		VisibleType leftType = getOutVisibleType(node.getAndExpr());
+		VisibleType rightType = getOutVisibleType(node.getOrExpr());
 
 		checkForNotBoolError(leftType, rightType, node.getOr());
 
@@ -506,8 +542,8 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 
 	public void outACompoundAndExpr(ACompoundAndExpr node) {
 		
-		Type leftType = getOutType(node.getBitorExpr());
-		Type rightType = getOutType(node.getAndExpr());
+		VisibleType leftType = getOutVisibleType(node.getBitorExpr());
+		VisibleType rightType = getOutVisibleType(node.getAndExpr());
 
 		checkForNotBoolError(leftType, rightType, node.getAnd());
 
@@ -516,24 +552,24 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 
 	public void outACompoundBitorExpr(ACompoundBitorExpr node) {
 		checkNumericOperationOnNumericTypes(node, node.getBitor(),
-				getOutType(node.getBitxorExpr()), getOutType(node
+				getOutVisibleType(node.getBitxorExpr()), getOutVisibleType(node
 						.getBitorExpr()));
 	}
 
 	public void outACompoundBitxorExpr(ACompoundBitxorExpr node) {
 		checkNumericOperationOnNumericTypes(node, node.getBitxor(),
-				getOutType(node.getBitandExpr()), getOutType(node
+				getOutVisibleType(node.getBitandExpr()), getOutVisibleType(node
 						.getBitxorExpr()));
 	}
 
 	public void outACompoundBitandExpr(ACompoundBitandExpr node) {
 		checkNumericOperationOnNumericTypes(node, node.getBitand(),
-				getOutType(node.getEqExpr()), getOutType(node.getBitandExpr()));
+				getOutVisibleType(node.getEqExpr()), getOutVisibleType(node.getBitandExpr()));
 	}
 
 	public void outACompoundEqExpr(ACompoundEqExpr node) {
-		Type leftType = getOutType(node.getRelExpr());
-		Type rightType = getOutType(node.getEqExpr());
+		VisibleType leftType = getOutVisibleType(node.getRelExpr());
+		VisibleType rightType = getOutVisibleType(node.getEqExpr());
 
 		if ((leftType != null) && (rightType != null)) {
 			if (isChan(leftType) && isChan(rightType)) {
@@ -553,48 +589,54 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 
 	public void outACompoundrelopRelExpr(ACompoundrelopRelExpr node) {
 		checkBooleanOperationOnNumericTypes(node, node.getRelop(),
-				getOutType(node.getShiftExpr()), getOutType(node.getRelExpr()));
+				getOutVisibleType(node.getShiftExpr()), getOutVisibleType(node.getRelExpr()));
 	}
 
 	public void outACompoundgtRelExpr(ACompoundgtRelExpr node) {
-		checkBooleanOperationOnNumericTypes(node, node.getGt(), getOutType(node
-				.getShiftExpr()), getOutType(node.getRelExpr()));
+		checkBooleanOperationOnNumericTypes(node, node.getGt(), getOutVisibleType(node
+				.getShiftExpr()), getOutVisibleType(node.getRelExpr()));
 	}
 
 	public void outACompoundltRelExpr(ACompoundltRelExpr node) {
-		checkBooleanOperationOnNumericTypes(node, node.getLt(), getOutType(node
-				.getShiftExpr()), getOutType(node.getRelExpr()));
+		checkBooleanOperationOnNumericTypes(node, node.getLt(), getOutVisibleType(node
+				.getShiftExpr()), getOutVisibleType(node.getRelExpr()));
 	}
 
 	public void outACompoundShiftExpr(ACompoundShiftExpr node) {
-		if (checkBothSidesNumeric(getOutType(node.getAddExpr()),
-				getOutType(node.getShiftExpr()), node.getShiftop())) {
-			Type outType = getOutType(node.getAddExpr());
-			outType.setNotPidLiteral();
+		if (checkBothSidesNumeric(getOutVisibleType(node.getAddExpr()),
+				getOutVisibleType(node.getShiftExpr()), node.getShiftop())) {
+			VisibleType outType = getOutVisibleType(node.getAddExpr());
+			setNotPidLiteral(outType);
 			setOut(node, outType);
+		}
+	}
+
+	private void setNotPidLiteral(Type t) {
+		if(t instanceof NumericType) {
+			((NumericType)t).setNotPidLiteral();
 		}
 	}
 
 	public void outACompoundplusAddExpr(ACompoundplusAddExpr node) {
 		checkNumericOperationOnNumericTypes(node, node.getPlus(),
-				getOutType(node.getMultExpr()), getOutType(node.getAddExpr()));
+				getOutVisibleType(node.getMultExpr()), getOutVisibleType(node.getAddExpr()));
 	}
 
 	public void outACompoundminusAddExpr(ACompoundminusAddExpr node) {
 		checkNumericOperationOnNumericTypes(node, node.getMinus(),
-				getOutType(node.getMultExpr()), getOutType(node.getAddExpr()));
+				getOutVisibleType(node.getMultExpr()), getOutVisibleType(node.getAddExpr()));
 	}
 
 	public void outACompoundMultExpr(ACompoundMultExpr node) {
 		checkNumericOperationOnNumericTypes(node, node.getMultop(),
-				getOutType(node.getUnExpr()), getOutType(node.getMultExpr()));
+				getOutVisibleType(node.getUnExpr()), getOutVisibleType(node.getMultExpr()));
 	}
 
 	public void outANotUnExpr(ANotUnExpr node) {
-		Type t = getOutType(node.getFactor());
+		VisibleType t = getOutVisibleType(node.getFactor());
 		if (t != null) {
 			if (t.isSubtype(boolType())) {
-				t.setNotPidLiteral();
+				setNotPidLiteral(t);
 				setOut(node, t);
 			} else {
 				addError(node.getBang(), new NotBoolError(t.name(), node
@@ -604,7 +646,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outAComplementUnExpr(AComplementUnExpr node) {
-		Type t = getOutType(node.getFactor());
+		VisibleType t = getOutVisibleType(node.getFactor());
 		if (t != null) {
 			if (isNumeric(t)) {
 				setOut(node, t);
@@ -696,7 +738,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outAChanopFactor(AChanopFactor node) {
-		Type varType = getOutType(node.getVarref());
+		VisibleType varType = getOutVisibleType(node.getVarref());
 		if (varType != null) {
 
 			if (!isChan(varType)) {
@@ -711,7 +753,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outALengthFactor(ALengthFactor node) {
-		Type varType = getOutType(node.getVarref());
+		VisibleType varType = getOutVisibleType(node.getVarref());
 		if (varType != null) {
 			if (!isChan(varType)) {
 				addError(node.getLParenthese(), new VariableNotChannelError(
@@ -741,7 +783,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outAAssertStmnt(AAssertStmnt node) {
-		Type type = getOutType(node.getExpr());
+		VisibleType type = getOutVisibleType(node.getExpr());
 		if ((type != null) && !type.isSubtype(boolType())) {
 			addError(node.getAssert(), new SubtypingError(type.name(),boolType().name()));
 		}
@@ -781,7 +823,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	public void outAHeadedListSendArgs(AHeadedlistSendArgs node) {
 		List<Type> tailTypes = (List<Type>)getOut(node.getArgLst());
 		if ((tailTypes) != null && (getOut(node.getExpr()) != null)) {
-			tailTypes.add(0, (Type)getOut(node.getExpr()));
+			tailTypes.add(0, getOutType(node.getExpr()));
 			setOut(node, tailTypes);
 		}
 	}
@@ -801,7 +843,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	@SuppressWarnings("unchecked")
 	private List<Type> processArgs(Node head, Node tail) {
 		List<Type> argumentTypes = (List<Type>) getOut(tail);
-		argumentTypes.add(0, (Type)getOut(head));
+		argumentTypes.add(0, getOutType(head));
 		return argumentTypes;
 	}
 
@@ -823,25 +865,27 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 			List actualArgTypes) {
 		List<Type> typeVariables = new ArrayList<Type>();
 		for (int i = 0; i < actualArgTypes.size(); i++) {
-			addTypeVariableForArgType(typeVariables, (Type) actualArgTypes
+			addTypeVariableForArgType(typeVariables, (VisibleType) actualArgTypes
 					.get(i), operator);
 		}
 		return typeVariables;
 	}
 
-	private void addTypeVariableForArgType(List<Type> variables, Type argType,
+	private void addTypeVariableForArgType(List<Type> variables, VisibleType argType,
 			Token operator) {
 
 		TypeVariableType tv = factory.freshTypeVariable();
-		if (isBang(operator) || isTypeOfNumericConstant(argType)) {
-			postSubtypingConstraint(argType, tv, operator);
-		} else {
-			postSubtypingConstraint(tv, argType, operator);
+		if(argType != null) {
+			if (isBang(operator) || isTypeOfNumericConstant(argType)) {
+				postSubtypingConstraint(argType, tv, operator);
+			} else {
+				postSubtypingConstraint(tv, argType, operator);
+			}
 		}
 		variables.add(tv);
 	}
 
-	private boolean isTypeOfNumericConstant(Type t) {
+	private boolean isTypeOfNumericConstant(VisibleType t) {
 		return isNumeric(t) && ((NumericType) t).isTypeOfConstant();
 	}
 
@@ -901,7 +945,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	public void outAEvalRecvArg(AEvalRecvArg node) {
-		Type t = getOutType(node.getExpr());
+		VisibleType t = getOutVisibleType(node.getExpr());
 		if (isNumeric(t)) {
 			((NumericType) t).setIsTypeOfConstant();
 		}
@@ -915,9 +959,12 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	public void caseAProctype(AProctype node) {
 		dealWithEnabler(node);
 		env.openScope();
-		dealWithDeclarations(node);
 
-		currentProctype = getParameterNamesAndTypes(node.getDeclLst());
+		gotoDestinations = new HashMap<String,List<Integer>>();
+
+		dealWithDeclarations(node);
+		
+		currentProctype = getParameterNamesAndTypes(node.getDeclLst(),node.getName().getLine());
 
 		EnvEntry existingEntry = env.putGlobal(node.getName().getText(),currentProctype);
 		if (existingEntry != null) {
@@ -928,11 +975,24 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		//((ProctypeEntry)env.get(node.getName().getText())).setLocalVariableTypeInfo(env.getTopVariables());
 		currentProctype.setLocalVariableTypeInfo(env.getTopEntries());
 		
+		resolveGotos();
+		
 		env.closeScope();
 	}
 
-	private ProctypeEntry getParameterNamesAndTypes(PDeclLst parameters) {
-		List<Type> argTypes = new ArrayList<Type>();
+	private void resolveGotos() {
+		for(String labelName : gotoDestinations.keySet()) {
+			EnvEntry entry = env.get(labelName);
+			if(!(entry instanceof LabelEntry)) {
+				for(ListIterator<Integer> i = gotoDestinations.get(labelName).listIterator(); i.hasNext(); ) {
+					errorTable.add(i.next(),new JumpToUndefinedLabelError(labelName,entry));
+				}
+			}
+		}
+	}
+
+	private ProctypeEntry getParameterNamesAndTypes(PDeclLst parameters, int lineOfDeclaration) {
+		List<VisibleType> argTypes = new ArrayList<VisibleType>();
 		List<String> argNames = new ArrayList<String>();
 		if (parameters != null) {
 			while (parameters instanceof AManyDeclLst) {
@@ -945,7 +1005,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		}
 		Assert.assertEquals(argTypes.size(),argNames.size());
 		
-		return new ProctypeEntry(argTypes,argNames);
+		return new ProctypeEntry(argTypes,argNames,lineOfDeclaration);
 	}
 
 	private PIvarLst getNames(AOneDeclLst typedArgs) {
@@ -968,7 +1028,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		}
 	}
 
-	private boolean checkForNotNumericError(Type t, Token operator, int nature) {
+	private boolean checkForNotNumericError(VisibleType t, Token operator, int nature) {
 		if (t != null) {
 			if (!isNumeric(t)) {
 				addError(operator, new NotNumericError(t.name(), operator
@@ -980,35 +1040,35 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		return false;
 	}
 
-	private boolean checkBothSidesNumeric(Type left, Type right, Token operator) {
+	private boolean checkBothSidesNumeric(VisibleType left, VisibleType right, Token operator) {
 		return checkForNotNumericError(left, operator, Error.LEFT)
 				&& checkForNotNumericError(right, operator, Error.RIGHT);
 	}
 
 	private void checkNumericOperationOnNumericTypes(Node node,
-			Token operation, Type leftType, Type rightType) {
+			Token operation, VisibleType leftType, VisibleType rightType) {
 		if (checkBothSidesNumeric(leftType, rightType, operation)) {
 			if (isNumeric(leftType) && isNumeric(rightType)) {
 				try {
-					Type max = Type.max(leftType, rightType);
-					max.setNotPidLiteral();
+					Type max = AnyType.max(leftType, rightType);
+					setNotPidLiteral(max);
 					setOut(node, max);
-				} catch (IncomparableTypesException e) {
+				} catch(IncomparableTypesException e) {
+					Assert.assertTrue(false);
 					e.printStackTrace();
-					System.exit(1);
 				}
 			}
 		}
 	}
 
 	private void checkBooleanOperationOnNumericTypes(Node node,
-			Token operation, Type leftType, Type rightType) {
+			Token operation, VisibleType leftType, VisibleType rightType) {
 		if (checkBothSidesNumeric(leftType, rightType, operation)) {
 			setOut(node, boolType());
 		}
 	}
 
-	private void checkForNotBoolError(Type t, Token operator, int nature) {
+	private void checkForNotBoolError(VisibleType t, Token operator, int nature) {
 		if (t != null) {
 			if (!isBoolSubtype(t)) {
 				addError(operator, new NotBoolError(t.name(), operator
@@ -1017,7 +1077,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		}
 	}
 
-	private void checkForNotBoolError(Type left, Type right, Token operator) {
+	private void checkForNotBoolError(VisibleType left, VisibleType right, Token operator) {
 		checkForNotBoolError(left, operator, Error.LEFT);
 		checkForNotBoolError(right, operator, Error.RIGHT);
 	}
@@ -1033,8 +1093,8 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		return result;		
 	}
 	
-	private List<Type> getArgumentTypes(PIvarLst names) {
-		List<Type> result = new ArrayList<Type>();
+	private List<VisibleType> getArgumentTypes(PIvarLst names) {
+		List<VisibleType> result = new ArrayList<VisibleType>();
 		String currentName;
 		while (names instanceof AManyIvarLst) {
 			// NEED TO HAVE A TYPE ERROR IF AN ARGUMENT HAS ARRAY.
@@ -1052,8 +1112,8 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		return result;
 	}
 
-	private void processVar(PIvar var, Type groupType, boolean isHidden) {
-		Type individualType = groupType;
+	private void processVar(PIvar var, VisibleType groupType, boolean isHidden) {
+		VisibleType individualType = groupType;
 		
 		if (isChan(groupType)) {
 			individualType = new ChanType(factory.freshTypeVariable());
@@ -1062,7 +1122,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		if (var instanceof AArrayIvar) {
 			int length;
 
-			Type initType = (Type) getOut(((AArrayIvar) var).getConst());
+			VisibleType initType = (VisibleType) getOut(((AArrayIvar) var).getConst());
 			if (initType != null) {
 				if(!initType.isSubtype(byteType())) {
 					addError(((AArrayIvar) var).getName(),new SubtypingError(initType.name(),byteType().name()));
@@ -1090,7 +1150,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 	}
 
 	private void checkVar(PIvarassignment assignment, TName name,
-			Type type, boolean isHidden) {
+			VisibleType type, boolean isHidden) {
 		if (assignment instanceof AVariableIvarassignment) {
 			checkVariableInitialisation((AVariableIvarassignment)assignment, type);
 		}
@@ -1104,7 +1164,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		addVariableToEnvironment(name, type, isHidden);
 	}
 
-	private void addVariableToEnvironment(TName name, Type type, boolean isHidden) {
+	private void addVariableToEnvironment(TName name, VisibleType type, boolean isHidden) {
 		if ((!inTypedef && nameExists(name.getText())) || nameExistsInTopScope(name.getText())) {
 			addError(name, new NameAlreadyUsedError(name.getText(),env.get(name.getText())));
 		} else {
@@ -1112,11 +1172,11 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 				typedefFieldNames.add(name.getText());
 				typedefFieldTypes.add(type);
 			}
-			env.put(name.getText(), new VarEntry(type,isHidden));
+			env.put(name.getText(), new VarEntry(type, isHidden, name.getLine()));
 		}
 	}
 	
-	private void addStaticChannelToEnvironment(TName name, Type type, AChannelIvarassignment assignment, boolean isHidden) {
+	private void addStaticChannelToEnvironment(TName name, VisibleType type, AChannelIvarassignment assignment, boolean isHidden) {
 		if ((!inTypedef && nameExists(name.getText())) || nameExistsInTopScope(name.getText())) {
 			addError(name, new NameAlreadyUsedError(name.getText(),env.get(name.getText())));
 		} else {
@@ -1127,14 +1187,14 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 				typedefFieldNames.add(name.getText());
 				typedefFieldTypes.add(type);
 			}
-			env.put(name.getText(),new ChannelEntry(new VarEntry(type,isHidden),length));
+			env.put(name.getText(),new ChannelEntry(new VarEntry(type,isHidden,name.getLine()),length,name.getLine()));
 		}
 	}
 
-	private void checkVariableInitialisation(AVariableIvarassignment assignment, Type type) {
-		Type assignType = getOutType(assignment.getExpr());
+	private void checkVariableInitialisation(AVariableIvarassignment assignment, VisibleType type) {
+		VisibleType assignType = getOutVisibleType(assignment.getExpr());
 		if (assignType != null) {
-			if (isChan(assignType)) {
+			if (isChan(type) && isChan(assignType)) {
 				postEqualityConstraint(type, assignType,assignment.getAssign());
 			} else if (isArray(type)) {
 				if(!assignType.isSubtype(((ArrayType)type).getElementType())) {
@@ -1148,7 +1208,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		}
 	}
 
-	private void checkChannelInitialisation(AChannelIvarassignment assignment, Type type) {
+	private void checkChannelInitialisation(AChannelIvarassignment assignment, VisibleType type) {
 		if (getChannelAssignmentTypeList(assignment) != null) {
 			if (isChan(type)) {
 				postEqualityConstraint(type, getChannelAssignmentType(assignment), assignment.getAssign());
@@ -1183,7 +1243,7 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		env.openScope();
 		inTypedef = true;
 		typedefFieldNames = new ArrayList<String>();
-		typedefFieldTypes = new ArrayList<Type>();
+		typedefFieldTypes = new ArrayList<VisibleType>();
 	}
 
 	protected void addError(Token t, Error e) {
@@ -1207,6 +1267,10 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		return (Type) getOut(n);
 	}
 
+	private VisibleType getOutVisibleType(Node n) {
+		return (VisibleType) getOut(n);
+	}
+
 	private BoolType boolType() {
 		return new BoolType();
 	}
@@ -1215,15 +1279,15 @@ atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomic
 		return new ByteType();
 	}
 
-	private boolean isChan(Type t) {
+	private boolean isChan(VisibleType t) {
 		return t instanceof ChanType;
 	}
 
-	private boolean isNumeric(Type t) {
-		return t instanceof NumericType || (!Type.checkingSymmetry() && (t instanceof PidType));
+	private boolean isNumeric(VisibleType t) {
+		return t instanceof NumericType || (!SymmetrySettings.CHECKING_SYMMETRY && (t instanceof PidType));
 	}
 
-	private boolean isArray(Type t) {
+	private boolean isArray(VisibleType t) {
 		return (t instanceof ArrayType);
 	}
 

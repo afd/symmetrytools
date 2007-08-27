@@ -18,16 +18,17 @@ public class TopSpin {
 			System.exit(0);
 		}
 		
-		Config.readConfigFile("config.txt");
-
 		if(args.length==2 && args[0].equals("check")) {
 			System.out.println("File: " + args[1]);
 			System.out.println("Type-check only");
-			Check check = new Check(args[args.length-1]);
+			Check check = new Check(args[1]);
+		
 			check.isWellTyped(true);
 			System.exit(0);
 		}
 
+		Config.readConfigFile("config.txt");
+		
 		if(args.length==2 && args[0].equals("detect")) {
 			Config.DETECT_ONLY = true;
 			if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }

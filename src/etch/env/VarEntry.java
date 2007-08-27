@@ -1,18 +1,19 @@
 package src.etch.env;
 
-import src.etch.types.Type;
+import src.etch.types.VisibleType;
 
 public class VarEntry extends EnvEntry {
 
-	private Type type;
+	private VisibleType type;
 	private boolean isHidden;
 	
-	public VarEntry(Type type, boolean isHidden) {
+	public VarEntry(VisibleType type, boolean isHidden, int lineOfDeclaration) {
+		super(lineOfDeclaration);
 		this.type = type;
 		this.isHidden = isHidden;
 	}
 
-	public Type getType() {
+	public VisibleType getType() {
 		return type;
 	}
 	
@@ -24,7 +25,11 @@ public class VarEntry extends EnvEntry {
 		return " variable";
 	}
 
-	public void setType(Type type) {
+	public void setType(VisibleType type) {
 		this.type = type;
+	}
+
+	public String getEntryKind() {
+		return "variable";
 	}
 }

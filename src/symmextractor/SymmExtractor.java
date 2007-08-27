@@ -13,7 +13,7 @@ import java.util.Set;
 
 import src.etch.checker.Check;
 import src.etch.checker.Checker;
-import src.etch.unifier.Substituter;
+import src.etch.typeinference.Substituter;
 import src.group.Group;
 import src.group.Permutation;
 import src.promela.lexer.Lexer;

@@ -1,28 +1,9 @@
-/****************************************************************************/
-/*                                                                          */
-/*                   Copyright 2003 University of Glasgow                   */
-/*                                                                          */
-/*                           All rights reserved.                           */
-/*                                                                          */
-/****************************************************************************/
-
-/****************************************************************************/
-/* FILE          : IncompatibleTypesError.java                              */
-/* DESCRIPTION   : Error: types prove to be incompatible during unification */
-/*                                                                          */
-/* AUTHOR        : A.F. Donaldson                                           */
-/* DATE          : 10th February 2005                                       */
-/*                                                                          */
-/* LAST MODIFIED : A.F. Donaldson                                           */
-/* DATE          : 10th February 2005                                       */
-/****************************************************************************/
-
 package src.etch.error;
 
 public class IncompatibleTypesError extends Error {
 
-    public String type1;
-    public String type2;
+    private String type1;
+    private String type2;
 
     public IncompatibleTypesError(String t1, String t2) {
 	type1 = t1;

@@ -36,7 +36,13 @@ public class ErrorTable {
 	public String output(String header) {
 		String result = "";
 		int numErrors = errors.size();
-		result = result + numErrors + " errors were found " + header + ":\n\n";
+		result = result + numErrors + " error";
+		if(numErrors==1) {
+			result += " was";
+		} else {
+			result += "s were";
+		}
+		result += " found " + header + ":\n\n";
 		Enumeration errs = errors.elements();
 		while (errs.hasMoreElements()) {
 			result = result + ((ErrorTableEntry) errs.nextElement()).output() + "\n\n";

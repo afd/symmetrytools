@@ -19,9 +19,9 @@ public class ErrorTableEntry {
 
 	public String output() {
 		if(line==-1) {
-			return "Error: " + err.message();
+			return "Error: " + err.message() + "(line number unknown)";
 		}
-		return "Line " + line + ": Error: " + err.message();
+		return "Error at line " + line + ": " + err.message();
 	}
 
 }

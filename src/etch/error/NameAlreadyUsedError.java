@@ -1,6 +1,7 @@
 package src.etch.error;
 
 import src.etch.env.EnvEntry;
+import src.etch.env.InlineEntry;
 
 public class NameAlreadyUsedError extends Error {
 
@@ -13,7 +14,12 @@ public class NameAlreadyUsedError extends Error {
 	}
 	
 	public String message() {
-		return "The name \"" + name + "\" is already used as a " + existingEntry + " name.";
+		String result = "The name \"" + name + "\" is already used (on line " + existingEntry.getLineOfDeclaration() + ") as a";
+		if(existingEntry instanceof InlineEntry) {
+			result += "n";
+		}
+		result += " " + existingEntry.getEntryKind() + " name.";
+		return result;
 	}
 
 }

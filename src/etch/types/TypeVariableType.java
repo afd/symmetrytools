@@ -2,7 +2,7 @@ package src.etch.types;
 
 import junit.framework.Assert;
 
-public class TypeVariableType extends SimpleType {
+public class TypeVariableType extends SimpleType implements InternalType {
 
 	private char letter;
 	private int guid;

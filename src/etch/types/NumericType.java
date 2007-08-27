@@ -1,5 +1,7 @@
 package src.etch.types;
 
+import src.etch.checker.SymmetrySettings;
+
 public abstract class NumericType extends SimpleType {
 
 	public static final long MAX_INT = 2147483647;
@@ -39,8 +41,8 @@ public abstract class NumericType extends SimpleType {
 		// can accept. If it isn't, the value is untypable, and
 		// should have already been rejected.
 
-		if(checkingSymmetry()) {
-			if(val>=0 && val<=noProcesses) {
+		if(SymmetrySettings.CHECKING_SYMMETRY) {
+			if(val>=0 && val<=SymmetrySettings.noProcesses()) {
 				if(val==0 || val==1) {
 					return new BitType(true,true);
 				}

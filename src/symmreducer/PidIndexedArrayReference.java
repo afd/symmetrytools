@@ -2,6 +2,7 @@ package src.symmreducer;
 
 import junit.framework.Assert;
 import src.etch.types.ArrayType;
+import src.etch.types.VisibleType;
 
 public class PidIndexedArrayReference extends SensitiveVariableReference {
 
@@ -9,7 +10,8 @@ public class PidIndexedArrayReference extends SensitiveVariableReference {
 	
 	public PidIndexedArrayReference(String name, ArrayType type) {
 		super(name,type);
-		Assert.assertTrue(SymmetryApplier.isPid(type.getIndexType()));
+		Assert.assertTrue(type.getIndexType() instanceof VisibleType);
+		Assert.assertTrue(SymmetryApplier.isPid((VisibleType) type.getIndexType()));
 		this.type = type;
 	}
 

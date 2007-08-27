@@ -4,18 +4,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import junit.framework.Assert;
+
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
 import src.etch.types.Type;
+import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
 
 public class TypeFlattener {
 
-	public static List<Type> flatten(Type t, StaticChannelDiagramExtractor typeInfo) {
+	public static List<VisibleType> flatten(Type t, StaticChannelDiagramExtractor typeInfo) {
 		
-		List<Type> result = new ArrayList<Type>();
+		List<VisibleType> result = new ArrayList<VisibleType>();
 		
 		if(t instanceof RecordType) {
 			TypeEntry typeEntry = (TypeEntry) typeInfo.getEnvEntry(t.name());
@@ -37,7 +40,8 @@ public class TypeFlattener {
 		}
 		
 		else {
-			result.add(t);
+			Assert.assertTrue(t instanceof VisibleType);
+			result.add((VisibleType) t);
 		}
 		
 		return result;

@@ -14,7 +14,8 @@ public class InlineEntry extends EnvEntry {
 	private List<String> argNames;
 	private PSequence sequence;
 	
-	public InlineEntry(List<String> argNames, PSequence sequence) {
+	public InlineEntry(List<String> argNames, PSequence sequence, int lineOfDeclaration) {
+		super(lineOfDeclaration);
 		this.argNames = argNames;
 		this.sequence = sequence;
 	}
@@ -36,6 +37,10 @@ public class InlineEntry extends EnvEntry {
 
 	public String toString() {
 		return "n inline macro";
+	}
+
+	public String getEntryKind() {
+		return "inline macro";
 	}
 	
 }

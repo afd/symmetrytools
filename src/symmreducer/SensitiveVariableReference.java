@@ -1,13 +1,13 @@
 package src.symmreducer;
 
-import src.etch.types.Type;
+import src.etch.types.VisibleType;
 
 class SensitiveVariableReference {
 
 	private String reference;
-	private Type type;
+	private VisibleType type;
 	
-	SensitiveVariableReference(String reference, Type type) {
+	SensitiveVariableReference(String reference, VisibleType type) {
 		this.reference = reference;
 		this.type = type;
 	}
@@ -16,7 +16,7 @@ class SensitiveVariableReference {
 		return reference;
 	}
 	
-	Type getType() {
+	VisibleType getType() {
 		return type;
 	}
 	

@@ -25,7 +25,7 @@ public abstract class InlineProcessor extends DepthFirstAdapter {
 		if(existingInline!=null) {
 			addError(node.getName(),new NameAlreadyUsedError(node.getName().getText(),existingInline));
 		} else {
-			inlines.put(node.getName().getText(),new InlineEntry(toList(node.getNameLst()),node.getSequence()));		
+			inlines.put(node.getName().getText(),new InlineEntry(toList(node.getNameLst()),node.getSequence(),node.getName().getLine()));		
 		}
 	}
 

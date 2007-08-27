@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.StringTokenizer;
 
 import junit.framework.Assert;
-import src.etch.unifier.Substituter;
+import src.etch.typeinference.Substituter;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.SymmExtractor;
 import src.utilities.Config;

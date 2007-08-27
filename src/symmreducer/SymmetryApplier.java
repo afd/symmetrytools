@@ -25,7 +25,7 @@ import src.etch.types.PidType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
 import src.etch.types.SimpleType;
-import src.etch.types.Type;
+import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.Config;
 import src.utilities.Strategy;
@@ -777,23 +777,20 @@ public class SymmetryApplier {
 			EnvEntry entry = globalVariables.get(name);
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-				List sensitiveReferences = getSensitiveVariableReferences(name,
+				List<SensitiveVariableReference> sensitiveReferences = getSensitiveVariableReferences(name,
 						((VarEntry) entry).getType(), "");
-				for (int i = 0; i < sensitiveReferences.size(); i++) {
-					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences
-							.get(i);
+				for (SensitiveVariableReference reference : sensitiveReferences) {
 					fw.write("   temp." + reference.getReference() + " = ");
 					Assert.assertTrue(isPid(reference.getType()));
 					fw.write("applyToPr(*alpha,s->" + reference.getReference()
 							+ ");\n");
 				}
 
-				List sensitivelyIndexedArrays = getSensitivelyIndexedArrayReferences(
+				List<PidIndexedArrayReference> sensitivelyIndexedArrays = getSensitivelyIndexedArrayReferences(
 						name, ((VarEntry) entry).getType(), "");
-				for (int i = 0; i < sensitivelyIndexedArrays.size(); i++) {
-					PidIndexedArrayReference reference = (PidIndexedArrayReference) sensitivelyIndexedArrays
-							.get(i);
-					Assert.assertTrue(isPid(((ArrayType) reference.getType())
+				for (PidIndexedArrayReference reference : sensitivelyIndexedArrays) {
+					Assert.assertTrue(((ArrayType) reference.getType()).getIndexType() instanceof VisibleType);
+					Assert.assertTrue(isPid((VisibleType) ((ArrayType) reference.getType())
 							.getIndexType()));
 					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
@@ -866,7 +863,9 @@ public class SymmetryApplier {
 					.hasNext();) {
 				PidIndexedArrayReference reference = (PidIndexedArrayReference) iter
 						.next();
-				Assert.assertTrue(isPid(((ArrayType) reference.getType())
+				Assert.assertTrue(((ArrayType) reference.getType())
+						.getIndexType() instanceof VisibleType);
+				Assert.assertTrue(isPid((VisibleType) ((ArrayType) reference.getType())
 						.getIndexType()));
 				/* uchar must be changed to appropriate type */
 				fw.write("   {\n");
@@ -896,7 +895,7 @@ public class SymmetryApplier {
 					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
 							i))).getType();
 
-			List flattenedFieldTypes = TypeFlattener.flatten(type
+			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
 			if (containsSensitiveType(flattenedFieldTypes)) {
@@ -904,23 +903,23 @@ public class SymmetryApplier {
 						+ "))->Qlen; slot++) {\n");
 
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
-					if (isPid((Type) flattenedFieldTypes.get(j))
-							|| isChan((Type) flattenedFieldTypes.get(j))) {
+					if (isPid(flattenedFieldTypes.get(j))
+							|| isChan(flattenedFieldTypes.get(j))) {
 						fw.write("      ((Q" + (i + 1) + " *)QSEG(s," + i
 								+ "))->contents[slot].fld" + j + " = ");
-						if (isPid((Type) flattenedFieldTypes.get(j))) {
+						if (isPid(flattenedFieldTypes.get(j))) {
 							fw.write("applyToPr");
 						} else {
-							Assert.assertTrue(isChan((Type) flattenedFieldTypes
+							Assert.assertTrue(isChan(flattenedFieldTypes
 									.get(j)));
 							fw.write("applyToCh");
 						}
 						fw.write("(*alpha,((Q" + (i + 1) + " *)QSEG(s," + i
 								+ "))->contents[slot].fld" + j);
-						if (isChan((Type) flattenedFieldTypes.get(j))) {
+						if (isChan(flattenedFieldTypes.get(j))) {
 							fw.write("-1)+1;\n");
 						} else {
-							Assert.assertTrue(isPid((Type) flattenedFieldTypes
+							Assert.assertTrue(isPid(flattenedFieldTypes
 									.get(j)));
 							fw.write(");\n");
 						}
@@ -957,10 +956,10 @@ public class SymmetryApplier {
 		}
 	}
 
-	private boolean containsSensitiveType(List flattenedFieldTypes) {
+	private boolean containsSensitiveType(List<VisibleType> flattenedFieldTypes) {
 		for (int i = 0; i < flattenedFieldTypes.size(); i++) {
-			if (isChan((Type) flattenedFieldTypes.get(i))
-					|| isPid((Type) flattenedFieldTypes.get(i))) {
+			if (isChan(flattenedFieldTypes.get(i))
+					|| isPid(flattenedFieldTypes.get(i))) {
 				return true;
 			}
 		}
@@ -1045,7 +1044,9 @@ public class SymmetryApplier {
 
 				for (PidIndexedArrayReference reference : getSensitivelyIndexedArrayReferences(
 						name, ((VarEntry) entry).getType(), referencePrefix)) {
-					Assert.assertTrue(isPid(((ArrayType) reference.getType())
+					Assert.assertTrue(((ArrayType) reference.getType())
+							.getIndexType() instanceof VisibleType);
+					Assert.assertTrue(isPid((VisibleType) ((ArrayType) reference.getType())
 							.getIndexType()));
 					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
@@ -1110,7 +1111,9 @@ public class SymmetryApplier {
 					.hasNext();) {
 				PidIndexedArrayReference reference = (PidIndexedArrayReference) iter
 						.next();
-				Assert.assertTrue(isPid(((ArrayType) reference.getType())
+				Assert.assertTrue(((ArrayType) reference.getType())
+						.getIndexType() instanceof VisibleType);
+				Assert.assertTrue(isPid((VisibleType) ((ArrayType) reference.getType())
 						.getIndexType()));
 				/* uchar must be changed to appropriate type */
 				fw.write("   {\n");
@@ -1138,7 +1141,7 @@ public class SymmetryApplier {
 					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
 							i))).getType();
 
-			List flattenedFieldTypes = TypeFlattener.flatten(type
+			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
 			if (containsChanType(flattenedFieldTypes)) {
@@ -1146,7 +1149,7 @@ public class SymmetryApplier {
 						+ "))->Qlen; slot++) {\n");
 
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
-					if (isChan((Type) flattenedFieldTypes.get(j))) {
+					if (isChan(flattenedFieldTypes.get(j))) {
 						fw.write("      if(((Q" + (i + 1) + " *)QSEG(s," + i
 								+ "))->contents[slot].fld" + j + "==a+1) {\n");
 						fw.write("         ((Q" + (i + 1) + " *)QSEG(s," + i
@@ -1173,7 +1176,7 @@ public class SymmetryApplier {
 					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
 							i))).getType();
 
-			List flattenedFieldTypes = TypeFlattener.flatten(type
+			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
 			if (containsPidType(flattenedFieldTypes)) {
@@ -1181,7 +1184,7 @@ public class SymmetryApplier {
 						+ "))->Qlen; slot++) {\n");
 
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
-					if (isPid((Type) flattenedFieldTypes.get(j))) {
+					if (isPid(flattenedFieldTypes.get(j))) {
 						fw.write("      if(((Q" + (i + 1) + " *)QSEG(s," + i
 								+ "))->contents[slot].fld" + j + "==a) {\n");
 						fw.write("         ((Q" + (i + 1) + " *)QSEG(s," + i
@@ -1414,7 +1417,7 @@ public class SymmetryApplier {
 		Map<String, EnvEntry> localScope = proctype.getLocalScope();
 		for (String varName : localScope.keySet()) {
 			if (localScope.get(varName) instanceof VarEntry) {
-				Type entryType = ((VarEntry) localScope.get(varName)).getType();
+				VisibleType entryType = ((VarEntry) localScope.get(varName)).getType();
 				Assert.assertFalse(entryType instanceof ProductType);
 				if (entryType instanceof PidType) {
 					for (int j = 1; j < typeInfo.getNoProcesses(); j++) {
@@ -1439,7 +1442,8 @@ public class SymmetryApplier {
 			int chanLength = ((ChannelEntry) typeInfo.getEnvEntry(chanName))
 					.getLength();
 			for (int i = 0; i < msgType.getArity(); i++) {
-				Type fieldType = msgType.getTypeOfPosition(i);
+				Assert.assertTrue(msgType.getTypeOfPosition(i) instanceof VisibleType);
+				VisibleType fieldType = (VisibleType) msgType.getTypeOfPosition(i);
 
 				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
 				// doesn't
@@ -1507,7 +1511,7 @@ public class SymmetryApplier {
 					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
 							i))).getType();
 
-			List<Type> flattenedFieldTypes = TypeFlattener.flatten(type
+			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
 			if (containsPidType(flattenedFieldTypes)
@@ -1739,7 +1743,7 @@ public class SymmetryApplier {
 			ChanType type = (ChanType) ((ChannelEntry) typeInfo
 					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
 							i - 1))).getType();
-			List flattenedFieldTypes = TypeFlattener.flatten(type
+			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
 			if (containsInsensitiveType(flattenedFieldTypes)) {
@@ -1748,7 +1752,7 @@ public class SymmetryApplier {
 						+ "*)q1)->Qlen; slot++) {\n\n");
 
 				for (int k = 0; k < flattenedFieldTypes.size(); k++) {
-					if (!(isChan((Type) flattenedFieldTypes.get(k)) || isPid((Type) flattenedFieldTypes
+					if (!(isChan(flattenedFieldTypes.get(k)) || isPid(flattenedFieldTypes
 							.get(k)))) {
 						fw.write("          if(" + q1Prefix
 								+ "contents[slot].fld" + k + "!=" + q2Prefix
@@ -1775,8 +1779,8 @@ public class SymmetryApplier {
 		for (String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
 			if (entry instanceof VarEntry) {
-				Type entryType = ((VarEntry)entry).getType();
-				if(entryType instanceof ArrayType && isPid(((ArrayType)entryType).getIndexType()) &&
+				VisibleType entryType = ((VarEntry)entry).getType();
+				if(entryType instanceof ArrayType && isPid((VisibleType) ((ArrayType)entryType).getIndexType()) &&
 						(((ArrayType)entryType).getElementType() instanceof SimpleType)) {
 					if(isPid(((ArrayType)entryType).getElementType())) {
 						fw.write("   if((s->" + name + "[i]==0 && s->" + name + "[j]!=0)||(s->" + name + "[i]!=0 && s->" + name + "[j]==0)) return 0;\n");
@@ -1836,8 +1840,8 @@ public class SymmetryApplier {
 		for (String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
 			if (entry instanceof VarEntry) {
-				Type entryType = ((VarEntry)entry).getType();
-				if(entryType instanceof ArrayType && isPid(((ArrayType)entryType).getIndexType()) &&
+				VisibleType entryType = ((VarEntry)entry).getType();
+				if(entryType instanceof ArrayType && isPid((VisibleType) ((ArrayType)entryType).getIndexType()) &&
 						(((ArrayType)entryType).getElementType() instanceof SimpleType)) {
 					for(int i=1; i<typeInfo.getNoProcesses(); i++) {
 					
@@ -1896,7 +1900,7 @@ public class SymmetryApplier {
 			ChanType type = (ChanType) ((ChannelEntry) typeInfo
 					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
 							j))).getType();
-			List flattenedFieldTypes = TypeFlattener.flatten(type
+			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
 			String sPrefix = "((Q" + (j + 1) + " *)QSEG(s," + j + "))->";
@@ -1913,7 +1917,7 @@ public class SymmetryApplier {
 						+ "))->Qlen; slot++) {\n\n");
 
 				for (int k = 0; k < flattenedFieldTypes.size(); k++) {
-					if (!(isChan((Type) flattenedFieldTypes.get(k)) || isPid((Type) flattenedFieldTypes
+					if (!(isChan(flattenedFieldTypes.get(k)) || isPid(flattenedFieldTypes
 							.get(k)))) {
 						fw.write("    if(" + sPrefix + "contents[slot].fld" + k
 								+ " < " + tPrefix + "contents[slot].fld" + k
@@ -1931,27 +1935,27 @@ public class SymmetryApplier {
 		fw.write("}\n\n");
 	}
 
-	private boolean containsPidType(List flattenedFieldTypes) {
+	private boolean containsPidType(List<VisibleType> flattenedFieldTypes) {
 		for (int i = 0; i < flattenedFieldTypes.size(); i++) {
-			if (isPid((Type) flattenedFieldTypes.get(i))) {
+			if (isPid(flattenedFieldTypes.get(i))) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private boolean containsChanType(List flattenedFieldTypes) {
+	private boolean containsChanType(List<VisibleType> flattenedFieldTypes) {
 		for (int i = 0; i < flattenedFieldTypes.size(); i++) {
-			if (isChan((Type) flattenedFieldTypes.get(i))) {
+			if (isChan(flattenedFieldTypes.get(i))) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private boolean containsInsensitiveType(List flattenedFieldTypes) {
+	private boolean containsInsensitiveType(List<VisibleType> flattenedFieldTypes) {
 		for (int i = 0; i < flattenedFieldTypes.size(); i++) {
-			if (!(isPid((Type) flattenedFieldTypes.get(i)) || isChan((Type) flattenedFieldTypes
+			if (!(isPid(flattenedFieldTypes.get(i)) || isChan(flattenedFieldTypes
 					.get(i)))) {
 				return true;
 			}
@@ -2010,12 +2014,12 @@ public class SymmetryApplier {
 	}
 
 	protected List<PidIndexedArrayReference> getSensitivelyIndexedArrayReferences(
-			String name, Type type, String referencePrefix) {
+			String name, VisibleType type, String referencePrefix) {
 
 		List<PidIndexedArrayReference> result = new ArrayList<PidIndexedArrayReference>();
 		if (isArray(type)) {
-			if (isPid(((ArrayType) type).getIndexType())
-					&& !isByte(((ArrayType) type).getIndexType())) {
+			if (isPid((VisibleType) ((ArrayType) type).getIndexType())
+					&& !isByte((VisibleType) ((ArrayType) type).getIndexType())) {
 				result.add(new PidIndexedArrayReference(referencePrefix + name,
 						(ArrayType) type));
 			}
@@ -2040,7 +2044,7 @@ public class SymmetryApplier {
 	}
 
 	protected List<SensitiveVariableReference> getSensitiveVariableReferences(
-			String varName, Type varType, String prefix) {
+			String varName, VisibleType varType, String prefix) {
 		List<SensitiveVariableReference> result = new ArrayList<SensitiveVariableReference>();
 		if (isPid(varType) || isChan(varType)) {
 			result
@@ -2067,7 +2071,7 @@ public class SymmetryApplier {
 	}
 
 	protected List<String> getInsensitiveVariableReferences(String varName,
-			Type varType, String prefix) {
+			VisibleType varType, String prefix) {
 		List<String> result = new ArrayList<String>();
 
 		if (isPid(varType) || isChan(varType)) {
@@ -2075,7 +2079,8 @@ public class SymmetryApplier {
 		}
 
 		if (isArray(varType)) {
-			if (isPid(((ArrayType) varType).getIndexType())) {
+			Assert.assertTrue(((ArrayType) varType).getIndexType() instanceof VisibleType);
+			if (isPid((VisibleType) ((ArrayType) varType).getIndexType())) {
 				return result;
 			}
 
@@ -2131,7 +2136,7 @@ public class SymmetryApplier {
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
 	
-				Type entryType = ((VarEntry) entry).getType();
+				VisibleType entryType = ((VarEntry) entry).getType();
 	
 				Assert.assertFalse(entryType instanceof ChanType);
 				Assert.assertFalse(entryType instanceof ProductType);
@@ -2239,7 +2244,7 @@ public class SymmetryApplier {
 	
 		for (String varName : localScope.keySet()) {
 			if (localScope.get(varName) instanceof VarEntry) {
-				Type entryType = ((VarEntry) localScope.get(varName)).getType();
+				VisibleType entryType = ((VarEntry) localScope.get(varName)).getType();
 				Assert.assertFalse(entryType instanceof ProductType);
 				if (entryType instanceof ArrayType) {
 					System.out
@@ -2292,7 +2297,8 @@ public class SymmetryApplier {
 			int chanLength = ((ChannelEntry) typeInfo.getEnvEntry(chanName))
 					.getLength();
 			for (int i = 0; i < msgType.getArity(); i++) {
-				Type fieldType = msgType.getTypeOfPosition(i);
+				Assert.assertTrue(msgType.getTypeOfPosition(i) instanceof VisibleType);
+				VisibleType fieldType = (VisibleType) msgType.getTypeOfPosition(i);
 	
 				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
 				// doesn't
@@ -2339,23 +2345,23 @@ public class SymmetryApplier {
 		fw.write(ltMethod);
 	}
 
-	private boolean isRecord(Type varType) {
+	private boolean isRecord(VisibleType varType) {
 		return varType instanceof RecordType;
 	}
 
-	private boolean isArray(Type varType) {
+	private boolean isArray(VisibleType varType) {
 		return varType instanceof ArrayType;
 	}
 
-	protected boolean isChan(Type varType) {
+	protected boolean isChan(VisibleType varType) {
 		return varType instanceof ChanType;
 	}
 
-	protected static boolean isPid(Type varType) {
+	protected static boolean isPid(VisibleType varType) {
 		return varType instanceof PidType;
 	}
 
-	private static boolean isByte(Type varType) {
+	private static boolean isByte(VisibleType varType) {
 		return varType instanceof ByteType;
 	}
 
