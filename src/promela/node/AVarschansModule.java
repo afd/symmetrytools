@@ -7,7 +7,7 @@ import src.promela.analysis.*;
 @SuppressWarnings("nls")
 public final class AVarschansModule extends PModule
 {
-    private PDeclLst _declLst_;
+    private POneDecl _oneDecl_;
 
     public AVarschansModule()
     {
@@ -15,10 +15,10 @@ public final class AVarschansModule extends PModule
     }
 
     public AVarschansModule(
-        @SuppressWarnings("hiding") PDeclLst _declLst_)
+        @SuppressWarnings("hiding") POneDecl _oneDecl_)
     {
         // Constructor
-        setDeclLst(_declLst_);
+        setOneDecl(_oneDecl_);
 
     }
 
@@ -26,7 +26,7 @@ public final class AVarschansModule extends PModule
     public Object clone()
     {
         return new AVarschansModule(
-            cloneNode(this._declLst_));
+            cloneNode(this._oneDecl_));
     }
 
     public void apply(Switch sw)
@@ -34,16 +34,16 @@ public final class AVarschansModule extends PModule
         ((Analysis) sw).caseAVarschansModule(this);
     }
 
-    public PDeclLst getDeclLst()
+    public POneDecl getOneDecl()
     {
-        return this._declLst_;
+        return this._oneDecl_;
     }
 
-    public void setDeclLst(PDeclLst node)
+    public void setOneDecl(POneDecl node)
     {
-        if(this._declLst_ != null)
+        if(this._oneDecl_ != null)
         {
-            this._declLst_.parent(null);
+            this._oneDecl_.parent(null);
         }
 
         if(node != null)
@@ -56,23 +56,23 @@ public final class AVarschansModule extends PModule
             node.parent(this);
         }
 
-        this._declLst_ = node;
+        this._oneDecl_ = node;
     }
 
     @Override
     public String toString()
     {
         return ""
-            + toString(this._declLst_);
+            + toString(this._oneDecl_);
     }
 
     @Override
     void removeChild(@SuppressWarnings("unused") Node child)
     {
         // Remove child
-        if(this._declLst_ == child)
+        if(this._oneDecl_ == child)
         {
-            this._declLst_ = null;
+            this._oneDecl_ = null;
             return;
         }
 
@@ -83,9 +83,9 @@ public final class AVarschansModule extends PModule
     void replaceChild(@SuppressWarnings("unused") Node oldChild, @SuppressWarnings("unused") Node newChild)
     {
         // Replace child
-        if(this._declLst_ == oldChild)
+        if(this._oneDecl_ == oldChild)
         {
-            setDeclLst((PDeclLst) newChild);
+            setOneDecl((POneDecl) newChild);
             return;
         }
 

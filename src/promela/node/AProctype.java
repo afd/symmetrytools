@@ -11,7 +11,7 @@ public final class AProctype extends PProctype
     private TProctypetok _proctypetok_;
     private TName _name_;
     private TLParenthese _lParenthese_;
-    private PDeclLst _declLst_;
+    private PParamLst _paramLst_;
     private TRParenthese _rParenthese_;
     private PPriority _priority_;
     private PEnabler _enabler_;
@@ -29,7 +29,7 @@ public final class AProctype extends PProctype
         @SuppressWarnings("hiding") TProctypetok _proctypetok_,
         @SuppressWarnings("hiding") TName _name_,
         @SuppressWarnings("hiding") TLParenthese _lParenthese_,
-        @SuppressWarnings("hiding") PDeclLst _declLst_,
+        @SuppressWarnings("hiding") PParamLst _paramLst_,
         @SuppressWarnings("hiding") TRParenthese _rParenthese_,
         @SuppressWarnings("hiding") PPriority _priority_,
         @SuppressWarnings("hiding") PEnabler _enabler_,
@@ -46,7 +46,7 @@ public final class AProctype extends PProctype
 
         setLParenthese(_lParenthese_);
 
-        setDeclLst(_declLst_);
+        setParamLst(_paramLst_);
 
         setRParenthese(_rParenthese_);
 
@@ -70,7 +70,7 @@ public final class AProctype extends PProctype
             cloneNode(this._proctypetok_),
             cloneNode(this._name_),
             cloneNode(this._lParenthese_),
-            cloneNode(this._declLst_),
+            cloneNode(this._paramLst_),
             cloneNode(this._rParenthese_),
             cloneNode(this._priority_),
             cloneNode(this._enabler_),
@@ -184,16 +184,16 @@ public final class AProctype extends PProctype
         this._lParenthese_ = node;
     }
 
-    public PDeclLst getDeclLst()
+    public PParamLst getParamLst()
     {
-        return this._declLst_;
+        return this._paramLst_;
     }
 
-    public void setDeclLst(PDeclLst node)
+    public void setParamLst(PParamLst node)
     {
-        if(this._declLst_ != null)
+        if(this._paramLst_ != null)
         {
-            this._declLst_.parent(null);
+            this._paramLst_.parent(null);
         }
 
         if(node != null)
@@ -206,7 +206,7 @@ public final class AProctype extends PProctype
             node.parent(this);
         }
 
-        this._declLst_ = node;
+        this._paramLst_ = node;
     }
 
     public TRParenthese getRParenthese()
@@ -367,7 +367,7 @@ public final class AProctype extends PProctype
             + toString(this._proctypetok_)
             + toString(this._name_)
             + toString(this._lParenthese_)
-            + toString(this._declLst_)
+            + toString(this._paramLst_)
             + toString(this._rParenthese_)
             + toString(this._priority_)
             + toString(this._enabler_)
@@ -404,9 +404,9 @@ public final class AProctype extends PProctype
             return;
         }
 
-        if(this._declLst_ == child)
+        if(this._paramLst_ == child)
         {
-            this._declLst_ = null;
+            this._paramLst_ = null;
             return;
         }
 
@@ -477,9 +477,9 @@ public final class AProctype extends PProctype
             return;
         }
 
-        if(this._declLst_ == oldChild)
+        if(this._paramLst_ == oldChild)
         {
-            setDeclLst((PDeclLst) newChild);
+            setParamLst((PParamLst) newChild);
             return;
         }
 

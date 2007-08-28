@@ -8,7 +8,6 @@ import src.promela.analysis.*;
 public final class AMtypeModule extends PModule
 {
     private PMtype _mtype_;
-    private TSeparator _separator_;
 
     public AMtypeModule()
     {
@@ -16,13 +15,10 @@ public final class AMtypeModule extends PModule
     }
 
     public AMtypeModule(
-        @SuppressWarnings("hiding") PMtype _mtype_,
-        @SuppressWarnings("hiding") TSeparator _separator_)
+        @SuppressWarnings("hiding") PMtype _mtype_)
     {
         // Constructor
         setMtype(_mtype_);
-
-        setSeparator(_separator_);
 
     }
 
@@ -30,8 +26,7 @@ public final class AMtypeModule extends PModule
     public Object clone()
     {
         return new AMtypeModule(
-            cloneNode(this._mtype_),
-            cloneNode(this._separator_));
+            cloneNode(this._mtype_));
     }
 
     public void apply(Switch sw)
@@ -64,37 +59,11 @@ public final class AMtypeModule extends PModule
         this._mtype_ = node;
     }
 
-    public TSeparator getSeparator()
-    {
-        return this._separator_;
-    }
-
-    public void setSeparator(TSeparator node)
-    {
-        if(this._separator_ != null)
-        {
-            this._separator_.parent(null);
-        }
-
-        if(node != null)
-        {
-            if(node.parent() != null)
-            {
-                node.parent().removeChild(node);
-            }
-
-            node.parent(this);
-        }
-
-        this._separator_ = node;
-    }
-
     @Override
     public String toString()
     {
         return ""
-            + toString(this._mtype_)
-            + toString(this._separator_);
+            + toString(this._mtype_);
     }
 
     @Override
@@ -104,12 +73,6 @@ public final class AMtypeModule extends PModule
         if(this._mtype_ == child)
         {
             this._mtype_ = null;
-            return;
-        }
-
-        if(this._separator_ == child)
-        {
-            this._separator_ = null;
             return;
         }
 
@@ -123,12 +86,6 @@ public final class AMtypeModule extends PModule
         if(this._mtype_ == oldChild)
         {
             setMtype((PMtype) newChild);
-            return;
-        }
-
-        if(this._separator_ == oldChild)
-        {
-            setSeparator((TSeparator) newChild);
             return;
         }
 

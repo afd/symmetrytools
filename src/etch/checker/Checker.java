@@ -964,7 +964,7 @@ public class Checker extends InlineProcessor {
 
 		dealWithDeclarations(node);
 		
-		currentProctype = getParameterNamesAndTypes(node.getDeclLst(),node.getName().getLine());
+		currentProctype = getParameterNamesAndTypes(node.getParamLst(),node.getName().getLine());
 
 		EnvEntry existingEntry = env.putGlobal(node.getName().getText(),currentProctype);
 		if (existingEntry != null) {
@@ -991,34 +991,34 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	private ProctypeEntry getParameterNamesAndTypes(PDeclLst parameters, int lineOfDeclaration) {
+	private ProctypeEntry getParameterNamesAndTypes(PParamLst parameters, int lineOfDeclaration) {
 		List<VisibleType> argTypes = new ArrayList<VisibleType>();
 		List<String> argNames = new ArrayList<String>();
 		if (parameters != null) {
-			while (parameters instanceof AManyDeclLst) {
-				argTypes.addAll(getArgumentTypes(getNames((AManyDeclLst) parameters)));
-				argNames.addAll(getArgumentNames(getNames((AManyDeclLst) parameters)));
-				parameters = ((AManyDeclLst) parameters).getDeclLst();
+			while (parameters instanceof AManyParamLst) {
+				argTypes.addAll(getArgumentTypes(getNames((AManyParamLst) parameters)));
+				argNames.addAll(getArgumentNames(getNames((AManyParamLst) parameters)));
+				parameters = ((AManyParamLst) parameters).getParamLst();
 			}
-			argTypes.addAll(getArgumentTypes(getNames((AOneDeclLst) parameters)));
-			argNames.addAll(getArgumentNames(getNames((AOneDeclLst)parameters)));
+			argTypes.addAll(getArgumentTypes(getNames((AOneParamLst) parameters)));
+			argNames.addAll(getArgumentNames(getNames((AOneParamLst)parameters)));
 		}
 		Assert.assertEquals(argTypes.size(),argNames.size());
 		
 		return new ProctypeEntry(argTypes,argNames,lineOfDeclaration);
 	}
 
-	private PIvarLst getNames(AOneDeclLst typedArgs) {
+	private PIvarLst getNames(AOneParamLst typedArgs) {
 		return ((AOneDecl) typedArgs.getOneDecl()).getIvarLst();
 	}
 
-	private PIvarLst getNames(AManyDeclLst typedArgs) {
+	private PIvarLst getNames(AManyParamLst typedArgs) {
 		return ((AOneDecl) typedArgs.getOneDecl()).getIvarLst();
 	}
 
 	private void dealWithDeclarations(AProctype node) {
-		if (node.getDeclLst() != null) {
-			node.getDeclLst().apply(this);
+		if (node.getParamLst() != null) {
+			node.getParamLst().apply(this);
 		}
 	}
 

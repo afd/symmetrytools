@@ -8,7 +8,6 @@ import src.promela.analysis.*;
 public final class AUtypeModule extends PModule
 {
     private PUtype _utype_;
-    private TSeparator _separator_;
 
     public AUtypeModule()
     {
@@ -16,13 +15,10 @@ public final class AUtypeModule extends PModule
     }
 
     public AUtypeModule(
-        @SuppressWarnings("hiding") PUtype _utype_,
-        @SuppressWarnings("hiding") TSeparator _separator_)
+        @SuppressWarnings("hiding") PUtype _utype_)
     {
         // Constructor
         setUtype(_utype_);
-
-        setSeparator(_separator_);
 
     }
 
@@ -30,8 +26,7 @@ public final class AUtypeModule extends PModule
     public Object clone()
     {
         return new AUtypeModule(
-            cloneNode(this._utype_),
-            cloneNode(this._separator_));
+            cloneNode(this._utype_));
     }
 
     public void apply(Switch sw)
@@ -64,37 +59,11 @@ public final class AUtypeModule extends PModule
         this._utype_ = node;
     }
 
-    public TSeparator getSeparator()
-    {
-        return this._separator_;
-    }
-
-    public void setSeparator(TSeparator node)
-    {
-        if(this._separator_ != null)
-        {
-            this._separator_.parent(null);
-        }
-
-        if(node != null)
-        {
-            if(node.parent() != null)
-            {
-                node.parent().removeChild(node);
-            }
-
-            node.parent(this);
-        }
-
-        this._separator_ = node;
-    }
-
     @Override
     public String toString()
     {
         return ""
-            + toString(this._utype_)
-            + toString(this._separator_);
+            + toString(this._utype_);
     }
 
     @Override
@@ -104,12 +73,6 @@ public final class AUtypeModule extends PModule
         if(this._utype_ == child)
         {
             this._utype_ = null;
-            return;
-        }
-
-        if(this._separator_ == child)
-        {
-            this._separator_ = null;
             return;
         }
 
@@ -123,12 +86,6 @@ public final class AUtypeModule extends PModule
         if(this._utype_ == oldChild)
         {
             setUtype((PUtype) newChild);
-            return;
-        }
-
-        if(this._separator_ == oldChild)
-        {
-            setSeparator((TSeparator) newChild);
             return;
         }
 

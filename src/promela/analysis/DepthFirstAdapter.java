@@ -132,10 +132,6 @@ public class DepthFirstAdapter extends AnalysisAdapter
         {
             node.getUtype().apply(this);
         }
-        if(node.getSeparator() != null)
-        {
-            node.getSeparator().apply(this);
-        }
         outAUtypeModule(node);
     }
 
@@ -157,10 +153,6 @@ public class DepthFirstAdapter extends AnalysisAdapter
         {
             node.getMtype().apply(this);
         }
-        if(node.getSeparator() != null)
-        {
-            node.getSeparator().apply(this);
-        }
         outAMtypeModule(node);
     }
 
@@ -178,9 +170,9 @@ public class DepthFirstAdapter extends AnalysisAdapter
     public void caseAVarschansModule(AVarschansModule node)
     {
         inAVarschansModule(node);
-        if(node.getDeclLst() != null)
+        if(node.getOneDecl() != null)
         {
-            node.getDeclLst().apply(this);
+            node.getOneDecl().apply(this);
         }
         outAVarschansModule(node);
     }
@@ -290,6 +282,27 @@ public class DepthFirstAdapter extends AnalysisAdapter
         outAInlineModule(node);
     }
 
+    public void inASemiModule(ASemiModule node)
+    {
+        defaultIn(node);
+    }
+
+    public void outASemiModule(ASemiModule node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseASemiModule(ASemiModule node)
+    {
+        inASemiModule(node);
+        if(node.getSeparator() != null)
+        {
+            node.getSeparator().apply(this);
+        }
+        outASemiModule(node);
+    }
+
     public void inAProctype(AProctype node)
     {
         defaultIn(node);
@@ -320,9 +333,9 @@ public class DepthFirstAdapter extends AnalysisAdapter
         {
             node.getLParenthese().apply(this);
         }
-        if(node.getDeclLst() != null)
+        if(node.getParamLst() != null)
         {
-            node.getDeclLst().apply(this);
+            node.getParamLst().apply(this);
         }
         if(node.getRParenthese() != null)
         {
@@ -349,6 +362,56 @@ public class DepthFirstAdapter extends AnalysisAdapter
             node.getRBrace().apply(this);
         }
         outAProctype(node);
+    }
+
+    public void inAOneParamLst(AOneParamLst node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAOneParamLst(AOneParamLst node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAOneParamLst(AOneParamLst node)
+    {
+        inAOneParamLst(node);
+        if(node.getOneDecl() != null)
+        {
+            node.getOneDecl().apply(this);
+        }
+        outAOneParamLst(node);
+    }
+
+    public void inAManyParamLst(AManyParamLst node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAManyParamLst(AManyParamLst node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAManyParamLst(AManyParamLst node)
+    {
+        inAManyParamLst(node);
+        if(node.getOneDecl() != null)
+        {
+            node.getOneDecl().apply(this);
+        }
+        if(node.getSeparator() != null)
+        {
+            node.getSeparator().apply(this);
+        }
+        if(node.getParamLst() != null)
+        {
+            node.getParamLst().apply(this);
+        }
+        outAManyParamLst(node);
     }
 
     public void inAInit(AInit node)
@@ -708,6 +771,23 @@ public class DepthFirstAdapter extends AnalysisAdapter
             node.getExprLst().apply(this);
         }
         outAManyExprLst(node);
+    }
+
+    public void inANullDeclLst(ANullDeclLst node)
+    {
+        defaultIn(node);
+    }
+
+    public void outANullDeclLst(ANullDeclLst node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseANullDeclLst(ANullDeclLst node)
+    {
+        inANullDeclLst(node);
+        outANullDeclLst(node);
     }
 
     public void inAOneDeclLst(AOneDeclLst node)

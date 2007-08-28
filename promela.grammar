@@ -56,7 +56,7 @@ Tokens
     r_bracket = ']';
 
     separator = ';' | '->';
-
+    
     comma = ',';
     dot = '.';
     assign = '=';
@@ -153,18 +153,23 @@ Productions
     name templatetok colon sequence ;
 
   module =
-   {utype} utype separator? |		/* user defined types */
-   {mtype} mtype separator? |		/* mtype declaration */
-   {varschans} decl_lst | 		/* global vars, chans */
+   {utype} utype |		/* user defined types */
+   {mtype} mtype |		/* mtype declaration */
+   {varschans} one_decl | 		/* global vars, chans */
    {proctype} proctype | 	/* proctype declaration */
    {init} init |		/* init process - max 1 per model */
    {never} never |		/* never claim - max 1 per model */
    {trace} trace |		/* event trace - max 1 per model */
-   {inline} inline;
+   {inline} inline |
+   {semi} separator;
 
   proctype =
-   active? proctypetok name l_parenthese decl_lst? r_parenthese priority? enabler? l_brace sequence r_brace ;
+   active? proctypetok name l_parenthese param_lst? r_parenthese priority? enabler? l_brace sequence r_brace ;
 
+  param_lst =
+   {one} one_decl |
+   {many} one_decl separator param_lst;
+   
   init =
    inittok priority? l_brace sequence r_brace ;
 
@@ -193,8 +198,9 @@ Productions
    {many} expr comma expr_lst ;
 
   decl_lst =
+   {null} |
    {one} one_decl |
-   {many} one_decl separator decl_lst ;
+   {many} one_decl separator decl_lst;
 
   one_decl =
    visible? typename ivar_lst ;

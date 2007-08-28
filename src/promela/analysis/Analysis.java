@@ -23,7 +23,10 @@ public interface Analysis extends Switch
     void caseANeverModule(ANeverModule node);
     void caseATraceModule(ATraceModule node);
     void caseAInlineModule(AInlineModule node);
+    void caseASemiModule(ASemiModule node);
     void caseAProctype(AProctype node);
+    void caseAOneParamLst(AOneParamLst node);
+    void caseAManyParamLst(AManyParamLst node);
     void caseAInit(AInit node);
     void caseANever(ANever node);
     void caseATraceTrace(ATraceTrace node);
@@ -35,6 +38,7 @@ public interface Analysis extends Switch
     void caseAManyNameLst(AManyNameLst node);
     void caseAOneExprLst(AOneExprLst node);
     void caseAManyExprLst(AManyExprLst node);
+    void caseANullDeclLst(ANullDeclLst node);
     void caseAOneDeclLst(AOneDeclLst node);
     void caseAManyDeclLst(AManyDeclLst node);
     void caseAOneDecl(AOneDecl node);

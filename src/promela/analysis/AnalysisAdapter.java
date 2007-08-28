@@ -124,7 +124,22 @@ public class AnalysisAdapter implements Analysis
         defaultCase(node);
     }
 
+    public void caseASemiModule(ASemiModule node)
+    {
+        defaultCase(node);
+    }
+
     public void caseAProctype(AProctype node)
+    {
+        defaultCase(node);
+    }
+
+    public void caseAOneParamLst(AOneParamLst node)
+    {
+        defaultCase(node);
+    }
+
+    public void caseAManyParamLst(AManyParamLst node)
     {
         defaultCase(node);
     }
@@ -180,6 +195,11 @@ public class AnalysisAdapter implements Analysis
     }
 
     public void caseAManyExprLst(AManyExprLst node)
+    {
+        defaultCase(node);
+    }
+
+    public void caseANullDeclLst(ANullDeclLst node)
     {
         defaultCase(node);
     }

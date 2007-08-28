@@ -2,7 +2,7 @@ package src.etch.types;
 
 import src.etch.checker.SymmetrySettings;
 
-public abstract class NumericType extends SimpleType {
+public abstract class NumericType extends SimpleType implements VisibleType {
 
 	public static final long MAX_INT = 2147483647;
 	public static final long MIN_INT = -2147483647;

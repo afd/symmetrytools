@@ -63,14 +63,13 @@ public abstract class Node implements Switchable, Cloneable
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     protected <T> List<T> cloneList(List<T> list)
     {
         List<T> clone = new LinkedList<T>();
 
         for(T n : list)
         {
-            clone.add((T)((Node)n).clone());
+            clone.add(n);
         }
 
         return clone;

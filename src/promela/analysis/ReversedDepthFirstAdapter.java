@@ -129,10 +129,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
     public void caseAUtypeModule(AUtypeModule node)
     {
         inAUtypeModule(node);
-        if(node.getSeparator() != null)
-        {
-            node.getSeparator().apply(this);
-        }
         if(node.getUtype() != null)
         {
             node.getUtype().apply(this);
@@ -154,10 +150,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
     public void caseAMtypeModule(AMtypeModule node)
     {
         inAMtypeModule(node);
-        if(node.getSeparator() != null)
-        {
-            node.getSeparator().apply(this);
-        }
         if(node.getMtype() != null)
         {
             node.getMtype().apply(this);
@@ -179,9 +171,9 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
     public void caseAVarschansModule(AVarschansModule node)
     {
         inAVarschansModule(node);
-        if(node.getDeclLst() != null)
+        if(node.getOneDecl() != null)
         {
-            node.getDeclLst().apply(this);
+            node.getOneDecl().apply(this);
         }
         outAVarschansModule(node);
     }
@@ -291,6 +283,27 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         outAInlineModule(node);
     }
 
+    public void inASemiModule(ASemiModule node)
+    {
+        defaultIn(node);
+    }
+
+    public void outASemiModule(ASemiModule node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseASemiModule(ASemiModule node)
+    {
+        inASemiModule(node);
+        if(node.getSeparator() != null)
+        {
+            node.getSeparator().apply(this);
+        }
+        outASemiModule(node);
+    }
+
     public void inAProctype(AProctype node)
     {
         defaultIn(node);
@@ -329,9 +342,9 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         {
             node.getRParenthese().apply(this);
         }
-        if(node.getDeclLst() != null)
+        if(node.getParamLst() != null)
         {
-            node.getDeclLst().apply(this);
+            node.getParamLst().apply(this);
         }
         if(node.getLParenthese() != null)
         {
@@ -350,6 +363,56 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getActive().apply(this);
         }
         outAProctype(node);
+    }
+
+    public void inAOneParamLst(AOneParamLst node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAOneParamLst(AOneParamLst node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAOneParamLst(AOneParamLst node)
+    {
+        inAOneParamLst(node);
+        if(node.getOneDecl() != null)
+        {
+            node.getOneDecl().apply(this);
+        }
+        outAOneParamLst(node);
+    }
+
+    public void inAManyParamLst(AManyParamLst node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAManyParamLst(AManyParamLst node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAManyParamLst(AManyParamLst node)
+    {
+        inAManyParamLst(node);
+        if(node.getParamLst() != null)
+        {
+            node.getParamLst().apply(this);
+        }
+        if(node.getSeparator() != null)
+        {
+            node.getSeparator().apply(this);
+        }
+        if(node.getOneDecl() != null)
+        {
+            node.getOneDecl().apply(this);
+        }
+        outAManyParamLst(node);
     }
 
     public void inAInit(AInit node)
@@ -709,6 +772,23 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getExpr().apply(this);
         }
         outAManyExprLst(node);
+    }
+
+    public void inANullDeclLst(ANullDeclLst node)
+    {
+        defaultIn(node);
+    }
+
+    public void outANullDeclLst(ANullDeclLst node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseANullDeclLst(ANullDeclLst node)
+    {
+        inANullDeclLst(node);
+        outANullDeclLst(node);
     }
 
     public void inAOneDeclLst(AOneDeclLst node)
