@@ -15,6 +15,8 @@
 package src.etch.checker;
 
 import src.etch.error.ErrorTable;
+import src.etch.typeinference.Substituter;
+import src.etch.variableanalysis.VariableAnalyser;
 import src.promela.lexer.Lexer;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
@@ -60,7 +62,11 @@ public class Check {
 	public boolean isWellTyped(boolean isPidSensitive) {
 		Checker chk = new Checker(isPidSensitive);
 		theAST.apply(chk);
-		chk.unify();
+		Substituter substituter = chk.unify();
+		substituter.setTypeInformation(chk);
+		theAST.apply(substituter);
+		VariableAnalyser analyser = new VariableAnalyser(chk);
+		theAST.apply(analyser);
 		
 		ErrorTable errorTable = chk.getErrorTable();
 		if (errorTable.hasErrors()) {

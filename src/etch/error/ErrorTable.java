@@ -3,55 +3,38 @@ package src.etch.error;
 import java.util.*;
 import java.io.*;
 
-public class ErrorTable {
-
-	private Vector<ErrorTableEntry> errors;
+public class ErrorTable extends FeedbackTable {
 
 	public ErrorTable() {
-		errors = new Vector<ErrorTableEntry>();
+		super();
 	}
 
 	// Adds a new error.
 
 	public void add(int line, Error e) {
-		errors.addElement(new ErrorTableEntry(line, e));
+		super.add(new ErrorTableEntry(line, e));
 	}
 
 	public boolean hasErrors() {
-		return !(errors.isEmpty());
-	}
-
-	public void output(PrintStream out, String header) {
-		int numErrors = errors.size();
-		out.print(numErrors);
-		out.println(" errors were found " + header + ":");
-		out.println();
-		Enumeration errs = errors.elements();
-		while (errs.hasMoreElements()) {
-			((ErrorTableEntry) errs.nextElement()).output(out);
-			out.println();
-		}
+		return hasFeedback();
 	}
 
 	public String output(String header) {
-		String result = "";
-		int numErrors = errors.size();
-		result = result + numErrors + " error";
-		if(numErrors==1) {
+		String result = noMessages() + " error";
+		if(noMessages()==1) {
 			result += " was";
 		} else {
 			result += "s were";
 		}
 		result += " found " + header + ":\n\n";
-		Enumeration errs = errors.elements();
-		while (errs.hasMoreElements()) {
-			result = result + ((ErrorTableEntry) errs.nextElement()).output() + "\n\n";
+		for(int i=0; i<noMessages(); i++) {
+			result = result + getMessage(i).output() + "\n\n";
 		}
 		return result;
 	}
 
 	public void add(int line, List<String> callStack, Error e) {
-		errors.addElement(new ErrorTableInlineEntry(line, callStack, e));
+		super.add(new ErrorTableInlineEntry(line, callStack, e));
 	}
 	
 }

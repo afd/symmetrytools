@@ -1,27 +1,14 @@
 package src.etch.error;
 
-import java.io.*;
 
-public class ErrorTableEntry {
+class ErrorTableEntry extends FeedbackTableEntry {
 
-	private int line;
-
-	private Error err;
-
-	public ErrorTableEntry(int l, Error e) {
-		line = l;
-		err = e;
+	public ErrorTableEntry(int line, Feedback feedback) {
+		super(line,feedback);
 	}
 
-	public void output(PrintStream out) {
-		out.print(output());
-	}
-
-	public String output() {
-		if(line==-1) {
-			return "Error: " + err.message() + "(line number unknown)";
-		}
-		return "Error at line " + line + ": " + err.message();
+	protected final String kindOfFeedback() {
+		return "Error";
 	}
 
 }
