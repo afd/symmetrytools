@@ -5,11 +5,15 @@ import src.etch.types.VisibleType;
 public class VarEntry extends EnvEntry {
 
 	private VisibleType type;
+
+	private VisibleType widestAssignment;
+
 	private boolean isHidden;
 	
 	public VarEntry(VisibleType type, boolean isHidden, int lineOfDeclaration) {
 		super(lineOfDeclaration);
 		this.type = type;
+		this.widestAssignment = null;
 		this.isHidden = isHidden;
 	}
 
@@ -32,4 +36,9 @@ public class VarEntry extends EnvEntry {
 	public String getEntryKind() {
 		return "variable";
 	}
+
+	public VisibleType getNarrowestType() {
+		return widestAssignment;
+	}
+
 }
