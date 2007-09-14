@@ -26,7 +26,7 @@ public class ConstraintSet {
 	
 	public Substituter unify(ErrorTable et) {
 
-		TypeGraph graph = new TypeGraph();
+		Unifier graph = new Unifier();
 		
 		for (SubtypingConstraint c : subtypingConstraints) {
 

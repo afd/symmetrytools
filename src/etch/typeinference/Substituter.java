@@ -24,11 +24,11 @@ import src.promela.node.TName;
 
 public class Substituter extends DepthFirstAdapter {
 
-	private TypeGraph graph;
+	private Unifier graph;
 
 	private Checker nodeTypes;
 
-	public Substituter(TypeGraph graph) {
+	public Substituter(Unifier graph) {
 		this.graph = graph;
 	}
 
@@ -47,7 +47,7 @@ public class Substituter extends DepthFirstAdapter {
 			return history.get(t);
 		}
 		
-		Type tRep = graph.rep(t);
+		Type tRep = graph.find(t);
 
 		if(tRep instanceof SimpleType) {
 			return tRep;

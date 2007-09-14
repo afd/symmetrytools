@@ -1,11 +1,9 @@
 package src.etch.typeinference;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import junit.framework.Assert;
 import src.etch.error.Error;
@@ -30,14 +28,12 @@ import src.etch.types.SimpleType;
 import src.etch.types.Type;
 import src.etch.types.TypeVariableType;
 
-public class TypeGraph {
+public class Unifier {
 
 	private Map<Type,Type> rep;
-	private Set<Set<TypeVariableType>> previousTypeVariablePairs;
 	
-	protected TypeGraph() {
+	protected Unifier() {
 		rep = new HashMap<Type,Type>();
-		previousTypeVariablePairs = new HashSet<Set<TypeVariableType>>();
 	}
 			
 	protected Error unifySubtypingConstraint(SubtypingConstraint sc, List<EqualityConstraint> equalityConstraints) {
@@ -64,8 +60,8 @@ public class TypeGraph {
 			rep.put(sc.getRhs(),sc.getRhs());
 		}
 		
-		Type s = rep(sc.getLhs());
-		Type t = rep(sc.getRhs());
+		Type s = find(sc.getLhs());
+		Type t = find(sc.getRhs());
 		
 		if (s instanceof TypeVariableType && t instanceof NumericType) {
 			return unifySubtype((TypeVariableType) s, (NumericType) t);
@@ -133,31 +129,12 @@ public class TypeGraph {
 	
 	protected Error unifyConstraint(Type left, Type right) {
 
-		if(!rep.containsKey(left)) {
-			rep.put(left,left);
-		}
+		Type s = find(left);
+		Type t = find(right);
 
-		if(!rep.containsKey(right)) {
-			rep.put(right,right);
-		}
-
-		/* Quick fix 
-		if((left instanceof TypeVariableType) && (right instanceof TypeVariableType) && left.name().equals(right.name())) {
+		if(s==t) {
 			return null;
-		}*/
-
-		if (left instanceof TypeVariableType && right instanceof TypeVariableType) {
-			Set<TypeVariableType> typeVariablePair = new HashSet<TypeVariableType>();
-			typeVariablePair.add((TypeVariableType) left);
-			typeVariablePair.add((TypeVariableType) right);
-			if(previousTypeVariablePairs.contains(typeVariablePair)) {
-				return null;
-			}
-			previousTypeVariablePairs.add(typeVariablePair);
 		}
-	
-		Type s = rep(left);
-		Type t = rep(right);
 
 		if (s instanceof TypeVariableType || t instanceof TypeVariableType) {
 			return union(s, t);
@@ -210,6 +187,7 @@ public class TypeGraph {
 		}
 
 		if (s instanceof ChanType && t instanceof ChanType) {
+			union(s,t);
 			return (unifyConstraint(((ChanType)s).getMessageType(), ((ChanType)t).getMessageType()));
 		}
 
@@ -220,6 +198,7 @@ public class TypeGraph {
 			Error result = unifyConstraint(((ArrayType)s).getElementType(),
 					((ArrayType)t).getElementType());
 			if (result == null) {
+				union(s,t);
 				result = unifyConstraint(((ArrayType)s).getIndexType(), ((ArrayType)t).getIndexType());
 			}
 			return result;
@@ -227,6 +206,7 @@ public class TypeGraph {
 
 		if (s instanceof ProductType && t instanceof ProductType) {
 			if (((ProductType) s).getArity()==((ProductType) t).getArity()) {
+				union(s,t);
 				Error result = null;
 				for(int i=0; i < ((ProductType) s).getArity() && (result == null); i++) {
 					result = unifyConstraint(((ProductType) s).getTypeOfPosition(i), ((ProductType) t)
@@ -240,34 +220,34 @@ public class TypeGraph {
 		return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(), applySubstitutionsAndMinimise(t).name());
 	}
 
+	protected Type find(Type t) {
+		if(!rep.containsKey(t)) {
+			rep.put(t,t);
+			return t;
+		}
+		Type previous = t;
+		Type current = rep.get(t);
+		while(current != previous) {
+			previous = current;
+			current = rep.get(previous);
+		}
+		return current;
+	}
+
 	private void setNotPidLiteral(Type t) {
 		if(t instanceof NumericType) {
 			((NumericType)t).setNotPidLiteral();
 		}
 	}
 
-	public Type rep(Type t) {
-		
-		if(!rep.containsKey(t)) {
-			// This should only be called during substitution, with a type
-			// that was never added to the the type graph during unification.
-			return t;
-		} else {
-			Assert.assertNotNull(rep.get(t));
-			Type previous = t;
-			Type current = rep.get(t);
-			while(current != previous) {
-				previous = current;
-				current = rep.get(previous);
-			}
-			return current;
-		}
-	}
-
 	private Error union(Type s, Type t) {
 		// s and t are assumed to be equivalence class representatives
 
-		Assert.assertTrue(s instanceof TypeVariableType || t instanceof TypeVariableType);
+		if(!(s instanceof TypeVariableType || t instanceof TypeVariableType)) {
+			rep.put(s,t);
+			return null;
+		}
+		
 		Error result = null;
 		
 		if (s instanceof TypeVariableType && t instanceof TypeVariableType) {
