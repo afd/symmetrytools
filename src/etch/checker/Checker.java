@@ -15,6 +15,7 @@ import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.error.ArithmeticOnPidError;
+import src.etch.error.ArrayWithLengthZeroError;
 import src.etch.error.AssignmentMismatchError;
 import src.etch.error.ElementDoesNotExistError;
 import src.etch.error.EqMismatchError;
@@ -26,6 +27,7 @@ import src.etch.error.IncomparableTypesException;
 import src.etch.error.JumpToUndefinedLabelError;
 import src.etch.error.LiteralValueTooLargeError;
 import src.etch.error.NameAlreadyUsedError;
+import src.etch.error.NoInitError;
 import src.etch.error.NotBoolError;
 import src.etch.error.NotNumericError;
 import src.etch.error.PidIndexedArrayWithWrongLengthError;
@@ -33,7 +35,7 @@ import src.etch.error.SubtypingError;
 import src.etch.error.VariableNotArrayError;
 import src.etch.error.VariableNotChannelError;
 import src.etch.error.VariableNotRecordError;
-import src.etch.error.WrongNumArgsError;
+import src.etch.error.WrongNumParameters;
 import src.etch.typeinference.ConstraintSet;
 import src.etch.typeinference.EqualityConstraint;
 import src.etch.typeinference.Substituter;
@@ -54,6 +56,7 @@ import src.etch.types.Type;
 import src.etch.types.TypeVariableFactory;
 import src.etch.types.TypeVariableType;
 import src.etch.types.VisibleType;
+import src.promela.NodeHelper;
 import src.promela.node.*;
 
 public class Checker extends InlineProcessor {
@@ -84,100 +87,41 @@ public class Checker extends InlineProcessor {
 	private Map<String,List<Integer>> gotoDestinations;
 	
 	public void caseANormalSpec(ANormalSpec node) {
+
+		PModules modules = node.getModules();
 		
 		if(SymmetrySettings.CHECKING_SYMMETRY) {
 
 			boolean found = false;
-			for(Object module : node.getModule()) {
 
+			PModules temp = modules;
+			
+			for( ; temp instanceof AManyModules; temp = ((AManyModules)temp).getModules() ) {
+				PModule module = ((AManyModules)temp).getModule();
 				if(module instanceof AInitModule) {
-
-					SymmetrySettings.setNoProcesses(findNumberOfRunningProcesses((AInitModule)module));
+					SymmetrySettings.findNumberOfRunningProcesses((AInitModule)module,this);
 					found = true;
 					break;
-
 				}
 			}
+
+			if(!found) {
+				PModule module = ((AOneModules)temp).getModule();
+				if(module instanceof AInitModule) {
+					SymmetrySettings.findNumberOfRunningProcesses((AInitModule)module,this);
+					found = true;
+				}
+			}
+			
 			if(!found) {
 				errorTable.add(-1,new NoInitError());
 			}
 		}
-	
-		for(Object module : node.getModule()) {
-			((Node)module).apply(this);
-		}
+
+		modules.apply(this);
 
 	}
 	
-	private int findNumberOfRunningProcesses(AInitModule module) {
-		
-		PSequence initsequence = ((AInit) module.getInit()).getSequence();
-		if(initsequence instanceof ANullSequence) {
-			// ERROR : Form of init process
-			return 0;
-		}
-		PStep initFirstStep;
-		if(initsequence instanceof AOneSequence) {
-			initFirstStep = ((AOneSequence)initsequence).getStep();
-		} else {
-			initFirstStep = ((AManySequence)initsequence).getStep();
-		}
-
-
-		if(!isAtomicStatement(initFirstStep)) {
-
-			addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
-			return 0;
-		}
-
-		int result = 0;
-		
-		PSequence atomicSequence;
-		
-		for(atomicSequence = ((AAtomicStmnt)((AStmntStep)initFirstStep).getStmnt()).getSequence();
-			atomicSequence instanceof AManySequence; atomicSequence = ((AManySequence)atomicSequence).getSequence()) {
-			
-			if(!isRunStatement(((AManySequence)atomicSequence).getStep())) {
-				if(result==0) {
-					addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
-				}
-				return result;
-			} else {
-				result++;
-				setOut(getRunStatement(((AManySequence)atomicSequence).getStep()),new PidType());
-			}
-		}
-		
-		if(atomicSequence instanceof AOneSequence && isRunStatement(((AOneSequence)atomicSequence).getStep())) {
-			result++;
-			setOut(getRunStatement(((AOneSequence)atomicSequence).getStep()),new PidType());
-		}
-
-		if(result==0) {
-			addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
-		}
-		return result;
-
-		/* TODO Check that any other statements within the init block are commutative */
-		
-	}
-
-	private boolean isRunStatement(PStep step) {
-		return step.toString().substring(0,4).equals("run ");
-	}
-
-	private ARunFactor getRunStatement(PStep step) {
-		Assert.assertTrue(isRunStatement(step));
-		return (ARunFactor)((ASimpleUnExpr)((ASimpleMultExpr)((ASimpleAddExpr)((ASimpleShiftExpr)((ASimpleRelExpr)((ASimpleEqExpr)((ASimpleBitandExpr)((ASimpleBitxorExpr)
-				((ASimpleBitorExpr)((ASimpleAndExpr)((ASimpleOrExpr)((ASimpleExpr)((AExpressionStmnt)((AStmntStep)step).getStmnt()).getExpr()).getOrExpr())
-				.getAndExpr()).getBitorExpr()).getBitxorExpr()).getBitandExpr()).getEqExpr()).getRelExpr())
-				.getShiftExpr()).getAddExpr()).getMultExpr()).getUnExpr()).getFactor();
-	}
-
-	private boolean isAtomicStatement(PStep step) {
-		return step.toString().length()>=7 && step.toString().substring(0,7).equals("atomic ");
-	}
-
 	public Checker(boolean checkingSymmetry) {
 		SymmetrySettings.CHECKING_SYMMETRY = checkingSymmetry;
 	}
@@ -327,6 +271,7 @@ public class Checker extends InlineProcessor {
 		
 		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
 				.getPlusPlus(), Error.UNARY);
+	
 	}
 
 	public void outADecrementAssignment(ADecrementAssignment node) {
@@ -336,38 +281,81 @@ public class Checker extends InlineProcessor {
 		
 		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
 				.getMinusMinus(), Error.UNARY);
+
+	}
+
+	public void outASingleVarref(ASingleVarref node) {
+
+		EnvEntry entry = env.get(NodeHelper.getNameFromVaribableReference(node).getText());
+		if ((entry instanceof MtypeEntry) && (node.getArrayref() == null)) {
+			setOut(node, new MtypeType());
+			return;
+		}
+		
+		if (!(entry instanceof VarEntry)) {
+			addError(NodeHelper.getNameFromVaribableReference(node), new ElementDoesNotExistError(NodeHelper.getNameFromVaribableReference(node).getText(),VARIABLE));
+			return;
+		}
+
+		VisibleType t = ((VarEntry) entry).getType();
+
+		checkVariableReferenceIsWellFormed(node, t);
 	}
 
 	public void outARecordVarref(ARecordVarref node) {
 
 		VisibleType t = getOutVisibleType(node.getVarref());
-		if (t != null) {
-			if (!(t instanceof RecordType)) {
-				addError(node.getDot(), new VariableNotRecordError(t.name()));
-			} else {
-				VisibleType fieldType = ((TypeEntry)env.get(t.name())).getFieldType(node.getName()
+
+		if(t==null) {
+			return;
+		}
+		
+		if (!(t instanceof RecordType)) {
+			addError(node.getDot(), new VariableNotRecordError(t.name()));
+			return;
+		} 
+
+		VisibleType fieldType = ((TypeEntry)env.get(t.name())).getFieldType(node.getName()
 						.getText());
-				if (fieldType == null) {
-					addError(node.getDot(), new ElementDoesNotExistError(node
-							.getName().getText(), FIELD, t.name()));
-				} else if (node.getArrayref() == null) {
-					setOut(node, fieldType);
-				} else if (fieldType instanceof ArrayType) {
-					setOut(node, ((ArrayType) fieldType).getElementType());
-					if (getArrayIndexType(node) != null) {
-						postEqualityConstraint(((ArrayType) fieldType)
-								.getIndexType(), getArrayIndexType(node), node
-								.getName());
-					}
-				} else {
-					addError(node.getDot(), new VariableNotArrayError(node.getName().getText(),fieldType
-							.name()));
-				}
-			}
+		if (fieldType == null) {
+			addError(node.getDot(), new ElementDoesNotExistError(node
+					.getName().getText(), FIELD, t.name()));
+			return;
+		}
+
+		checkVariableReferenceIsWellFormed(node,fieldType);
+	}
+
+	private void checkVariableReferenceIsWellFormed(PVarref node, VisibleType t) {
+		if (!NodeHelper.hasArrayReference(node)) {
+			setOut(node, t);
+			return;
+		} else if(t instanceof ArrayType) {
+			setOut(node, ((ArrayType) t).getElementType());
+			dealWithArrayIndex(node,t);
+		} else {
+			addError(NodeHelper.getNameFromVaribableReference(node), new VariableNotArrayError(NodeHelper.getNameFromVaribableReference(node).getText(),t.name()));
 		}
 	}
 
-	public void inALabelStmnt(ALabelStmnt node) {
+	private void dealWithArrayIndex(PVarref node, VisibleType t) {
+		if (getArrayIndexType(node) != null) {
+			postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
+					.getIndexType(), NodeHelper.getNameFromVaribableReference(node));
+			if(SymmetrySettings.CHECKING_SYMMETRY && getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(SymmetrySettings.noProcesses()+1) && ((ArrayType)t).getLength()!=0) {
+				// The length of a pid-indexed array should be n+1, where n is the number of running processes.
+				// This is so that it can be indexed by the process identifiers 1, 2, ... , n.  Unfortunately, index
+				// 0 is usually wasted (unless the init process uses it).
+				// We don't add an error if the length is zero.  An error has either already
+				// been reported about this, or the length has been set to zero by default as
+				// there was an error with the initialiser.
+				addError(NodeHelper.getNameFromVaribableReference(node), new PidIndexedArrayWithWrongLengthError(NodeHelper.getNameFromVaribableReference(node).getText(),((ArrayType)t).getLength(),SymmetrySettings.noProcesses()));
+				((ArrayType)t).zeroLength(); // Do this so that the error will not be reported again
+			}
+		}
+	}
+	
+	public void inALabel(ALabel node) {
 		String name = node.getName().getText();
 		if(nameExists(name)) {
 			/* Maybe this is conservative -- it will give an error if you try to declare
@@ -380,7 +368,7 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	public void outAGotoStmnt(AGotoStmnt node) {
+	public void outAGotoSimpleStmnt(AGotoSimpleStmnt node) {
 		String name = node.getName().getText();
 		List<Integer> destinations;
 		if(gotoDestinations.containsKey(name)) {
@@ -393,54 +381,13 @@ public class Checker extends InlineProcessor {
 		gotoDestinations.put(name,destinations);
 	}
 	
-	public void outASingleVarref(ASingleVarref node) {
-		EnvEntry entry = env.get(node.getName().getText());
-		if ((entry instanceof MtypeEntry) && (node.getArrayref() == null)) {
-			setOut(node, new MtypeType());
-		} else if (!(entry instanceof VarEntry)) {
-			addError(node.getName(), new ElementDoesNotExistError(node
-					.getName().getText(),VARIABLE));
-		} else {
-			VisibleType t = ((VarEntry) entry).getType();
-			
-			if (isArray(t) && hasArrayReference(node)) {
-				
-				setOut(node, ((ArrayType) t).getElementType());
-				if (getArrayIndexType(node) != null) {
-					postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
-							.getIndexType(), node
-							.getName());
-					if(SymmetrySettings.CHECKING_SYMMETRY && getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(SymmetrySettings.noProcesses()+1) && ((ArrayType)t).getLength()!=0) {
-						// The length of a pid-indexed array should be n+1, where n is the number of running processes.
-						// This is so that it can be indexed by the process identifiers 1, 2, ... , n.  Unfortunately, index
-						// 0 is usually wasted (unless the init process uses it).
-						// We don't add an error if the length is zero.  An error has either already
-						// been reported about this, or the length has been set to zero by default as
-						// there was an error with the initialiser.
-						addError(node.getName(), new PidIndexedArrayWithWrongLengthError(node.getName().getText(),((ArrayType)t).getLength(),SymmetrySettings.noProcesses()));
-						((ArrayType)t).zeroLength(); // Do this so that the error will not be reported again
-					}
-				}
-			} else if (!isArray(t) && hasArrayReference(node)) {
-				addError(node.getName(), new VariableNotArrayError(node.getName().getText(),t.name()));
-			} else {
-				setOut(node, t);
-			}
+	private Type getArrayIndexType(PVarref node) {
+		if(node instanceof ASingleVarref) {
+			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getExpr());
 		}
+		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getExpr());
 	}
 
-	private boolean hasArrayReference(ASingleVarref node) {
-		return node.getArrayref() != null;
-	}
-
-	private Type getArrayIndexType(ASingleVarref node) {
-		return getOutType(((AArrayref) node.getArrayref()).getExpr());
-	}
-
-	private Type getArrayIndexType(ARecordVarref node) {
-		return getOutType(((AArrayref) node.getArrayref()).getExpr());
-	}
-	
 	public void outAArrayref(AArrayref node) {
 		Type exprType = getOutType(node.getExpr());
 		if ((exprType != null) && !isByteOrPidSubtype(exprType)) {
@@ -462,10 +409,10 @@ public class Checker extends InlineProcessor {
 		} else {
 			if (node.getArgLst() == null) {
 				typeCheckRunArguments(proctypeFormalArgs(entry), new ArrayList<VisibleType>(),
-						node.getName());
+						node.getName(),(ProctypeEntry) entry);
 			} else {
 				typeCheckRunArguments(proctypeFormalArgs(entry),
-						(List<VisibleType>) getOut(node.getArgLst()), node.getName());
+						(List<VisibleType>) getOut(node.getArgLst()), node.getName(),(ProctypeEntry) entry);
 			}
 		}
 	}
@@ -475,23 +422,29 @@ public class Checker extends InlineProcessor {
 	}
 
 	private void typeCheckRunArguments(List<VisibleType> formalArgTypes, List<VisibleType> actualArgTypes,
-			TName proctypeName) {
+			TName proctypeName, ProctypeEntry entry) {
 
 		checkCorrectNumberOfActualArgs(formalArgTypes, actualArgTypes, proctypeName);
 
 		for (int i = 0; i < minSize(formalArgTypes, actualArgTypes); i++) {
 			if ((actualArgTypes.get(i) != null)
 					&& (formalArgTypes.get(i) != null)) {
-
+				
+				/* In practice, we don't need type inference here so we could
+				 * replace this with a subtyping check and get better error messages.
+				 * We would need to post an equality constraint if both formalArgTypes(i)
+				 * and actualArgTypes(i) were channels.
+				 */
 				postSubtypingConstraint(actualArgTypes.get(i),
 						formalArgTypes.get(i), proctypeName);
+
 			}
 		}
 	}
 
 	private void checkCorrectNumberOfActualArgs(List formalArgs, List actualArgs, TName proctypeName) {
 		if (formalArgs.size() != actualArgs.size()) {
-			addError(proctypeName, new WrongNumArgsError(
+			addError(proctypeName, new WrongNumParameters(
 					proctypeName.getText(), formalArgs.size(),
 					actualArgs.size()));
 		}
@@ -782,31 +735,33 @@ public class Checker extends InlineProcessor {
 		return val > NumericType.MAX_INT || val < NumericType.MIN_INT;
 	}
 
-	public void outAAssertStmnt(AAssertStmnt node) {
+	public void outAAssertSimpleStmnt(AAssertSimpleStmnt node) {
 		VisibleType type = getOutVisibleType(node.getExpr());
 		if ((type != null) && !type.isSubtype(boolType())) {
 			addError(node.getAssert(), new SubtypingError(type.name(),boolType().name()));
 		}
 	}
 	
-	public void outAElseStmnt(AElseStmnt node) {
+	public void outAElseSimpleStmnt(AElseSimpleStmnt node) {
 		// Unimplemented - Check that :: precedes this else
 	}
 
-	public void outABreakStmnt(ABreakStmnt node) {
+	public void outABreakSimpleStmnt(ABreakSimpleStmnt node) {
 		// Unimplemented - Check that the break statement is within a do..od
 		// loop
 	}
 
+	@SuppressWarnings("unchecked")
 	private void processSend(PVarref chan, PSendArgs args, Token bang) {
-		processCommunication(chan, (List) getOut(args), bang);
+		processCommunication(chan, (List<VisibleType>) getOut(args), bang);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void processReceive(PVarref chan, PRecvArgs args, Token query) {
-		processCommunication(chan, (List) getOut(args), query);
+		processCommunication(chan, (List<VisibleType>) getOut(args), query);
 	}
 	
-	public void processCommunication(PVarref chan, List argTypes, Token operator) {
+	public void processCommunication(PVarref chan, List<VisibleType> argTypes, Token operator) {
 		if ((getOutType(chan) != null) && (argTypes!=null)) {
 			List<Type> typeVariables = createTypeVariablesForCommunication(operator,
 					argTypes);
@@ -820,7 +775,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void outAHeadedListSendArgs(AHeadedlistSendArgs node) {
+	public void outAHeadedlistSendArgs(AHeadedlistSendArgs node) {
 		List<Type> tailTypes = (List<Type>)getOut(node.getArgLst());
 		if ((tailTypes) != null && (getOut(node.getExpr()) != null)) {
 			tailTypes.add(0, getOutType(node.getExpr()));
@@ -862,10 +817,10 @@ public class Checker extends InlineProcessor {
 	}
 
 	private List<Type> createTypeVariablesForCommunication(Token operator,
-			List actualArgTypes) {
+			List<VisibleType> actualArgTypes) {
 		List<Type> typeVariables = new ArrayList<Type>();
 		for (int i = 0; i < actualArgTypes.size(); i++) {
-			addTypeVariableForArgType(typeVariables, (VisibleType) actualArgTypes
+			addTypeVariableForArgType(typeVariables, actualArgTypes
 					.get(i), operator);
 		}
 		return typeVariables;
@@ -976,7 +931,7 @@ public class Checker extends InlineProcessor {
 		currentProctype.setLocalVariableTypeInfo(env.getTopEntries());
 		
 		resolveGotos();
-		
+
 		env.closeScope();
 	}
 
@@ -1291,5 +1246,21 @@ public class Checker extends InlineProcessor {
 		return (t instanceof ArrayType);
 	}
 
+	public void restoreProctypeScope(AProctype node) {
+		Assert.assertTrue(env.get(node.getName().getText()) instanceof ProctypeEntry);
+		env.restoreScope(((ProctypeEntry)getEnvEntry(node.getName().getText())).getLocalScope());
+	}
+
+	
+	public void printCompleteTypeInformation() {
+		for(String entryName : env.getTopEntries().keySet()) {
+			EnvEntry entry = env.get(entryName);
+			if(entry instanceof VarEntry) {
+				System.out.println(entryName + " : " + ((VarEntry)entry).getType().name());
+			}
+		}
+		
+		
+	}
 
 }

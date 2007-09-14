@@ -14,16 +14,21 @@
 
 package src.etch.checker;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PushbackReader;
+import java.io.StringReader;
+
 import src.etch.error.ErrorTable;
 import src.etch.typeinference.Substituter;
-import src.etch.variableanalysis.VariableAnalyser;
 import src.promela.lexer.Lexer;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.utilities.Config;
 import src.utilities.Profile;
-
-import java.io.*;
 
 public class Check {
 
@@ -37,17 +42,42 @@ public class Check {
 		if(Config.PROFILE) { Profile.PARSE_START = System.currentTimeMillis(); }
 
 		this.sourceName = sourceName;
-		Lexer scanner = null;
-	
+
+		BufferedReader br = null;
 		try {
-			scanner = new Lexer(new PushbackReader(new BufferedReader(
-					new FileReader(sourceName)), 1024));
-		} catch (FileNotFoundException e) {
-			System.out.println("Can't access source file " + sourceName);
-			System.exit(1);
+			Process p = Runtime.getRuntime().exec("cpp " + sourceName);
+			BufferedReader cppReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			String programForParsing = "";
+			String line;
+			int currentLine = 1;
+			while((line=cppReader.readLine())!=null) {
+				if(line.length() > 0 && line.charAt(0)=='#') {
+					String[] splitOnSpace = line.split(" ");
+					int nextLine = Integer.parseInt(splitOnSpace[1]);
+					for(;currentLine<nextLine; currentLine++) {
+						programForParsing += "\n";
+					}
+				} else {
+					programForParsing += line + "\n";
+					currentLine++;
+				}
+				
+			}
+			br = new BufferedReader(new StringReader(programForParsing));
+		} catch (IOException e) {
+			System.out.println("C preprocessor not available");
+			try {
+				br = new BufferedReader(new FileReader(sourceName));
+			} catch (FileNotFoundException e1) {
+				System.out.println("Can't access source file " + sourceName);
+				System.exit(1);
+			}
 		}
+		
+		Lexer scanner = new Lexer(new PushbackReader(br, 1024));
 
 		Parser parser = new Parser(scanner);
+
 		try {
 			theAST = parser.parse();
 		} catch (Exception e) {
@@ -65,8 +95,11 @@ public class Check {
 		Substituter substituter = chk.unify();
 		substituter.setTypeInformation(chk);
 		theAST.apply(substituter);
-		VariableAnalyser analyser = new VariableAnalyser(chk);
-		theAST.apply(analyser);
+
+		chk.printCompleteTypeInformation();
+		
+		//		VariableAnalyser analyser = new VariableAnalyser(chk);
+//		theAST.apply(analyser);
 		
 		ErrorTable errorTable = chk.getErrorTable();
 		if (errorTable.hasErrors()) {
