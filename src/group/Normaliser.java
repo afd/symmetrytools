@@ -5,18 +5,19 @@ import java.util.Collections;
 import java.util.List;
 
 import junit.framework.Assert;
+import src.etch.checker.SymmetrySettings;
 import src.promela.analysis.DepthFirstAdapter;
-import src.promela.node.AAtomicStmnt;
 import src.promela.node.ACompoundAndExpr;
 import src.promela.node.ACompoundOrExpr;
+import src.promela.node.ACompoundStmnt;
+import src.promela.node.ACompoundUnseparatedStep;
 import src.promela.node.AInit;
 import src.promela.node.AManySequence;
 import src.promela.node.ANormalOptions;
-import src.promela.node.ANullSequence;
 import src.promela.node.AOneSequence;
 import src.promela.node.ASimpleAndExpr;
 import src.promela.node.ASimpleOrExpr;
-import src.promela.node.AStmntStep;
+import src.promela.node.AStatementStep;
 import src.promela.node.PAndExpr;
 import src.promela.node.PBitorExpr;
 import src.promela.node.POptions;
@@ -92,11 +93,7 @@ public class Normaliser extends DepthFirstAdapter {
 	 */
 	public void outAInit(AInit node) {
 
-		Assert.assertFalse(node.getSequence() instanceof ANullSequence);
-		
-		PSequence atomicBlock = (node.getSequence() instanceof AOneSequence ? 
-				((AAtomicStmnt)((AStmntStep)((AOneSequence)node.getSequence()).getStep()).getStmnt()).getSequence() :
-				((AAtomicStmnt)((AStmntStep)((AManySequence)node.getSequence()).getStep()).getStmnt()).getSequence());
+		PSequence atomicBlock = SymmetrySettings.getStatementsWithinAtomic(node);
 
 		PSequence statementsAfterRunStatements = findStatementsAfterRunStatement(atomicBlock);
 
@@ -108,18 +105,38 @@ public class Normaliser extends DepthFirstAdapter {
 
 	private List<PStep> getListOfStatements(PSequence statementsAfterRunStatements) {
 		List<PStep> result = new ArrayList<PStep>();
-		PSequence temp;
-		for(temp = statementsAfterRunStatements; temp instanceof AManySequence; temp = ((AManySequence)temp).getSequence()) {
-			result.add(((AManySequence)temp).getStep());
+		PSequence temp = statementsAfterRunStatements;
+		for(; temp instanceof AManySequence; temp = ((AManySequence)temp).getSequence()) {
+			addStep(result, ((AManySequence)temp).getStep());
 		}
-		if(temp instanceof AOneSequence) {
-			result.add(((AOneSequence)temp).getStep());
-		}
+		Assert.assertTrue(temp instanceof AOneSequence);
+		addStep(result,((AOneSequence)temp).getStep());
 		return result;
+	}
+
+	private void addStep(List<PStep> result, PStep step) {
+		if(step instanceof ACompoundUnseparatedStep) {
+			result.add(new AStatementStep(new ACompoundStmnt(((ACompoundUnseparatedStep)step).getCompoundStmnt())));
+			result.add(((ACompoundUnseparatedStep)step).getStep());
+		} else {
+			result.add(step);
+		}
 	}
 
 	private PSequence findStatementsAfterRunStatement(PSequence atomicBlock) {
 		PSequence result = atomicBlock;
+		
+		/* I feel quite suspicious of this method.  Does it cope OK with:
+		 *
+		 * init { atomic {
+		 *    run ...;
+		 *    run ...;
+		 *    run ...;
+		 * } }
+		 * 
+		 * i.e. the case where there are no additional statements?
+		 * 
+		 */
 		
 		// There is no run statement for the init process, which is why
 		// we loop to noProcesses-1
@@ -143,7 +160,6 @@ public class Normaliser extends DepthFirstAdapter {
 				((AOneSequence)temp).setStep(newStatements.get(i));
 			}
 		}
-
 	}
 
 	public void outACompoundOrExpr(ACompoundOrExpr node) {

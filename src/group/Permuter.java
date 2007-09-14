@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.Assert;
+import src.etch.checker.SymmetrySettings;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
@@ -16,7 +17,6 @@ import src.etch.types.VisibleType;
 import src.promela.analysis.DepthFirstAdapter;
 import src.promela.node.AArrayref;
 import src.promela.node.AAssignmentAssignment;
-import src.promela.node.AAtomicStmnt;
 import src.promela.node.ACompoundEqExpr;
 import src.promela.node.AConstFactor;
 import src.promela.node.AConstRecvArg;
@@ -32,7 +32,6 @@ import src.promela.node.AManyArgLst;
 import src.promela.node.AManyRecvArgs;
 import src.promela.node.AManySequence;
 import src.promela.node.AManyheadedRecvArgs;
-import src.promela.node.ANullSequence;
 import src.promela.node.ANumberConst;
 import src.promela.node.AOneArgLst;
 import src.promela.node.AOneDecl;
@@ -58,7 +57,6 @@ import src.promela.node.ASimpleShiftExpr;
 import src.promela.node.ASimpleUnExpr;
 import src.promela.node.ASingleVarref;
 import src.promela.node.ASortedSend;
-import src.promela.node.AStmntStep;
 import src.promela.node.AVariableIvarassignment;
 import src.promela.node.Node;
 import src.promela.node.PArgLst;
@@ -87,7 +85,7 @@ public class Permuter extends DepthFirstAdapter {
 	}
 
 	public void inAProctype(AProctype node) {
-		typeInfo.getEnv().restoreScope(((ProctypeEntry)typeInfo.getEnvEntry(node.getName().getText())).getLocalScope());
+		typeInfo.restoreProctypeScope(node);
 	}
 	
 	public void outAProctype(AProctype node) {
@@ -97,8 +95,8 @@ public class Permuter extends DepthFirstAdapter {
 	protected boolean isArrayIndexedByPid(PVarref varref) {
 		PVarref temp = varref;
 
-		Assert.assertTrue((varref instanceof ASingleVarref && ((ASingleVarref)varref).getArrayref()!=null)
-				|| (varref instanceof ARecordVarref && ((ARecordVarref)varref).getArrayref()!=null));
+		Assert.assertTrue(((varref instanceof ASingleVarref && ((ASingleVarref)varref).getArrayref()!=null)
+		|| (varref instanceof ARecordVarref && ((ARecordVarref)varref).getArrayref()!=null)));
 
 		List<String> fieldNamesStack = new ArrayList<String>();
 		while(temp instanceof ARecordVarref) {
@@ -331,18 +329,16 @@ public class Permuter extends DepthFirstAdapter {
 	
 	public void outAInit(AInit node) {
 
-		Assert.assertFalse(node.getSequence() instanceof ANullSequence);
+		PSequence atomicBlock;
 		
-		PSequence atomicBlock = (node.getSequence() instanceof AOneSequence ? 
-				((AAtomicStmnt)((AStmntStep)((AOneSequence)node.getSequence()).getStep()).getStmnt()).getSequence() :
-				((AAtomicStmnt)((AStmntStep)((AManySequence)node.getSequence()).getStep()).getStmnt()).getSequence());
+		atomicBlock = SymmetrySettings.getStatementsWithinAtomic(node);
 		
 		List<PStep> runStatements = getRunStatements(atomicBlock);
 
 		applyPermutation(runStatements);
 
 		replaceRunStatements(atomicBlock,runStatements);
-		
+
 	}
 	
 	private void replaceRunStatements(PSequence atomicBlock, List<PStep> runStatements) {

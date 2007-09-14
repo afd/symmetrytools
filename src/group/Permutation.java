@@ -1,9 +1,13 @@
 package src.group;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 import junit.framework.Assert;
-
 import src.promela.node.Node;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.StringHelper;
