@@ -1,0 +1,35 @@
+#define true 1
+#define false 0
+
+bool flag[2];
+bool turn;
+
+proctype P0()
+{ do ::
+    flag[0] = true;
+    turn = 0;
+    (flag[1] == false || turn == 1);
+crit0:
+    assert(flag[0] && (!flag[1] || turn==1));
+    flag[0] = false
+  od
+}
+
+proctype P1()
+{ do ::
+    flag[1] = true;
+    turn = 1;
+    (flag[0] == false || turn == 0);
+crit1:
+    assert(flag[1] && (!flag[0] || turn==0));
+    flag[1] = false
+  od
+}
+
+init 
+{ flag[0] = false; flag[1] = false;
+  turn = 0;
+  atomic{run P0(); run P1()}
+}
+
+

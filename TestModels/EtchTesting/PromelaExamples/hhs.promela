@@ -1,0 +1,79 @@
+#define signal 0
+#define true 1
+#define false 0
+
+mtype = { ON, OFF, LOW, OK } ;
+
+
+chan pump_in = [0] of { mtype } ;
+chan burner_in = [0] of { mtype } ;
+chan resp_temp = [0] of { mtype } ;
+chan req_temp = [0] of { bit } ;
+chan start_heat = [0] of { bit } ;
+chan stop_heat = [0] of { bit } ;
+
+active proctype pump()
+{ 
+  end_pump:
+  do
+  :: pump_in?ON ; pump_in?OFF
+  od
+}
+
+
+active proctype burner()
+{ 
+  end_burner:
+  do
+  :: burner_in?ON ; burner_in?OFF
+  od
+}
+
+active proctype sensor()
+{
+  end_sensor:
+  do
+  :: req_temp?_ ; 
+     if
+       :: resp_temp!LOW
+       :: resp_temp!OK
+     fi
+   od
+}
+
+active proctype controller_top()
+{
+  end_temp_norm:
+  temp_norm:
+  if
+    :: timeout ; req_temp!signal ; goto temp_norm
+    :: resp_temp?OK ;  goto temp_norm
+    :: resp_temp?LOW ; start_heat!signal
+  fi;
+  end_temp_low: 
+  temp_low:
+  if
+    :: timeout ; req_temp!signal -> goto temp_low
+    :: resp_temp?LOW -> goto temp_low
+    :: resp_temp?OK -> stop_heat!signal ; goto temp_norm
+  fi
+}
+
+active proctype contoller_bot()
+{
+  end_controller_bot:
+  do
+    :: start_heat?_ ;
+       burner_in!ON ;
+       timeout ;
+       pump_in!ON ;
+       stop_heat?_ ;
+       pump_in!OFF ;
+       timeout ;
+       burner_in!OFF
+  od
+}
+
+
+
+

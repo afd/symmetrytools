@@ -1,0 +1,16 @@
+bit x,y;
+active proctype test()
+{ byte p;
+  do
+  :: x=!x
+  :: y=!y
+  :: p++
+  od
+}
+never
+{ do
+  :: skip
+  :: x&!y -> break
+  od;
+  accept: x&!y -> goto accept
+}

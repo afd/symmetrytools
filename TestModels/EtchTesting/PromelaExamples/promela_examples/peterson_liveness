@@ -1,0 +1,61 @@
+#define true 1
+#define false 0
+
+bool flag[2];
+bool turn;
+
+proctype P0()
+{ do ::
+    flag[0] = true;
+    turn = 0;
+    (flag[1] == false || turn == 1);
+crit0:
+  flag[0] = false
+  od
+}
+
+proctype P1()
+{ do ::
+    flag[1] = true;
+    turn = 1;
+    (flag[0] == false || turn == 0);
+crit1:
+    flag[1] = false
+  od
+}
+
+init
+{ flag[0] = false; flag[1] = false;
+  turn = 0;
+  atomic{run P0(); run P1()}
+}
+
+/*
+#define p (flag[0] == true)
+#define q (P0[1]@crit0) 
+
+	/*
+	 * Formula As Typed: [](p -> <>q)
+	 * The Never Claim Below Corresponds
+	 * To The Negated Formula !([](p -> <>q))
+	 * (formalizing violations of the original)
+	 */
+
+never {    /* !([](p -> <>q)) */
+T0_init:
+	if
+	:: (1) -> goto T0_init
+	:: (! ((q)) && (p)) -> goto accept_S4
+	fi;
+accept_S4:
+	if
+	:: (! ((q))) -> goto T0_S4
+	fi;
+T0_S4:
+	if
+	:: (! ((q))) -> goto accept_S4
+	fi;
+accept_all:
+	skip
+}
+*/

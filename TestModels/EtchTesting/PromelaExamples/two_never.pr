@@ -1,0 +1,25 @@
+byte x,y,z;
+chan c = [1] of {byte};
+active proctype P ()   /*n* shows PC values...*/
+ { byte p,r;           /* A P-move --> */
+    xr c;
+    if /*1*/
+    :: y++ -> /*2*/ r++ -> /*3*/ z++ 
+    :: c?x -> /*4*/ x++ -> /*5*/ p++ 
+    fi
+ }
+active proctype Q ()   /* A Q-move ==> */
+ { byte q;
+    xs c;
+    if/*1*/
+    :: c!3 -> /*2*/ q++ -> /*3*/ x++
+    fi
+ }
+/* Property checked: [](x<=y) */
+never  /* A never-move ~~> */
+{  do /*S*/ /* Never aut. states are S and A */
+   :: skip
+   :: x > y -> break
+   od;
+   /*A*/ accept: goto accept
+}

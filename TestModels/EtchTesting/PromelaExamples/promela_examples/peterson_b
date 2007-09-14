@@ -1,0 +1,22 @@
+#define true 1
+#define false 0
+
+bool turn;
+
+active proctype P0()
+{ do ::
+    turn = 0;
+    (turn == 1);
+crit0:
+    skip;
+  od
+}
+
+active proctype P1()
+{ do ::
+    turn = 1;
+    (turn == 0);
+crit1:
+    skip;
+  od
+}
