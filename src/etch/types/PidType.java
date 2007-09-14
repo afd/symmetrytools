@@ -2,7 +2,7 @@ package src.etch.types;
 
 import src.etch.checker.SymmetrySettings;
 
-public class PidType extends SimpleType {
+public class PidType extends SimpleType implements VisibleType {
 
 	public String name() {
 		if(SymmetrySettings.CHECKING_SYMMETRY) {

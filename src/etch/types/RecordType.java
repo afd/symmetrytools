@@ -1,6 +1,6 @@
 package src.etch.types;
 
-public class RecordType extends SimpleType {
+public class RecordType extends SimpleType implements VisibleType {
 
 	private String name;
 

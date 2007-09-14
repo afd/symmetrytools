@@ -13,7 +13,7 @@ public class ArrayType extends ConstructedType implements VisibleType {
 	private int length;
 	
 	public ArrayType(VisibleType elementType, SimpleType indexType, int length) {
-		Assert.assertTrue(indexType instanceof ByteType || indexType instanceof PidType || indexType instanceof TypeVariableType);
+		Assert.assertTrue(indexType==null || indexType instanceof ByteType || indexType instanceof PidType || indexType instanceof TypeVariableType);
 		this.elementType = elementType;
 		this.indexType = indexType;
 		this.length = length;
@@ -54,7 +54,12 @@ public class ArrayType extends ConstructedType implements VisibleType {
 		} else {
 			result += ((ConstructedType)elementType).nameRecursive(factory);
 		}
-		return result + "[" + this.indexType.name() + "]";
+		result += "[";
+		
+		if(!(this.indexType instanceof TypeVariableType)) {
+			result += this.indexType.name();
+		}
+		return result  + "]";
 	}
 
 	protected void replaceChildWithTypeVariable(ConstructedType type, TypeVariableType tVar) {

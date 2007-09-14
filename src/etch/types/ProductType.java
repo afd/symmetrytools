@@ -1,6 +1,12 @@
 package src.etch.types;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 import junit.framework.Assert;
 
@@ -108,5 +114,8 @@ public class ProductType extends ConstructedType implements InternalType {
 			
 	}
 
-	
+	public ListIterator<Type> getElementIterator() {
+		return tuple.listIterator();
+	}
+
 }
