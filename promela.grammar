@@ -1,4 +1,5 @@
-/* Promela grammar, taken from Holzmann's SPIN book */
+/* Promela grammar (severely) adapted from Holzmann's SPIN book */
+
 Package src.promela;
 
 Helpers
@@ -20,8 +21,11 @@ Helpers
     not_star_not_slash = [input_character - ['*' + '/']] | line_terminator;
 
 Tokens
+
     white_space = (sp | ht | ff | line_terminator)*;
+
     traditional_comment = '/*' not_star+ '*'+ (not_star_not_slash not_star* '*'+)* '/';
+
     end_of_line_comment = '//' input_character* line_terminator?;
 
     number = digit+;
@@ -127,8 +131,7 @@ Tokens
     for = 'for';
     over = 'over';
 
-    name = alpha (alpha | digit | '_')*;  /* NEED TO CHECK THAT THIS CORRECTLY DEFINES NAMES - ADD _pid as special case */
-   byteliteral = byterange;
+    name = alpha (alpha | digit | '_')*;
     string = '"' any_ascii_char* '"';
 
 /*******************************************************************
@@ -146,11 +149,15 @@ Ignored Tokens
 Productions
 
   spec = 
-    {normal} module+ |
+    {normal} modules |
     {template} template ;
 
   template =
     name templatetok colon sequence ;
+
+  modules =
+   {one} module separator? |
+   {many} module separator? modules ;
 
   module =
    {utype} utype |		/* user defined types */
@@ -160,8 +167,7 @@ Productions
    {init} init |		/* init process - max 1 per model */
    {never} never |		/* never claim - max 1 per model */
    {trace} trace |		/* event trace - max 1 per model */
-   {inline} inline |
-   {semi} separator;
+   {inline} inline ;
 
   proctype =
    active? proctypetok name l_parenthese param_lst? r_parenthese priority? enabler? l_brace sequence r_brace ;
@@ -198,8 +204,7 @@ Productions
    {many} expr comma expr_lst ;
 
   decl_lst =
-   {null} |
-   {one} one_decl |
+   {one} one_decl separator? |
    {many} one_decl separator decl_lst;
 
   one_decl =
@@ -226,7 +231,7 @@ Productions
 
   active =
    {one} activetok |
-   {many} activetok l_bracket const r_bracket ;	/* instantiation */
+   {many} activetok l_bracket const r_bracket ;
 
   priority =
    prioritytok const ;		/* simulation only */
@@ -239,17 +244,44 @@ Productions
    {show} show ;
 
   sequence =
-   {null}  |
-   {one} step |
+   {one} step separator? |
    {many} step separator sequence ;
 
   step =
-   {declaration} one_decl |
-   {stmnt} stmnt |
    {unless} [main]:stmnt unless [escape]:stmnt |
    {exreceive} xr varreflst |
-   {exsend} xs varreflst ;
+   {exsend} xs varreflst |
+   {declaration} one_decl |
+   {statement} stmnt |
+   {compound_unseparated} label? compound_stmnt step ;
 
+  stmnt =
+   {simple} simple_stmnt |
+   {compound} compound_stmnt ;
+   
+  compound_stmnt =
+   {atomic} atomic l_brace sequence r_brace |
+   {dstep} d_step l_brace sequence r_brace |
+   {braces} l_brace sequence r_brace ;
+      
+  simple_stmnt =
+   {label} label stmnt |
+   {if} if options fi |			/* selection */
+   {do} do options od |			/* iteration */
+   {send} send |
+   {receive} receive |
+   {assign} assignment |
+   {else} else |				/* guard statement */
+   {break} break |				/* only inside loops */
+   {goto} goto name |			/* anywhere */
+   {print} print l_parenthese string r_parenthese |
+   {printwithargs} print l_parenthese string comma arg_lst r_parenthese |
+   {assert} assert expr |
+   {expression} expr |			/* condition */
+   {inline} name l_parenthese expr_lst? r_parenthese ;
+
+  label = name colon ;
+  
   varreflst =
    {one} varref |
    {many} varref comma varreflst ;
@@ -308,25 +340,6 @@ Productions
    {assignment} varref assign expr |	/* assignment */
    {increment} varref plus_plus |		/* increment */
    {decrement} varref minus_minus ;		/* decrement */
-
-  stmnt =
-   {if} if options fi |			/* selection */
-   {do} do options od |			/* iteration */
-   {atomic} atomic l_brace sequence r_brace |
-   {dstep} d_step l_brace sequence r_brace |
-   {braces} l_brace sequence r_brace |
-   {send} send |
-   {receive} receive |
-   {assign} assignment |
-   {else} else |					/* guard statement */
-   {break} break |					/* only inside loops */
-   {goto} goto name |					/* anywhere */
-   {label} name colon stmnt |				
-   {print} print l_parenthese string r_parenthese |
-   {printwithargs} print l_parenthese string comma arg_lst r_parenthese |
-   {assert} assert expr |
-   {expression} expr |					/* condition */
-   {inline} name l_parenthese expr_lst? r_parenthese ;
 
   options =
    {normal} colon_colon sequence options? |
@@ -405,5 +418,3 @@ Productions
    {number} minus? number |
    {pid} processid |
    {underscore} underscore ;
-
-// end of grammar
