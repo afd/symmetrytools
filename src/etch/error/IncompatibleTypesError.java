@@ -11,7 +11,7 @@ public class IncompatibleTypesError extends Error {
     }
 
     public String message() {
-	return "error during type unification: \"" + type1 + "\" is not compatible with type \"" + type2 + "\"";
+	return "\"" + type1 + "\" is not compatible with type \"" + type2 + "\" (mismatch found during type unification)";
 	
     } 
 

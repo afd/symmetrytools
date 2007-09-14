@@ -31,8 +31,7 @@ public class MismatchedArgumentsError extends Error {
     }
 
     public String message() {
-	return "arguments of lengths " + length1 + " and " + length2 + " have been used with the same channel.";
-	
+    	return "arguments of lengths " + length1 + " and " + length2 + " have been used with the same channel";
     } 
 
 }

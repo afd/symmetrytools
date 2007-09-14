@@ -31,7 +31,7 @@ public class SubtypingError extends Error {
     }
 
     public String message() {
-	return "type \"" + type1 + "\" occurs in a context where it is required to be a subtype of \"" + type2 + "\".";
+	return "type \"" + type1 + "\" occurs in a context where it is required to be a subtype of \"" + type2 + "\"";
 	
     } 
 

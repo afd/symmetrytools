@@ -26,7 +26,7 @@ public class AssignmentMismatchError extends SubtypingError {
     }
 
     public String message() {
-    	return "error in assignment -- " + super.message();
+    	return "invalid assignment -- " + super.message();
     } 
 
 }

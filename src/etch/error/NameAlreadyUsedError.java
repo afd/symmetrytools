@@ -18,7 +18,7 @@ public class NameAlreadyUsedError extends Error {
 		if(existingEntry instanceof InlineEntry) {
 			result += "n";
 		}
-		result += " " + existingEntry.getEntryKind() + " name.";
+		result += " " + existingEntry.getEntryKind() + " name";
 		return result;
 	}
 
