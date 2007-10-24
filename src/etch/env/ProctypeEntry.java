@@ -21,7 +21,7 @@ public class ProctypeEntry extends EnvEntry {
 	private Map<String,EnvEntry> localScope;
 
 	public static final ProctypeEntry initProctypeEntry = new ProctypeEntry(new ArrayList<VisibleType>(),new ArrayList<String>(),-1);
-	public static final String initProctypeName = "init_proctype";
+	public static final String initProctypeName = "init";
 
 	public ProctypeEntry(List<VisibleType> argTypes, List<String> argNames, int lineOfDeclaration) {
 		super(lineOfDeclaration);

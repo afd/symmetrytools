@@ -41,7 +41,7 @@ proctype loadbalancer(chan in, out1, out2, out3) {
 
 init {
   atomic {
-    run client(clients[0],loadbalancers);
+    run client(clients[0],loadbalancers[0]);
     run client(clients[1],loadbalancers[0]);
     run client(clients[2],loadbalancers[0]);
     run client(clients[3],loadbalancers[1]);
@@ -52,7 +52,7 @@ init {
     run server(servers[1]);
     run server(servers[2]);
 
-    run loadbalancer(loadbalancers[0],servers,servers[1],servers[2]);
+    run loadbalancer(loadbalancers[0],servers[0],servers[1],servers[2]);
     run loadbalancer(loadbalancers[1],servers[0],servers[1],servers[2])
   }
 }

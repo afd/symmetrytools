@@ -4,19 +4,26 @@ import junit.framework.Assert;
 
 public class TypeVariableType extends SimpleType implements InternalType {
 
+	private static char prettyVariables[] = { 'X', 'Y', 'Z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+	
 	private char letter;
 	private int guid;
 	private NumericType lower;
 	private NumericType upper;
-
-	protected TypeVariableType(char letter, int guid) {
+	private boolean prettyPrint;
+	
+	protected TypeVariableType(char letter, int guid, boolean prettyPrint) {
 		this.letter = letter;
 		this.guid = guid;
+		this.prettyPrint = prettyPrint;
 		lower = null;
 		upper = null;
 	}
 
 	public String name() {
+		if(prettyPrint && guid < prettyVariables.length) {
+			return "" + prettyVariables[guid];
+		}
 		return String.valueOf(letter) + guid;
 	}
 

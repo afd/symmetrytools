@@ -402,6 +402,9 @@ public class SymmetryApplier {
 	
 			out.write("      memcpy(&tmp_now, &min_now, vsize);\n");
 			out.write("      memcpy(&current_min, &min_now, vsize);\n");
+			if(Config.OPENMP) {
+				out.write("      #pragma omp parallel for private(j,tmp_now,current_min)\n");
+			}
 			out.write("      for(j=0; j<" + setSize + "; j++) {\n");
 			out.write("         applyPermToState(&tmp_now,&(elementset_"
 					+ setCounter + "[j]));\n");
@@ -1251,6 +1254,10 @@ public class SymmetryApplier {
 	}
 
 	private void writePreprocessorMacros(FileWriter out) throws IOException {
+		if(Config.OPENMP) {
+			out.write("#include <omp.h>\n");
+		}
+		
 		if (!usingMarkers()) {
 			out.write("#include \"group.h\"\n\n");
 		}

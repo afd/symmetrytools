@@ -14,6 +14,7 @@ import src.etch.error.SubtypingError;
 import src.etch.types.AnyType;
 import src.etch.types.ArrayType;
 import src.etch.types.BoolType;
+import src.etch.types.BottomType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
 import src.etch.types.IntType;
@@ -40,6 +41,10 @@ public class Unifier {
 
 		Assert.assertFalse(sc.getLhs() instanceof TypeVariableType && sc.getRhs() instanceof TypeVariableType);
 
+		if(sc.getLhs() instanceof BottomType) {
+			return null;
+		}
+		
 		if((sc.getLhs() instanceof SimpleType) && (sc.getRhs() instanceof SimpleType))
 		{
 			if(!(sc.getLhs() instanceof TypeVariableType || sc.getRhs() instanceof TypeVariableType)) {

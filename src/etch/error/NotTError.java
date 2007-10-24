@@ -17,12 +17,12 @@ public abstract class NotTError extends Error {
 	public String message() {
 		String result = "the ";
 		if(nature == LEFT) {
-			result = result + " first ";
+			result = result + "first ";
 		}
 		else if(nature == RIGHT) {
-			result = result + " second ";
+			result = result + "second ";
 		}
-		return result + "argument of " + operator + " should have " + correctType + " type, but here it is \"" + type + "\".";
+		return result + "argument of " + operator + " should have " + correctType + " type, but here it is \"" + type + "\"";
 	}
 
 }

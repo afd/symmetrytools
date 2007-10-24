@@ -44,9 +44,11 @@ import src.etch.types.AnyType;
 import src.etch.types.ArrayType;
 import src.etch.types.BitType;
 import src.etch.types.BoolType;
+import src.etch.types.BottomType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
 import src.etch.types.IntType;
+import src.etch.types.Minimiser;
 import src.etch.types.MtypeType;
 import src.etch.types.NumericType;
 import src.etch.types.PidType;
@@ -67,7 +69,7 @@ public class Checker extends InlineProcessor {
 
 	private ConstraintSet constraintSet = new ConstraintSet();
 
-	private TypeVariableFactory factory = new TypeVariableFactory('X');
+	private TypeVariableFactory factory = new TypeVariableFactory('X',false);
 
 	protected boolean inTypedef = false;
 
@@ -297,9 +299,7 @@ public class Checker extends InlineProcessor {
 			return;
 		}
 
-		VisibleType t = ((VarEntry) entry).getType();
-
-		checkVariableReferenceIsWellFormed(node, t);
+		checkVariableReferenceIsWellFormed(node, ((VarEntry) entry).getType());
 	}
 
 	public void outARecordVarref(ARecordVarref node) {
@@ -327,11 +327,14 @@ public class Checker extends InlineProcessor {
 	}
 
 	private void checkVariableReferenceIsWellFormed(PVarref node, VisibleType t) {
+		
 		if (!NodeHelper.hasArrayReference(node)) {
 			setOut(node, t);
 			return;
 		} else if(t instanceof ArrayType) {
-			setOut(node, ((ArrayType) t).getElementType());
+			VisibleType elementType = ((ArrayType) t).getElementType();
+			
+			setOut(node, elementType);
 			dealWithArrayIndex(node,t);
 		} else {
 			addError(NodeHelper.getNameFromVaribableReference(node), new VariableNotArrayError(NodeHelper.getNameFromVaribableReference(node).getText(),t.name()));
@@ -435,6 +438,7 @@ public class Checker extends InlineProcessor {
 				 * We would need to post an equality constraint if both formalArgTypes(i)
 				 * and actualArgTypes(i) were channels.
 				 */
+
 				postSubtypingConstraint(actualArgTypes.get(i),
 						formalArgTypes.get(i), proctypeName);
 
@@ -530,7 +534,7 @@ public class Checker extends InlineProcessor {
 			} else if (!((leftType.isSubtype(rightType)) || (rightType
 					.isSubtype(leftType)))) {
 				addError(node.getEqop(), new EqMismatchError(leftType.name(),
-						rightType.name(), node.getEqop().getText()));
+						rightType.name(), node));
 			} else
 				setOut(node, boolType());
 		}
@@ -671,7 +675,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAUnderscoreConst(AUnderscoreConst node) {
-		setOut(node, factory.freshTypeVariable());
+		setOut(node, BottomType.uniqueInstance);
 	}
 	
 	public void outAFalseConst(AFalseConst node) {
@@ -762,11 +766,15 @@ public class Checker extends InlineProcessor {
 	}
 	
 	public void processCommunication(PVarref chan, List<VisibleType> argTypes, Token operator) {
-		if ((getOutType(chan) != null) && (argTypes!=null)) {
+		Type type = getOutType(chan);
+
+		if ((type != null) && (argTypes!=null)) {
 			List<Type> typeVariables = createTypeVariablesForCommunication(operator,
 					argTypes);
-			postEqualityConstraint(
-					new ChanType(typeVariables), (getOutType(chan)), operator);
+			if(typeVariables!=null) {
+				postEqualityConstraint(
+					new ChanType(typeVariables), type, operator);
+			}
 		}
 	}
 
@@ -820,6 +828,10 @@ public class Checker extends InlineProcessor {
 			List<VisibleType> actualArgTypes) {
 		List<Type> typeVariables = new ArrayList<Type>();
 		for (int i = 0; i < actualArgTypes.size(); i++) {
+			if(actualArgTypes.get(i)==null) {
+				return null;
+			}
+			
 			addTypeVariableForArgType(typeVariables, actualArgTypes
 					.get(i), operator);
 		}
@@ -831,7 +843,7 @@ public class Checker extends InlineProcessor {
 
 		TypeVariableType tv = factory.freshTypeVariable();
 		if(argType != null) {
-			if (isBang(operator) || isTypeOfNumericConstant(argType)) {
+			if (isBang(operator) || isTypeOfNumericConstant(argType) || argType.equal(BottomType.uniqueInstance)) {
 				postSubtypingConstraint(argType, tv, operator);
 			} else {
 				postSubtypingConstraint(tv, argType, operator);
@@ -1252,11 +1264,35 @@ public class Checker extends InlineProcessor {
 	}
 
 	
-	public void printCompleteTypeInformation() {
+	public void printCompleteTypeInformation(String sourceName) {
+
+		System.out.println("\nReconstructed types for " + sourceName + ":");
+		
+		for(String entryName : env.getTopEntries().keySet()) {
+			EnvEntry entry = env.get(entryName);
+			if(entry instanceof ProctypeEntry && !((ProctypeEntry)entry).getLocalScope().isEmpty()) {
+				System.out.print("\n  " + entryName + "\n  ");
+				for(int i=0; i<entryName.length(); i++) { System.out.print("-"); }
+				System.out.print("\n");
+
+				
+				ProctypeEntry proctypeEntry = (ProctypeEntry)entry;
+				Map<String,EnvEntry> scope = proctypeEntry.getLocalScope();
+				for(String scopeEntryName : scope.keySet()) {
+					EnvEntry scopeEntry = scope.get(scopeEntryName); 
+					if(scopeEntry instanceof VarEntry) {
+						System.out.println("    " + scopeEntryName + " : " + Minimiser.minimise(((VarEntry)scopeEntry).getType()).name());
+					}
+				}
+			}
+		}
+
+		System.out.println("\n  Globals\n  -------");
+
 		for(String entryName : env.getTopEntries().keySet()) {
 			EnvEntry entry = env.get(entryName);
 			if(entry instanceof VarEntry) {
-				System.out.println(entryName + " : " + ((VarEntry)entry).getType().name());
+				System.out.println("    " + entryName + " : " + Minimiser.minimise(((VarEntry)entry).getType()).name());
 			}
 		}
 		

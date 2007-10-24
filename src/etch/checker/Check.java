@@ -45,6 +45,26 @@ public class Check {
 
 		BufferedReader br = null;
 		try {
+			br = getBufferForInputSpecification(sourceName);
+		} catch (FileNotFoundException e1) {
+			System.out.println("Can't access source file " + sourceName);
+			System.exit(1);
+		}
+		
+		try {
+			theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
+		} catch (Exception e) {
+			System.out.println(e);
+			System.exit(1);
+		}
+		
+		if(Config.PROFILE) { Profile.PARSE_END = System.currentTimeMillis(); }
+
+	}
+
+	public static BufferedReader getBufferForInputSpecification(String sourceName) throws FileNotFoundException {
+		BufferedReader br = null;
+		try {
 			Process p = Runtime.getRuntime().exec("cpp " + sourceName);
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			String programForParsing = "";
@@ -66,48 +86,27 @@ public class Check {
 			br = new BufferedReader(new StringReader(programForParsing));
 		} catch (IOException e) {
 			System.out.println("C preprocessor not available");
-			try {
-				br = new BufferedReader(new FileReader(sourceName));
-			} catch (FileNotFoundException e1) {
-				System.out.println("Can't access source file " + sourceName);
-				System.exit(1);
-			}
+			br = new BufferedReader(new FileReader(sourceName));
 		}
-		
-		Lexer scanner = new Lexer(new PushbackReader(br, 1024));
-
-		Parser parser = new Parser(scanner);
-
-		try {
-			theAST = parser.parse();
-		} catch (Exception e) {
-			System.out.println(e);
-			System.exit(1);
-		}
-		
-		if(Config.PROFILE) { Profile.PARSE_END = System.currentTimeMillis(); }
-
+		return br;
 	}
 
 	public boolean isWellTyped(boolean isPidSensitive) {
 		Checker chk = new Checker(isPidSensitive);
 		theAST.apply(chk);
 		Substituter substituter = chk.unify();
-		substituter.setTypeInformation(chk);
-		theAST.apply(substituter);
-
-		chk.printCompleteTypeInformation();
-		
-		//		VariableAnalyser analyser = new VariableAnalyser(chk);
-//		theAST.apply(analyser);
-		
-		ErrorTable errorTable = chk.getErrorTable();
-		if (errorTable.hasErrors()) {
-			System.out.println(errorTable.output("while processing " + sourceName));
+	
+		if (chk.getErrorTable().hasErrors()) {
+			System.out.println(chk.getErrorTable().output("while processing " + sourceName));
 			return false;
 		}
 
 		System.out.println("Program is well typed");
+
+		substituter.setTypeInformation(chk);
+		theAST.apply(substituter);
+		chk.printCompleteTypeInformation(sourceName);
+
 		return true;
 	}
 

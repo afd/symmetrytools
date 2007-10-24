@@ -54,13 +54,14 @@ public class SymmetrySettings {
 	protected static void findNumberOfRunningProcesses(AInitModule module, Checker checker) {
 
 		AInit init = (AInit) module.getInit();
+
+		noProcesses = 0;
 		
 		if(!isAtomicStatement(init.getSequence())) {
 			checker.addError(init.getInittok(),new BadlyFormedInitError());
-			noProcesses = 0; return;
+			return;
 		}
 
-		int result = 0;
 		PSequence statementsWithinAtomic;
 		
 		statementsWithinAtomic = getStatementsWithinAtomic(init);
@@ -68,13 +69,12 @@ public class SymmetrySettings {
 		for( ; statementsWithinAtomic instanceof AManySequence; statementsWithinAtomic = nextInSequence(statementsWithinAtomic)) {
 			
 			if(!isRunStatement(((AManySequence)statementsWithinAtomic).getStep())) {
-				if(result==0) {
+				if(noProcesses==0) {
 					checker.addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
 				}
-				noProcesses = result;
 				return;
 			} else {
-				result++;
+				noProcesses++;
 				// We used to do setOut(getRunStatement(     ), new PidType);
 				// However, this doesn't seem necessary.
 			}
@@ -83,16 +83,16 @@ public class SymmetrySettings {
 		Assert.assertTrue(statementsWithinAtomic instanceof AOneSequence);
 
 		if(!isRunStatement(((AOneSequence)statementsWithinAtomic).getStep())) {
-			if(result==0) {
+			if(noProcesses==0) {
 				checker.addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
 			}
-			noProcesses = result;
+			return;
 		} else {
-			result++;
+			noProcesses++;
 			// We used to do setOut(getRunStatement(     ), new PidType);
 			// However, this doesn't seem necessary.
 		}
-		
+
 		/* TODO Check that any other statements within the init block are commutative */
 	}
 

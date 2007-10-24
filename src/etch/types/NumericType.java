@@ -42,7 +42,9 @@ public abstract class NumericType extends SimpleType implements VisibleType {
 		// should have already been rejected.
 
 		if(SymmetrySettings.CHECKING_SYMMETRY) {
+
 			if(val>=0 && val<=SymmetrySettings.noProcesses()) {
+
 				if(val==0 || val==1) {
 					return new BitType(true,true);
 				}

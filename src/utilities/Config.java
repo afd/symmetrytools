@@ -22,6 +22,7 @@ public class Config {
 	public static boolean PROFILE = false;
 	public static boolean DETECT_ONLY = false;
 	public static boolean SIEVE = false;
+	public static boolean OPENMP = false;
 	public static int NO_CORES = 0; /* If this is 0, an iteratorclass is used for splitting
 										If > 0 then explicit loops are generated */
 	
@@ -78,6 +79,7 @@ public class Config {
 	private static boolean strategyset = false;
 	private static boolean stabiliserchainset = false;
 	private static boolean sieveset = false;
+	private static boolean openmpset = false;
 	private static boolean coresset = false;
 
 	private static void processConfigurationLine(String line, int n) {
@@ -125,6 +127,9 @@ public class Config {
 				} else if(name.equals("sieve") && !sieveset) {
 					sieveset = true;
 					SIEVE = Boolean.parseBoolean(value.toUpperCase());
+				} else if(name.equals("openmp") && !openmpset) {
+					openmpset = true;
+					OPENMP = Boolean.parseBoolean(value.toUpperCase());
 				} else if(name.equals("cores") && !coresset) {
 					coresset = true;
 					NO_CORES = Integer.parseInt(value);

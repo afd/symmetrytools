@@ -12,6 +12,7 @@ public class PidType extends SimpleType implements VisibleType {
 	}
 
 	public boolean isSubtype(Type t) {
+		
 		if(SymmetrySettings.CHECKING_SYMMETRY) {
 			return equal(t);
 		}

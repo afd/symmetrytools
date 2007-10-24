@@ -10,6 +10,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import src.etch.checker.Check;
 import src.etch.checker.Checker;
 import src.promela.lexer.Lexer;
 import src.promela.lexer.LexerException;
@@ -27,43 +28,19 @@ public class EtchTest {
 
 		BufferedReader br = null;
 		try {
-			Process p = Runtime.getRuntime().exec("cpp " + sourceName);
-			BufferedReader cppReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String programForParsing = "";
-			String line;
-			int currentLine = 1;
-			while((line=cppReader.readLine())!=null) {
-				if(line.length() > 0 && line.charAt(0)=='#') {
-					String[] splitOnSpace = line.split(" ");
-					int nextLine = Integer.parseInt(splitOnSpace[1]);
-					for(;currentLine<nextLine; currentLine++) {
-						programForParsing += "\n";
-					}
-				} else {
-					programForParsing += line + "\n";
-					currentLine++;
-				}
-				
-			}
-			br = new BufferedReader(new StringReader(programForParsing));
-		} catch (IOException e) {
-			System.out.println("C preprocessor not available");
-			try {
-				br = new BufferedReader(new FileReader(sourceName));
-			} catch (FileNotFoundException e1) {
+			br = Check.getBufferForInputSpecification(sourceName);
+		} catch (FileNotFoundException e1) {
 				return TestResult.FileNotFound;
-			}
 		}
 		
 		try {
-			Lexer scanner = new Lexer(new PushbackReader(br, 1024));
-			Parser parser = new Parser(scanner);
-			Node theAST;
-			theAST = parser.parse();
+			Node theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
 			Checker checker = new Checker(false);
 			theAST.apply(checker);
 			checker.unify();
 			if(checker.getErrorTable().hasErrors()) {
+				if(sourceName.equals("PassTests/test_engine3F99.p"))
+					System.out.println(checker.getErrorTable().output("while processing " + sourceName));
 				return TestResult.BadlyTyped;
 			}
 			return TestResult.WellTyped;
@@ -115,7 +92,16 @@ public class EtchTest {
 				"failchannelinplaceofbyte.p",
 				"failnosubtyperelation.p",
 				"faillabelinunless.p",
-				"faillabelbeforeunless.p"
+				"faillabelbeforeunless.p",
+				"failmisc.p",
+				"failmisc2.p",
+				"failbadrecvargs.p",
+				"failbadrecvargs2.p",
+				"failbadsendargs.p",
+				"failincorrectloadbalancer.p",
+				"failbadinlines.p",
+				"failemailmissingchanneltwo.p",
+				"fail_ex_6.p"
 		};
 		
 		String passTests [] = {
@@ -134,17 +120,26 @@ public class EtchTest {
 				"testlabelatomicnoseparator.p",
 				"testgoodlabelinunless.p",
 				"testanothertelephone.p",
-				"testmisc.p",
 				"testpotsmodel.p",
 				"testresourceallocator.p",
 				"testemail.p",
-				"testmisc2.p",
 				"testpotsmodel2.p",
 				"testsharing.p",
 				"testloadbalancer.p",
 				"testmisc3.p",
 				"testpriority.p",
-				"testsimpleloadbalancer.p"
+				"testsimpleloadbalancer.p",
+				"testtelephoneexample.p",
+				"testfirewirestar3.p",
+				"test_ex_6_well_typed.p",
+				"testsort.p",
+				"testsplurge.p",
+				"test_mobile1_well_typed.p",
+				"test_mobile2_well_typed.p",
+				"test_engine3F99.p",
+				"testassertinnever.p",
+				"test_asg2_assigned.p",
+				"test_asg2_worked_out.p"
 		};
 
 		String parsePassTests [] = {
@@ -160,7 +155,6 @@ public class EtchTest {
 				"mobile2",
 				"peterson",
 				"pftp",
-				"sort"
 		};
 		
 		List<String> passes = new ArrayList<String>();

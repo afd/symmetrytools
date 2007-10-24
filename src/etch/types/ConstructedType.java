@@ -24,7 +24,7 @@ public abstract class ConstructedType extends AnyType {
 
 	public final String name() {
 		ConstructedType clonedUnrolledType = cloneAndUnroll(new HashMap<ConstructedType,ConstructedType>());
-		return clonedUnrolledType.nameRecursive(new TypeVariableFactory('Y'));
+		return clonedUnrolledType.nameRecursive(new TypeVariableFactory('Y',true));
 	}
 	
 	/* Display the name of the type, recursively.

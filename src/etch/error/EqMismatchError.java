@@ -19,20 +19,25 @@
 
 package src.etch.error;
 
+import src.promela.node.ACompoundEqExpr;
+import src.utilities.StringHelper;
+
 public class EqMismatchError extends Error {
 
     public String leftType;
     public String rightType;
-    public String operator;
+    public ACompoundEqExpr node;
 
-    public EqMismatchError(String l, String r, String o) {
-	leftType = l;
-	rightType = r;
-	operator = o;
+    public EqMismatchError(String leftType, String rightType, ACompoundEqExpr node) {
+	this.leftType = leftType;
+	this.rightType = rightType;
+	this.node = node;
     }
 
     public String message() {
-	return "the operands of \"e1 " + operator + "e2\" should have the same type, but here \"e1\" has type \"" + leftType + "\" and \"e2\" has type \"" + rightType + "\"";
+	return "the operands of \"e1" + node.getEqop().getText() + "e2\" should have the same type, but here \"" +
+	StringHelper.removeWhitespace(node.getRelExpr().toString())
+	   + "\" has type " + leftType + " and \"" + StringHelper.removeWhitespace(node.getEqExpr().toString()) + "\" has type " + rightType;
     } 
 
 }

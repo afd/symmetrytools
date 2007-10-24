@@ -55,7 +55,7 @@ proctype cpu1()
 
 proctype cache0()
 {	byte state = X;
-	byte which;
+	mtype which;
 
 	xr frombus0;
 	xr fromcpu0;
@@ -131,7 +131,7 @@ buscycle:
 
 proctype cache1()
 {	byte state = X;
-	byte which;
+	mtype which;
 
 	xr frombus1;
 	xr fromcpu1;

@@ -319,6 +319,8 @@ public class SymmExtractor extends Check {
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_START = System.currentTimeMillis(); }
 		System.out.println("Starting GAP");
 
+		System.out.println("Here");
+		
 		if(Config.isOSWindows()) {
 			gap = CommunicatingProcess.create(Config.GAP + " -L \"" + Config.COMMON + "gapworkspace\" -q");
 		} else {
@@ -330,8 +332,16 @@ public class SymmExtractor extends Check {
 
 		gapWriter.write("0;\n");
 		gapWriter.flush();
+
+		System.out.println("And here");
+
+		String readLine = gapReader.readLine();
+		while(!readLine.equals("0")) {
+			System.out.println("read a line: " + readLine);
+			readLine = gapReader.readLine();
+		}
 		
-		while(!gapReader.readLine().equals("0"));
+		System.out.println("But not here");
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_END = System.currentTimeMillis(); }
 
 	}

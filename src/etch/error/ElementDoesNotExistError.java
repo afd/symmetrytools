@@ -22,7 +22,7 @@ public class ElementDoesNotExistError extends Error {
 		if(recordTypeName!=null) {
 			result = result + " in user defined type \"" + recordTypeName + "\"";
 		}
-		return result + ".";
+		return result;
 	}
 
 }

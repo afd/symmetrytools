@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import src.etch.checker.SymmetrySettings;
+
 import junit.framework.Assert;
 
 public class ArrayType extends ConstructedType implements VisibleType {
@@ -48,18 +50,21 @@ public class ArrayType extends ConstructedType implements VisibleType {
 	}
 
 	protected String namePlugin(TypeVariableFactory factory) {
-		String result = "";
+		String result = "array (size " + length;
+
+		if(SymmetrySettings.CHECKING_SYMMETRY && !(this.indexType instanceof TypeVariableType)) {
+			result += ", indexed by " + this.indexType.name();
+		}
+
+		result += ") of ";
+		
 		if(elementType instanceof SimpleType) {
 			result += elementType.name();
 		} else {
 			result += ((ConstructedType)elementType).nameRecursive(factory);
 		}
-		result += "[";
-		
-		if(!(this.indexType instanceof TypeVariableType)) {
-			result += this.indexType.name();
-		}
-		return result  + "]";
+
+		return result;
 	}
 
 	protected void replaceChildWithTypeVariable(ConstructedType type, TypeVariableType tVar) {
