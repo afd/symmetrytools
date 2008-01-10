@@ -22,7 +22,6 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.io.StringReader;
 
-import src.etch.error.ErrorTable;
 import src.etch.typeinference.Substituter;
 import src.promela.lexer.Lexer;
 import src.promela.node.Node;

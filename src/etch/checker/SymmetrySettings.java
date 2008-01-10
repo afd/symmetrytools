@@ -5,25 +5,10 @@ import src.etch.error.BadlyFormedInitError;
 import src.promela.node.AAtomicCompoundStmnt;
 import src.promela.node.ACompoundStmnt;
 import src.promela.node.ACompoundUnseparatedStep;
-import src.promela.node.AExpressionSimpleStmnt;
 import src.promela.node.AInit;
 import src.promela.node.AInitModule;
 import src.promela.node.AManySequence;
 import src.promela.node.AOneSequence;
-import src.promela.node.ARunFactor;
-import src.promela.node.ASimpleAddExpr;
-import src.promela.node.ASimpleAndExpr;
-import src.promela.node.ASimpleBitandExpr;
-import src.promela.node.ASimpleBitorExpr;
-import src.promela.node.ASimpleBitxorExpr;
-import src.promela.node.ASimpleEqExpr;
-import src.promela.node.ASimpleExpr;
-import src.promela.node.ASimpleMultExpr;
-import src.promela.node.ASimpleOrExpr;
-import src.promela.node.ASimpleRelExpr;
-import src.promela.node.ASimpleShiftExpr;
-import src.promela.node.ASimpleStmnt;
-import src.promela.node.ASimpleUnExpr;
 import src.promela.node.AStatementStep;
 import src.promela.node.PCompoundStmnt;
 import src.promela.node.PSequence;
@@ -133,14 +118,15 @@ public class SymmetrySettings {
 		return sequence.toString().length()>=7 && sequence.toString().substring(0,7).equals("atomic ");
 	}
 
-	private ARunFactor getRunStatement(PStep step) {
+/*	private ARunFactor getRunStatement(PStep step) {
 		Assert.assertTrue(isRunStatement(step));
 		return (ARunFactor)((ASimpleUnExpr)((ASimpleMultExpr)((ASimpleAddExpr)((ASimpleShiftExpr)((ASimpleRelExpr)((ASimpleEqExpr)((ASimpleBitandExpr)((ASimpleBitxorExpr)
 				((ASimpleBitorExpr)((ASimpleAndExpr)((ASimpleOrExpr)((ASimpleExpr)((AExpressionSimpleStmnt)(((ASimpleStmnt)((AStatementStep)step).getStmnt()).getSimpleStmnt())).getExpr()).getOrExpr())
 				.getAndExpr()).getBitorExpr()).getBitxorExpr()).getBitandExpr()).getEqExpr()).getRelExpr())
 				.getShiftExpr()).getAddExpr()).getMultExpr()).getUnExpr()).getFactor();
 	}
-
+*/
+	
 	private static boolean isRunStatement(PStep step) {
 		return step.toString().substring(0,4).equals("run ");
 	}
