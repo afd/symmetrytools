@@ -2,7 +2,6 @@ package src.etch.types;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -70,20 +69,4 @@ public class ChanType extends ConstructedType implements VisibleType {
 		return result;
 	}
 
-	protected ConstructedType cloneAndUnrollPlugin(Map<ConstructedType, ConstructedType> cloneMap) {
-
-		if(messageType instanceof TypeVariableType) {
-			return new ChanType(messageType);
-		}
-		Assert.assertTrue(messageType instanceof ProductType);
-
-		ChanType clonedChannel = new ChanType();
-
-		cloneMap.put(this,clonedChannel);
-		
-		clonedChannel.setMessageType((InternalType) ((ProductType)messageType).cloneAndUnroll(cloneMap));
-
-		return clonedChannel;
-			
-	}
 }

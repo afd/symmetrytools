@@ -1,8 +1,6 @@
 package src.etch.types;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class ConstructedType extends AnyType {
@@ -23,8 +21,7 @@ public abstract class ConstructedType extends AnyType {
 	}
 
 	public final String name() {
-		ConstructedType clonedUnrolledType = cloneAndUnroll(new HashMap<ConstructedType,ConstructedType>());
-		return clonedUnrolledType.nameRecursive(new TypeVariableFactory('Y',true));
+		return super.name();
 	}
 	
 	/* Display the name of the type, recursively.
@@ -66,14 +63,5 @@ public abstract class ConstructedType extends AnyType {
 	protected abstract void replaceChildWithTypeVariable(ConstructedType type, TypeVariableType tVar);
 
 	protected abstract Set<ConstructedType> computeDescendentsOfTypeWhichAreAlsoDirectPredecessors(ConstructedType type, Set<ConstructedType> alreadyVisited);
-
-	protected ConstructedType cloneAndUnroll(Map<ConstructedType,ConstructedType> cloneMap) {
-		if(cloneMap.containsKey(this)) {
-			return cloneMap.get(this);
-		}
-		return cloneAndUnrollPlugin(cloneMap);
-	}
-
-	protected abstract ConstructedType cloneAndUnrollPlugin(Map<ConstructedType, ConstructedType> cloneMap);
 	
 }

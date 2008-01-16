@@ -1,12 +1,10 @@
 package src.etch.types;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import src.etch.checker.SymmetrySettings;
-
 import junit.framework.Assert;
+import src.etch.checker.SymmetrySettings;
 
 public class ArrayType extends ConstructedType implements VisibleType {
 
@@ -91,24 +89,5 @@ public class ArrayType extends ConstructedType implements VisibleType {
 		
 		return result;
 	}
-
-	protected ConstructedType cloneAndUnrollPlugin(Map<ConstructedType, ConstructedType> cloneMap) {
-
-		if(elementType instanceof SimpleType) {
-			return new ArrayType(elementType,indexType,length);
-		}
-
-		Assert.assertTrue(elementType instanceof ConstructedType);
-
-		ArrayType clonedArray = new ArrayType(null,indexType,length);
-
-		cloneMap.put(this,clonedArray);
-		
-		clonedArray.setElementType((VisibleType) ((ConstructedType)elementType).cloneAndUnroll(cloneMap));
-
-		return clonedArray;
-			
-	}
-
 	
 }

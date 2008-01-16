@@ -1,11 +1,9 @@
 package src.etch.types;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -88,30 +86,6 @@ public class ProductType extends ConstructedType implements InternalType {
 			}
 		}
 		return result;
-	}
-
-	protected ConstructedType cloneAndUnrollPlugin(Map<ConstructedType, ConstructedType> cloneMap) {
-
-		List<Type> nullTypeList = new ArrayList<Type>();
-		for(int i=0; i<tuple.size(); i++) {
-			nullTypeList.add(null);
-		}
-
-		ProductType clonedProduct = new ProductType(nullTypeList);
-
-		cloneMap.put(this,clonedProduct);
-		
-		for(int i=0; i<tuple.size(); i++) {
-			if(getTypeOfPosition(i) instanceof SimpleType) {
-				clonedProduct.setTypeOfPosition(i,getTypeOfPosition(i));
-			} else {
-				Map<ConstructedType,ConstructedType> newCloneMap = new HashMap<ConstructedType,ConstructedType>(cloneMap);
-				clonedProduct.setTypeOfPosition(i,((ConstructedType)getTypeOfPosition(i)).cloneAndUnroll(newCloneMap));
-			}
-		}
-		
-		return clonedProduct;
-			
 	}
 
 	public ListIterator<Type> getElementIterator() {
