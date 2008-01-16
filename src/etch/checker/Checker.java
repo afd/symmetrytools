@@ -530,6 +530,7 @@ public class Checker extends InlineProcessor {
 
 		if ((leftType != null) && (rightType != null)) {
 			if (isChan(leftType) && isChan(rightType)) {
+				postEqualityConstraint(leftType,rightType,node.getEqop());
 				setOut(node, boolType());
 			} else if (!((leftType.isSubtype(rightType)) || (rightType
 					.isSubtype(leftType)))) {
