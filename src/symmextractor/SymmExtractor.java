@@ -331,9 +331,22 @@ public class SymmExtractor extends Check {
 		gapWriter.write("0;\n");
 		gapWriter.flush();
 
-		String readLine = gapReader.readLine();
-		while(!readLine.equals("0")) {
-			readLine = gapReader.readLine();
+		String line = gapReader.readLine();
+		while(!line.equals("0")) {
+			
+			System.out.println(line);
+			if(line.contains("Couldn't open saved workspace")) {
+				System.out.println("Error -- bad GAP workspace specified in configuration file.");
+				gap.destroy();
+
+				try {
+					gap.waitFor();
+				} catch (InterruptedException e) { }
+				System.exit(1);
+				
+			}
+			
+			line = gapReader.readLine();
 		}
 		
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_END = System.currentTimeMillis(); }
