@@ -8,6 +8,7 @@ import java.util.StringTokenizer;
 
 public class Config {
 
+	public static final String VERSION = "2.0";
 	public static String SAUCY = null;
 	public static String GAP = null;
 	public static String TEMP_FILES = null;
@@ -25,6 +26,7 @@ public class Config {
 	public static boolean OPENMP = false;
 	public static int NO_CORES = 0; /* If this is 0, an iteratorclass is used for splitting
 										If > 0 then explicit loops are generated */
+	public static boolean PTHREADS = false;
 	
 	public static boolean isOSWindows() {
 		return System.getProperty("os.name").length()>="Windows".length() && System.getProperty("os.name").substring(0,7).equals("Windows");
@@ -80,6 +82,7 @@ public class Config {
 	private static boolean stabiliserchainset = false;
 	private static boolean sieveset = false;
 	private static boolean openmpset = false;
+	private static boolean pthreadsset = false;
 	private static boolean coresset = false;
 
 	private static void processConfigurationLine(String line, int n) {
@@ -130,9 +133,14 @@ public class Config {
 				} else if(name.equals("openmp") && !openmpset) {
 					openmpset = true;
 					OPENMP = Boolean.parseBoolean(value.toUpperCase());
+				} else if(name.equals("pthreads") && !pthreadsset) {
+					pthreadsset = true;
+					PTHREADS = Boolean.parseBoolean(value.toUpperCase());
 				} else if(name.equals("cores") && !coresset) {
 					coresset = true;
 					NO_CORES = Integer.parseInt(value);
+				} else if(name.equals("quiet")) {
+					ProgressPrinter.QUIET_MODE = Boolean.parseBoolean(value);
 				} else {
 					System.out.println("Line " + n + " of configuration file redefines a configuration item, or refers to an item which does not exist.");
 				}

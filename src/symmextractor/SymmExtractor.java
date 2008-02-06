@@ -20,7 +20,9 @@ import src.promela.lexer.Lexer;
 import src.promela.parser.Parser;
 import src.utilities.CommunicatingProcess;
 import src.utilities.Config;
+import src.utilities.ErrorStreamHandler;
 import src.utilities.Profile;
+import src.utilities.ProgressPrinter;
 
 
 public class SymmExtractor extends Check {
@@ -41,7 +43,8 @@ public class SymmExtractor extends Check {
 		if(Config.PROFILE) { Profile.EXTRACT_START = System.currentTimeMillis(); }
 		extractor = new StaticChannelDiagramExtractor();
 		if(isWellTyped(true)) {
-			System.out.println("Reparsing source without inlines");
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("Reparsing source without inlines");
 			reparseSourceWithoutInlines();
 			theAST.apply(extractor);
 			Substituter substituter = extractor.unify();
@@ -49,16 +52,21 @@ public class SymmExtractor extends Check {
 			if(Config.PROFILE) { Profile.EXTRACT_END = System.currentTimeMillis(); }
 
 			if(Config.PROFILE) { Profile.SAUCY_START = System.currentTimeMillis(); }
+			ProgressPrinter.printSeparator();
 			computeStaticChannelDiagramAutomorphisms(extractor);
 			if(Config.PROFILE) { Profile.SAUCY_END = System.currentTimeMillis(); }
 			
-			System.out.println("  Aut(C(P)) = " + autSCD);
+			ProgressPrinter.println("Saucy computed the following generators for Aut(SCD(P)):");
+			ProgressPrinter.println("   Aut(SCD(P)) = " + autSCD);
 
 			if(Config.PROFILE) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
 			computeLargestValidSubgroup();
 
-			System.out.println("H = " + largestValidSubgroup);
-			System.out.println("      is a safe group for symmetry reduction.");
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("The group:");
+			ProgressPrinter.println("   G = " + largestValidSubgroup);
+			ProgressPrinter.println("is a valid group for symmetry reduction.");
+			ProgressPrinter.printSeparator();
 
 			return extractor;
 		}
@@ -79,16 +87,17 @@ public class SymmExtractor extends Check {
 			throws IOException {
 
 		boolean someGeneratorsInvalid = false;
-		System.out.println("Computing safe generators");
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.println("Computing valid generators:");
 		Set<Permutation> safeGenerators = new HashSet<Permutation>();
 				
 		for(Iterator<Permutation> i = autSCD.iterator(); i.hasNext();) {
 			Permutation alpha = i.next();
 			if (alpha.isSafeFor(theAST, extractor)) {
-				System.out.println("    " + alpha + " : valid");
+				ProgressPrinter.println("    " + alpha + " : valid");
 				safeGenerators.add(alpha);
 			} else {
-				System.out.println("    " + alpha + " : not valid");
+				ProgressPrinter.println("    " + alpha + " : not valid");
 				someGeneratorsInvalid = true;
 			}
 		}
@@ -106,8 +115,8 @@ public class SymmExtractor extends Check {
 				gapWriter.write("Size(G);\n");
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
-				System.out.println("Size of Aut(SCD(P)): " + gapReader.readLine());
-				System.out.println("Size of base group: " + gapReader.readLine());
+				ProgressPrinter.println("Size of Aut(SCD(P)): " + gapReader.readLine());
+				ProgressPrinter.println("Size of base group: " + gapReader.readLine());
 			}
 			
 			
@@ -115,7 +124,7 @@ public class SymmExtractor extends Check {
 				enlargeBaseGroupWithRandomConjugates(baseGroup.noGenerators());
 			}
 
-			System.out.println("Finding largest valid subgroup");
+			ProgressPrinter.println("Finding largest valid subgroup");
 			
 			gapWriter.write("C := RightTransversal(G,H);;\n");
 			gapWriter.write("Size(C);\n");
@@ -123,7 +132,7 @@ public class SymmExtractor extends Check {
 
 			int noCosets = Integer.parseInt(gapReader.readLine());
 			
-			System.out.println("No cosets: " + noCosets);
+			ProgressPrinter.println("No cosets: " + noCosets);
 
 			int j = 2;
 			long initialTime = System.currentTimeMillis();
@@ -134,15 +143,15 @@ public class SymmExtractor extends Check {
 				Permutation nextRepresentative = getPerm();
 
 				if (nextRepresentative.isSafeFor(theAST, extractor)) {
-					System.out.println("    " + nextRepresentative + " : valid");
+					ProgressPrinter.println("    " + nextRepresentative + " : valid");
 					addRepresentativeToGenerators(j);
 					int newNoCosets = recomputeCosetRepresentatives(noCosets,j);
 					if(newNoCosets!=-1) {
 						noCosets = newNoCosets;
-						System.out.println("No cosets: " + noCosets);
+						ProgressPrinter.println("No cosets: " + noCosets);
 						j = 2;
 					} else {
-						System.out.println("No cosets: " + (noCosets-j));
+						ProgressPrinter.println("No cosets: " + (noCosets-j));
 						j++;
 					}
 				} else {
@@ -154,7 +163,7 @@ public class SymmExtractor extends Check {
 				Profile.LARGEST_VALID_END = System.currentTimeMillis();
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
-				System.out.println("Size of largest valid subgroup: " + gapReader.readLine());
+				ProgressPrinter.println("Size of largest valid subgroup: " + gapReader.readLine());
 			}
 		} else {
 			largestValidSubgroup = baseGroup;
@@ -167,7 +176,7 @@ public class SymmExtractor extends Check {
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
-				System.out.println("Size of Aut(SCD(P)): " + gapReader.readLine());
+				ProgressPrinter.println("Size of Aut(SCD(P)): " + gapReader.readLine());
 			}
 		}
 	}
@@ -262,8 +271,9 @@ public class SymmExtractor extends Check {
 		FileWriter fw = new FileWriter(Config.TEMP_FILES+"graph.saucy");
 		fw.write(extractor.directedSaucyRepresentation());
 		fw.close();
-		System.out.println("Computing the group Aut(C(P)) using directed saucy.");
+		ProgressPrinter.println("Computing the group Aut(C(P)) using directed saucy.");
 		String saucyGenerators = computeAutomorphismsOfDirectedGraph(Config.TEMP_FILES+"graph.saucy");
+		
 		autSCD = new Group(saucyGenerators, extractor);
 	}
 
@@ -271,29 +281,39 @@ public class SymmExtractor extends Check {
 
 		String result = "";
 		
+		String saucyString; 
+		if(Config.isOSWindows()) {
+			saucyString = Config.SAUCY + " -d \"" + filename + "\"";
+		} else {
+			saucyString = Config.SAUCY + " -d " + filename;
+		}
+
+		ProgressPrinter.println("\nLaunching saucy via the following command: " + saucyString + "\n");
+		
+		Process saucy = CommunicatingProcess.create(saucyString);
+
+		ErrorStreamHandler errorHandler = new ErrorStreamHandler(saucy, "\nsaucy produced errors:\n======================",  "End of saucy errors");
+		errorHandler.start();
+		
+		BufferedReader br = CommunicatingProcess.getReader(saucy);
+		String temp;
 		try {
-			Process saucy;
-			if(Config.isOSWindows()) {
-				saucy = CommunicatingProcess.create(Config.SAUCY + " -d \"" + filename + "\"");
-			} else {
-				saucy = CommunicatingProcess.create(Config.SAUCY + " -d " + filename);
+			while ((temp = br.readLine()) != null) {
+				result += temp + "\n";
 			}
-
-			BufferedReader br = CommunicatingProcess.getReader(saucy);
-			String temp;
-			try {
-				while ((temp = br.readLine()) != null) {
-					result += temp + "\n";
-				}
-				br.close();
-			} catch (IOException ioe) {
-				System.out.println("Error while getting output from saucy.");
-			}
-
-		} catch (IOException e) {
-			System.out.println("Error reading input for saucy");
+			br.close();
+		} catch (IOException ioe) {
+			ProgressPrinter.println("Error while getting output from saucy.");
 		}
 		
+
+		if(result.equals("")) {
+			System.out.println("The static channel diagram for the input specification has no non-trivial symmetry, so symmetry reduction cannot be applied.");
+			System.out.println("If you are sure that symmetry *is* present in the static channel diagram then check that the saucy command executed above is the correct path to saucy.");
+			System.out.println("* N.B. make sure you are using the version of saucy with digraph support, supplied with TopSPIN *");
+			System.exit(0);
+		}
+
 		return result;
 
 	}
@@ -317,33 +337,35 @@ public class SymmExtractor extends Check {
 	
 	protected void startGAP() throws IOException {
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_START = System.currentTimeMillis(); }
-		System.out.println("Starting GAP");
+
+		String gapString;
 
 		if(Config.isOSWindows()) {
-			gap = CommunicatingProcess.create(Config.GAP + " -L \"" + Config.COMMON + "gapworkspace\" -q");
+			gapString = Config.GAP + " -L \"" + Config.COMMON + "gapworkspace\" -q";
 		} else {
-			gap = CommunicatingProcess.create(Config.GAP + " -L " + Config.COMMON + "gapworkspace -q");
+			gapString = Config.GAP + " -L " + Config.COMMON + "gapworkspace -q";
 		}
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.print("Starting GAP with command: " + gapString + "\n");
+
+		gap = CommunicatingProcess.create(gapString);
 		
 		gapReader = CommunicatingProcess.getReader(gap);
 		gapWriter = CommunicatingProcess.getWriter(gap);
 
+		ErrorStreamHandler esh = new ErrorStreamHandler(gap, "\nGAP produced errors:\n====================",  "End of GAP errors");
+		esh.start();
+		
 		gapWriter.write("0;\n");
 		gapWriter.flush();
 
+		ProgressPrinter.println("Output produced by GAP at startup:");
 		String line = gapReader.readLine();
 		while(!line.equals("0")) {
 			
-			System.out.println(line);
+			ProgressPrinter.println(line);
 			if(line.contains("Couldn't open saved workspace")) {
-				System.out.println("Error -- bad GAP workspace specified in configuration file.");
-				gap.destroy();
-
-				try {
-					gap.waitFor();
-				} catch (InterruptedException e) { }
-				System.exit(1);
-				
+				ProgressPrinter.println("Error -- bad GAP workspace specified in configuration file.");
 			}
 			
 			line = gapReader.readLine();

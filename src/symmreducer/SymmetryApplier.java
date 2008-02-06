@@ -28,6 +28,7 @@ import src.etch.types.SimpleType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.Config;
+import src.utilities.ProgressPrinter;
 import src.utilities.Strategy;
 import src.utilities.StringHelper;
 
@@ -279,6 +280,12 @@ public class SymmetryApplier {
 
 	private void writeRepFunction(List<String> groupInfo, FileWriter out)
 			throws IOException {
+
+		if(Config.PTHREADS) {
+			writeRepPthreads(groupInfo, out);
+			return;
+		}
+		
 		out.write("\nState *rep(State *orig_now) {\n\n");
 
 		if (usingMarkers()) {
@@ -342,6 +349,72 @@ public class SymmetryApplier {
 		}
 		out.write("   return &min_now;\n");
 		out.write("}\n\n");
+	}
+
+	private void writeRepPthreads(List<String> groupInfo, FileWriter out) throws IOException {
+		Assert.assertTrue(groupInfo.get(0).equals("<enumerate>"));
+		
+		int setSize = Integer.parseInt(StringHelper.trimWhitespace(groupInfo
+				.get(1)));
+		
+		out.write("#include <pthread.h>\n");
+		out.write("#define NTHREADS " + Config.NO_CORES + "\n");
+
+		out.write("#define ELEMENTS " + setSize + "\n");
+
+		out.write("#define ITERATIONS (ELEMENTS/NTHREADS)\n");
+
+		out.write("pthread_mutex_t state_mutex;\n");
+
+		out.write("State original;\n");
+
+		out.write("void * rep_local(void *tid) {\n");
+		out.write("   int i, mytid, start, end;\n");
+		out.write("   State my_min, tmp_now;\n");
+
+		out.write("   mytid = *((int*) tid);\n");
+
+		out.write("   start = (mytid)*ITERATIONS;\n");
+		out.write("   end = (mytid<(NTHREADS-1) ? start + ITERATIONS : ELEMENTS);\n");
+
+		out.write("   memcpy(&my_min, &original, vsize);\n");
+
+		out.write("   for(i=start; i<end; i++) {\n");
+		out.write("      memcpy(&tmp_now, &original, vsize);\n");
+		
+		out.write("      applyPermToState(&tmp_now,&(elementset_1[i]));\n");
+		out.write("      if(memcmp(&tmp_now,&my_min,vsize)<0) {\n");
+		out.write("         memcpy(&my_min,&tmp_now,vsize);\n");
+		out.write("      }\n");
+		out.write("   }\n");
+		out.write("   pthread_mutex_lock(&state_mutex);\n");
+		out.write("   if(memcmp(&my_min, &min_now, vsize) < 0) {\n");
+		out.write("      memcpy(&min_now, &my_min,vsize);\n");
+		out.write("   }\n");
+		out.write("   pthread_mutex_unlock(&state_mutex);\n");
+		out.write("   pthread_exit(NULL);\n");
+		out.write("}\n\n");
+
+		out.write("State *rep(State *orig_now) {\n");
+		out.write("   int i, tids[NTHREADS];\n");
+		out.write("   pthread_t threads[NTHREADS];\n");
+		out.write("   pthread_attr_t attr;\n");
+		out.write("   memcpy( &min_now, orig_now, vsize);\n");
+		out.write("   memcpy( &original, orig_now, vsize); // could optimise\n");
+		out.write("   pthread_mutex_init(&state_mutex, NULL);\n");
+		out.write("   pthread_attr_init(&attr);\n");
+		out.write("   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);\n");
+		out.write("   for (i=0; i<NTHREADS; i++) {\n");
+		out.write("      tids[i] = i;\n");
+		out.write("      pthread_create(&threads[i], &attr, rep_local, (void*) &tids[i]);\n");
+		out.write("   }\n\n");
+
+		out.write("   for(i=0; i<NTHREADS; i++) {\n");
+		out.write("      pthread_join(threads[i], NULL);\n");
+		out.write("   }\n\n");
+
+		out.write("   return &min_now;\n");
+		out.write("}\n");
 	}
 
 	private void writeRepLocalSearch(List<String> groupInfo, FileWriter out,
@@ -1348,6 +1421,9 @@ public class SymmetryApplier {
 	}
 
 	private void dealWithGroupFiles() throws IOException, InterruptedException {
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.println("Copying template files for computing with permutations:");
+		
 		if (!usingMarkers() && Config.USE_TRANSPOSITIONS) {
 			copyTextFile(Config.COMMON + "groupTranspositions.c", "group.c");
 			// Copy group theory files into current directory
@@ -1376,14 +1452,17 @@ public class SymmetryApplier {
 			}
 			out.close();
 
-			System.out
-					.println("Remember to compile \"group.c\" together with \"sympan.c\"");
 		}
 
 	}
 
 	private void generatePanFiles() throws IOException, InterruptedException {
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.println("Using SPIN to generate pan files");
 		execute("spin", "-a", specification); // Generate pan files.
+
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.println("Generating sympan files from pan files:");
 
 		char[] endings = { 'c', 'h', 'b', 't', 'm' };
 		for (char ending : endings) { // Copy pan files into sympan files
@@ -2429,7 +2508,7 @@ public class SymmetryApplier {
 
 	private static void copyTextFile(String sourceName, String destName)
 			throws IOException {
-		System.out.print("Copying " + sourceName + " -> " + destName + " ... ");
+		ProgressPrinter.print("   Copying " + sourceName + " -> " + destName + " ... ");
 		BufferedReader br = new BufferedReader(new FileReader(sourceName));
 		BufferedWriter bw = new BufferedWriter(new FileWriter(destName));
 		String line;
@@ -2438,7 +2517,7 @@ public class SymmetryApplier {
 		}
 		br.close();
 		bw.close();
-		System.out.println("[OK]");
+		ProgressPrinter.println("[OK]");
 	}
 
 }

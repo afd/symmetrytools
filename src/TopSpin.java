@@ -8,6 +8,7 @@ import src.symmextractor.SymmExtractor;
 import src.symmreducer.SymmReducer;
 import src.utilities.Config;
 import src.utilities.Profile;
+import src.utilities.ProgressPrinter;
 
 public class TopSpin {
 
@@ -45,17 +46,22 @@ public class TopSpin {
 			if(Config.PROFILE) { Profile.TOPSPIN_END = System.currentTimeMillis(); Profile.show(); }
 			System.exit(0);
 		}
-		
-		System.out.println("Symmetry detection method: " + (Config.AUTOMATIC_DETECTION?"static channel diagram analysis":"manual"));
+
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.println("TopSPIN version " + Config.VERSION);
+		ProgressPrinter.printSeparator();
+		ProgressPrinter.println("Configuration settings:");
+		ProgressPrinter.println("    Symmetry detection method: " + (Config.AUTOMATIC_DETECTION?"static channel diagram analysis":"manual"));
 		if(!Config.AUTOMATIC_DETECTION) {
-			System.out.println("Generators given in: " + Config.AUTOS_FILE);
+			ProgressPrinter.println("    Generators given in: " + Config.AUTOS_FILE);
 		} else {
-			System.out.println("Using " + Config.NO_CONJUGATES + " random conjugate" + (Config.NO_CONJUGATES==1?"":"s"));
-			System.out.println("Timeout for finding largest valid subgroup: " + Config.TIME_BOUND + " seconds");
+			ProgressPrinter.println("    Using " + Config.NO_CONJUGATES + " random conjugate" + (Config.NO_CONJUGATES==1?"":"s"));
+			ProgressPrinter.println("    Timeout for finding largest valid subgroup: " + Config.TIME_BOUND + " seconds");
 		}
-		System.out.println("Reduction strategy: " + Config.REDUCTION_STRATEGY);
-		System.out.println("Using transpositions to represent permutations: " + Config.USE_TRANSPOSITIONS);
-		System.out.println("Using stabiliser chain for enumeration: " + Config.USE_STABILISER_CHAIN);
+		ProgressPrinter.println("    Reduction strategy: " + Config.REDUCTION_STRATEGY);
+		ProgressPrinter.println("    Using transpositions to represent permutations: " + Config.USE_TRANSPOSITIONS);
+		ProgressPrinter.println("    Using stabiliser chain for enumeration: " + Config.USE_STABILISER_CHAIN);
+		ProgressPrinter.printSeparator();
 
 		if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
 		SymmReducer reducer = new SymmReducer(args[args.length-1]);

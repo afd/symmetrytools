@@ -28,6 +28,7 @@ import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.utilities.Config;
 import src.utilities.Profile;
+import src.utilities.ProgressPrinter;
 
 public class Check {
 
@@ -91,6 +92,9 @@ public class Check {
 	}
 
 	public boolean isWellTyped(boolean isPidSensitive) {
+		ProgressPrinter.println("\nTypechecking input specification...\n");
+
+		
 		Checker chk = new Checker(isPidSensitive);
 		theAST.apply(chk);
 		Substituter substituter = chk.unify();
@@ -100,11 +104,14 @@ public class Check {
 			return false;
 		}
 
-		System.out.println("Program is well typed");
+		ProgressPrinter.println("Specification is well typed!");
 
 		substituter.setTypeInformation(chk);
 		theAST.apply(substituter);
-		chk.printCompleteTypeInformation(sourceName);
+
+		if(!ProgressPrinter.QUIET_MODE) {
+			chk.printCompleteTypeInformation(sourceName);
+		}
 
 		return true;
 	}

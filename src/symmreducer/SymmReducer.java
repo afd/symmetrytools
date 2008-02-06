@@ -12,6 +12,7 @@ import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.SymmExtractor;
 import src.utilities.Config;
 import src.utilities.Profile;
+import src.utilities.ProgressPrinter;
 
 public class SymmReducer extends SymmExtractor {
 
@@ -32,9 +33,11 @@ public class SymmReducer extends SymmExtractor {
     	}
 
     	if(extractor==null) {
-    		System.exit(0);
+    		System.exit(1);
     	}
 
+    	ProgressPrinter.println("Generating symmetry reduction algorithms\n");
+    	
     	if(Config.PROFILE) { Profile.CLASSIFY_START = System.currentTimeMillis(); }
 
     	Assert.assertNotNull(gap);
@@ -86,7 +89,7 @@ public class SymmReducer extends SymmExtractor {
 
     	gapWriter.flush();
 
-    	System.out.println("Size of group: " + gapReader.readLine());
+    	ProgressPrinter.println("The symmetry group has size " + gapReader.readLine());
     	
 		String groupGenerators = "";
 		String temp = gapReader.readLine();
@@ -107,6 +110,19 @@ public class SymmReducer extends SymmExtractor {
     	
     	if(Config.PROFILE) { Profile.CODE_GENERATION_END = System.currentTimeMillis(); 	}
 
+    	ProgressPrinter.printSeparator();
+    	ProgressPrinter.println("Completed generation of sympan verifier which includes algorithms for symmetry reduction!\n");
+    	ProgressPrinter.println("To generate an executable verifier use the following command:");
+    	ProgressPrinter.println("   gcc -o sympan sympan.c group.c");
+    	ProgressPrinter.println("together with SPIN compile-time directives for your specification.\n");
+    	ProgressPrinter.println("Execute the verifier using the following command:");
+		if(Config.isOSWindows()) {
+			ProgressPrinter.println("   sympan.exe");
+		} else {
+			ProgressPrinter.println("   ./sympan");
+		}
+		ProgressPrinter.println("together with SPIN run-time options for your specification.");
+		
     }
 
 	private StaticChannelDiagramExtractor parseUserSpecifiedSymmetry() throws FileNotFoundException, IOException {
