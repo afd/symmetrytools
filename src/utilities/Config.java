@@ -22,8 +22,7 @@ public class Config {
 	public static boolean USE_STABILISER_CHAIN = true;
 	public static boolean PROFILE = false;
 	public static boolean DETECT_ONLY = false;
-	public static boolean SIEVE = false;
-	public static boolean OPENMP = false;
+
 	public static int NO_CORES = 0; /* If this is 0, an iteratorclass is used for splitting
 										If > 0 then explicit loops are generated */
 	public static boolean PTHREADS = false;
@@ -80,8 +79,6 @@ public class Config {
 	private static boolean profileset = false;
 	private static boolean strategyset = false;
 	private static boolean stabiliserchainset = false;
-	private static boolean sieveset = false;
-	private static boolean openmpset = false;
 	private static boolean pthreadsset = false;
 	private static boolean coresset = false;
 
@@ -127,12 +124,6 @@ public class Config {
 						System.out.println("Unknown reduction strategy -- defaulting to " + Strategy.FAST);
 						REDUCTION_STRATEGY = Strategy.FAST;
 					}
-				} else if(name.equals("sieve") && !sieveset) {
-					sieveset = true;
-					SIEVE = Boolean.parseBoolean(value.toUpperCase());
-				} else if(name.equals("openmp") && !openmpset) {
-					openmpset = true;
-					OPENMP = Boolean.parseBoolean(value.toUpperCase());
 				} else if(name.equals("pthreads") && !pthreadsset) {
 					pthreadsset = true;
 					PTHREADS = Boolean.parseBoolean(value.toUpperCase());

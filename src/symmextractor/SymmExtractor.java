@@ -2,6 +2,7 @@ package src.symmextractor;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -267,10 +268,20 @@ public class SymmExtractor extends Check {
 	}
 
 	private void computeStaticChannelDiagramAutomorphisms(
-			StaticChannelDiagramExtractor extractor) throws IOException {
-		FileWriter fw = new FileWriter(Config.TEMP_FILES+"graph.saucy");
-		fw.write(extractor.directedSaucyRepresentation());
-		fw.close();
+			StaticChannelDiagramExtractor extractor) {
+
+		try {
+			FileWriter fw = new FileWriter(Config.TEMP_FILES+"graph.saucy");
+			fw.write(extractor.directedSaucyRepresentation());
+			fw.close();
+		} catch(FileNotFoundException e) {
+			System.out.println("Error while trying to create file \"" + Config.TEMP_FILES+"graph.saucy\".  Make sure that the directory " + Config.TEMP_FILES + " exists, and that you have write permission.");
+			System.exit(1);
+		} catch (IOException e) {
+			System.out.println("An error occurred while trying to create the file \"" + Config.TEMP_FILES+"graph.saucy\".");
+			System.exit(1);
+		}
+		
 		ProgressPrinter.println("Computing the group Aut(C(P)) using directed saucy.");
 		String saucyGenerators = computeAutomorphismsOfDirectedGraph(Config.TEMP_FILES+"graph.saucy");
 		

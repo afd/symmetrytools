@@ -1,10 +1,15 @@
 #include "group.h"
 
-struct perm identityPerm() {
+void freePerm(perm_t p) {
+   free(p.pr);
+   free(p.ch);
+}
+
+perm_t identityPerm() {
   return constructPerm("");
 }
 
-void displayPerm(struct perm alpha) {
+void displayPerm(perm_t alpha) {
   int i, j;
   printf("Processes:\n");
   for(i=0; i<NO_PROCS; i++) {
@@ -38,8 +43,8 @@ void displayPerm(struct perm alpha) {
 
 }
 
-struct perm constructPerm(char *transpositionsstring) {
-  struct perm alpha;
+perm_t constructPerm(char *transpositionsstring) {
+  perm_t alpha;
 
   /*  int i, first = -1, current, next, number;
       char *token, temp[5];*/

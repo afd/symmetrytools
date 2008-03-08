@@ -6,16 +6,16 @@
 #define NO_PROCS <NO_PROCS>
 #define NO_CHANS <NO_CHANS>
 
-struct perm {
+typedef struct perm_s {
   int pr[NO_PROCS];
   int ch[NO_CHANS];
-};
+} perm_t;
 
 /* PERMUTATION METHODS */
-struct perm constructPerm(char *dcfstring);
-int applyToPr(struct perm alpha, int pid);
-int applyToCh(struct perm alpha, int cid);
-void displayPerm(struct perm alpha);
-void product(struct perm *result, struct perm alpha,struct perm beta);
-bool equals(struct perm *alpha, struct perm *beta);
-struct perm identityPerm();
+perm_t constructPerm(char *dcfstring);
+int applyToPr(perm_t alpha, int pid);
+int applyToCh(perm_t alpha, int cid);
+void displayPerm(perm_t alpha);
+void product(perm_t *result, perm_t alpha,perm_t beta);
+bool equals(perm_t *alpha, perm_t *beta);
+perm_t identityPerm();

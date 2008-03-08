@@ -1,15 +1,15 @@
 #include "group.h"
 
-bool equals(struct perm *alpha, struct perm *beta) {
-  return(memcmp(alpha,beta,sizeof(struct perm))==0);
+bool equals(perm_t *alpha, perm_t *beta) {
+  return(memcmp(alpha,beta,sizeof(perm_t))==0);
 }
 
-struct perm identityPerm() {
+perm_t identityPerm() {
   return constructPerm("()");
 }
 
-struct perm constructPerm(char *dcfstring) {
-  struct perm alpha;
+perm_t constructPerm(char *dcfstring) {
+  perm_t alpha;
   int i, first = -1, current, next, number;
   char *token, temp[5];
 
@@ -68,7 +68,7 @@ struct perm constructPerm(char *dcfstring) {
 }
 
 
-void displayPerm(struct perm alpha) {
+void displayPerm(perm_t alpha) {
   bool dealtWithProcess[NO_PROCS];
   bool dealtWithChannel[NO_CHANS];
   bool writtenBracket;
@@ -123,7 +123,7 @@ void displayPerm(struct perm alpha) {
   
 }
 
-void product(struct perm *result, struct perm alpha,struct perm beta) {
+void product(perm_t *result, perm_t alpha,perm_t beta) {
   // APPLY BETA THEN ALPHA
   int i;
   for(i=0; i<NO_PROCS; i++)
@@ -132,11 +132,11 @@ void product(struct perm *result, struct perm alpha,struct perm beta) {
     result->ch[i]=applyToCh(alpha,applyToCh(beta,i));
 }
 
-int applyToCh(struct perm alpha,int cid) {
+int applyToCh(perm_t alpha,int cid) {
   return ( (cid >= 0) && (cid < NO_CHANS) ? alpha.ch[cid] : -1);
 }
 
-int applyToPr(struct perm alpha,int pid) {
+int applyToPr(perm_t alpha,int pid) {
   return ( (pid >= 0) && (pid < NO_PROCS) ? alpha.pr[pid] : -1);
 }
 

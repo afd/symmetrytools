@@ -13,6 +13,7 @@ import src.symmextractor.SymmExtractor;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
+import src.utilities.Strategy;
 
 public class SymmReducer extends SymmExtractor {
 
@@ -113,7 +114,13 @@ public class SymmReducer extends SymmExtractor {
     	ProgressPrinter.printSeparator();
     	ProgressPrinter.println("Completed generation of sympan verifier which includes algorithms for symmetry reduction!\n");
     	ProgressPrinter.println("To generate an executable verifier use the following command:");
-    	ProgressPrinter.println("   gcc -o sympan sympan.c group.c");
+    	ProgressPrinter.print("   gcc -o sympan sympan.c group.c");
+    	    	
+    	if(Config.PTHREADS) {
+    		ProgressPrinter.print(" symmetry_threads.c -DNUM_THREADS=...");
+    	}
+    	
+    	ProgressPrinter.println("");
     	ProgressPrinter.println("together with SPIN compile-time directives for your specification.\n");
     	ProgressPrinter.println("Execute the verifier using the following command:");
 		if(Config.isOSWindows()) {

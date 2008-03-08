@@ -28,12 +28,13 @@ Classify := function(G)
 
     #Print("Disjoint product: ",A,"\n\n");
 
-    result := "";
+    result := "<parallel>\n";
     for i in [1..Size(A)] do
       Classify(A[i]);
 
       result := Concatenation(result,Classify(A[i]));
     od;
+    result := Concatenation(result,"</parallel>\n");
 
     return result;
   fi;
@@ -45,12 +46,17 @@ Classify := function(G)
 
     #Print("Wreath product: ",A,"\n\n");
 
-    result := "";
-    for i in [1..Size(A)] do
+    result := "<parallel>\n";
+    
+    for i in [1..Size(A)-1] do
       Classify(A[i]);
 
       result := Concatenation(result,Classify(A[i]));
     od;
+
+    result := Concatenation(result,"</parallel>\n");
+
+    result := Concatenation(result, Classify(A[Size(A)]));
 
     return result;
 

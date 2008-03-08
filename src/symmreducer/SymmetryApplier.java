@@ -2,6 +2,7 @@ package src.symmreducer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -39,8 +40,6 @@ public class SymmetryApplier {
 	private String specification;
 
 	private String groupGenerators;
-
-	private final String memcpy = Config.SIEVE ? "imm_memcpy" : "memcpy";
 	
 	public SymmetryApplier(String specification,
 			StaticChannelDiagramExtractor typeInfo, String groupGenerators) {
@@ -55,6 +54,8 @@ public class SymmetryApplier {
 			dealWithSympanHeader();
 			dealWithSympanBody();
 			dealWithGroupFiles();
+			dealWithSegmentFiles();
+			dealWithSymmetryThreadFiles();
 		} catch (Exception e) {
 			System.out
 					.println("An error occurred while constructing the \"sympan\" files.");
@@ -101,15 +102,18 @@ public class SymmetryApplier {
 					writeApplyPermToStateBasic(out);
 				}
 
+				if(Config.PTHREADS) {
+					out.write("\n#include \"symmetry_threads.h\"\n\n");
+					out.write("pthread_mutex_t min_mutex = PTHREAD_MUTEX_INITIALIZER;\n\n");
+				}
+				
 				if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
 					writeLt(out);
 					writeEqualProcesses(out);
 					writeEqualChannels(out);
-					writeFreePerm(out);
-					writeSegmentDataStructuresAndMacros(out);
-					writeIsKey(out);
 					writeConstructPartition(out);
-					writeSegment(out);
+					out.write("#include \"segment.h\"\n");
+
 				} else if (Config.REDUCTION_STRATEGY == Strategy.FLATTEN) {
 					writeFlatten(out);
 				} else if (usingMarkers()) {
@@ -126,9 +130,14 @@ public class SymmetryApplier {
 				writeRepFunction(groupInfo, out);
 			}
 
-			if (verificationEndPoint(lines, counter)
-					&& Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
-				writeWrapUpSegment(out);
+			if (verificationEndPoint(lines, counter)) {
+				if(Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+					writeWrapUpSegment(out);
+				}
+				
+				/*if(Config.PTHREADS) {
+					out.write("   join_threads();\n\n");
+				}*/
 			}
 
 			if (!usingMarkers() && mainMethodReached(lines, counter)) {
@@ -167,6 +176,10 @@ public class SymmetryApplier {
 									groupInfoCounter);
 						}
 					}
+				}
+				
+				if(Config.PTHREADS) {
+					out.write("   start_threads();\n\n");
 				}
 			}
 		}
@@ -207,7 +220,7 @@ public class SymmetryApplier {
 					.trimWhitespace(cosetInfo[1]));
 			out.write("\n   elementset_" + setCounter + "[" + partitionCounter
 					+ "] = malloc(" + partitionSize
-					+ " * sizeof(struct perm));\n");
+					+ " * sizeof(perm_t));\n");
 			if (Config.USE_TRANSPOSITIONS) {
 				out.write("   elementset_" + setCounter + "["
 						+ partitionCounter + "][0] = constructPerm(\"\");\n");
@@ -257,13 +270,18 @@ public class SymmetryApplier {
 		// AND PUT THE APPROPRIATE
 		// DECLARATIONS
 		for (int groupInfoCounter = 0; groupInfoCounter < groupInfo.size(); groupInfoCounter++) {
+
+			if(groupInfo.get(groupInfoCounter).contains("parallel")) {
+				continue;
+			}
+			
 			if (groupInfo.get(groupInfoCounter).contains("<")) {
 				if (Config.USE_STABILISER_CHAIN
 						&& groupInfo.get(groupInfoCounter).contains(
 								"<enumerate>")) {
-					out.write("struct perm* elementset_");
+					out.write("perm_t* elementset_");
 				} else {
-					out.write("struct perm elementset_");
+					out.write("perm_t elementset_");
 				}
 				out.write(setcounter
 						+ "["
@@ -281,8 +299,8 @@ public class SymmetryApplier {
 	private void writeRepFunction(List<String> groupInfo, FileWriter out)
 			throws IOException {
 
-		if(Config.PTHREADS) {
-			writeRepPthreads(groupInfo, out);
+		if(Config.PTHREADS && (Config.REDUCTION_STRATEGY==Strategy.ENUMERATE)) {
+			writeRepPthreadsEnumerate(groupInfo, out);
 			return;
 		}
 		
@@ -351,70 +369,115 @@ public class SymmetryApplier {
 		out.write("}\n\n");
 	}
 
-	private void writeRepPthreads(List<String> groupInfo, FileWriter out) throws IOException {
-		Assert.assertTrue(groupInfo.get(0).equals("<enumerate>"));
+	private void writeRepPthreadsEnumerate(List<String> groupInfo, FileWriter out) throws IOException {
+		Assert.assertTrue(Config.REDUCTION_STRATEGY==Strategy.ENUMERATE);
+
+		out.write("State* original;\n\n");
+
+		out.write("void * thread_body(void* arg) {\n");
+		out.write("   int id, start, end, i;\n");
 		
-		int setSize = Integer.parseInt(StringHelper.trimWhitespace(groupInfo
-				.get(1)));
-		
-		out.write("#include <pthread.h>\n");
-		out.write("#define NTHREADS " + Config.NO_CORES + "\n");
+		if(Config.USE_STABILISER_CHAIN) {
+			writeThreadBodyStabiliserChain(out, groupInfo);
+		} else {
+			writeThreadBodyBasic(out, Integer.parseInt(StringHelper.trimWhitespace(groupInfo.get(1))));
+		}
 
-		out.write("#define ELEMENTS " + setSize + "\n");
+		out.write("   return 0;\n\n");
+		out.write("}\n\n\n");
 
-		out.write("#define ITERATIONS (ELEMENTS/NTHREADS)\n");
-
-		out.write("pthread_mutex_t state_mutex;\n");
-
-		out.write("State original;\n");
-
-		out.write("void * rep_local(void *tid) {\n");
-		out.write("   int i, mytid, start, end;\n");
-		out.write("   State my_min, tmp_now;\n");
-
-		out.write("   mytid = *((int*) tid);\n");
-
-		out.write("   start = (mytid)*ITERATIONS;\n");
-		out.write("   end = (mytid<(NTHREADS-1) ? start + ITERATIONS : ELEMENTS);\n");
-
-		out.write("   memcpy(&my_min, &original, vsize);\n");
-
-		out.write("   for(i=start; i<end; i++) {\n");
-		out.write("      memcpy(&tmp_now, &original, vsize);\n");
-		
-		out.write("      applyPermToState(&tmp_now,&(elementset_1[i]));\n");
-		out.write("      if(memcmp(&tmp_now,&my_min,vsize)<0) {\n");
-		out.write("         memcpy(&my_min,&tmp_now,vsize);\n");
-		out.write("      }\n");
-		out.write("   }\n");
-		out.write("   pthread_mutex_lock(&state_mutex);\n");
-		out.write("   if(memcmp(&my_min, &min_now, vsize) < 0) {\n");
-		out.write("      memcpy(&min_now, &my_min,vsize);\n");
-		out.write("   }\n");
-		out.write("   pthread_mutex_unlock(&state_mutex);\n");
-		out.write("   pthread_exit(NULL);\n");
-		out.write("}\n\n");
 
 		out.write("State *rep(State *orig_now) {\n");
-		out.write("   int i, tids[NTHREADS];\n");
-		out.write("   pthread_t threads[NTHREADS];\n");
-		out.write("   pthread_attr_t attr;\n");
-		out.write("   memcpy( &min_now, orig_now, vsize);\n");
-		out.write("   memcpy( &original, orig_now, vsize); // could optimise\n");
-		out.write("   pthread_mutex_init(&state_mutex, NULL);\n");
-		out.write("   pthread_attr_init(&attr);\n");
-		out.write("   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);\n");
-		out.write("   for (i=0; i<NTHREADS; i++) {\n");
-		out.write("      tids[i] = i;\n");
-		out.write("      pthread_create(&threads[i], &attr, rep_local, (void*) &tids[i]);\n");
-		out.write("   }\n\n");
-
-		out.write("   for(i=0; i<NTHREADS; i++) {\n");
-		out.write("      pthread_join(threads[i], NULL);\n");
-		out.write("   }\n\n");
-
+		out.write("   memcpy(&min_now,orig_now, vsize);\n");
+		out.write("   original = orig_now;\n");
+		out.write("   wake_threads();\n");
+		out.write("   wait_for_threads();\n");
 		out.write("   return &min_now;\n");
-		out.write("}\n");
+		out.write("}\n\n");
+				
+	}
+
+	private void writeThreadBodyBasic(FileWriter out, final int numberOfNonTrivialGroupElements) throws IOException {
+		out.write("   id = *(int*)arg;\n");
+		out.write("   get_data_section(&start, &end, id, " + numberOfNonTrivialGroupElements + ");\n\n");
+
+		out.write("   while(working(id)) {\n");
+		out.write("      State partial_min;\n");
+		out.write("      State temp;\n");
+		out.write("      memcpy(&partial_min, original, vsize);\n\n");
+
+		out.write("      for(i=start; i<end; i++) {\n");
+		out.write("         memcpy(&temp, original, vsize);\n");
+		out.write("         applyPermToState(&temp, &(elementset_1[i]));\n");
+		out.write("         if(memcmp(&temp,&partial_min,vsize)<0) {\n");
+		out.write("            memcpy(&partial_min,&temp,vsize);\n");
+		out.write("         }\n");
+		out.write("      }\n\n");
+
+		out.write("      pthread_mutex_lock(&min_mutex);\n");
+		out.write("      if(memcmp(&partial_min, &min_now, vsize)<0) {\n");
+		out.write("         memcpy(&min_now, &partial_min, vsize);\n");
+		out.write("      }\n");
+		out.write("      pthread_mutex_unlock(&min_mutex);\n");
+		out.write("      sleep(id);\n");
+		out.write("   }\n\n");
+
+	}
+
+	private void writeThreadBodyStabiliserChain(FileWriter out, List<String> groupInfo) throws IOException {
+
+		final int stabiliserChainSize = getSizeOfStabiliserChain(groupInfo, 0);
+
+		List<Integer> stabiliserChainComponentSizes = getStabiliserChainComponentSizes(groupInfo, 0, stabiliserChainSize);
+
+		int numberOfGroupElements = getSizeOfGroupFromStabiliserChainComponentSizes(stabiliserChainComponentSizes);
+
+		out.write("   int ");
+		for(int i=0; i<stabiliserChainSize; i++) {
+			out.write("start_" + i + ", ");
+		}
+		out.write("count;\n");
+		
+		out.write("   id = *(int*)arg;\n");
+		out.write("   get_data_section(&start, &end, id, " + numberOfGroupElements + ");\n\n");
+		
+		out.write("   while(working(id)) {\n");
+		out.write("      State partial_min;\n");
+		out.write("      memcpy(&partial_min, original, vsize);\n\n");
+
+		int divisor = 1;
+		for(int i=0; i<stabiliserChainSize; i++) {
+			out.write("   start_" + i + " = (start/" + divisor + ")%" + stabiliserChainComponentSizes.get(i) + ";\n"); 
+			divisor *= stabiliserChainComponentSizes.get(i);
+		}
+		out.write("   count = 0;\n");
+		
+		List<String> start = new ArrayList<String>();
+		List<String> end = new ArrayList<String>();
+
+		for(int i=0; i<stabiliserChainSize ; i++) {
+			start.add("start_" + i + ", start_" + i + "=0");
+			end.add(stabiliserChainComponentSizes.get(i).toString());
+		}
+
+		outputSimsEnumeration(out, 1, stabiliserChainSize, start, end, "partial_min", "original");
+
+		out.write("      pthread_mutex_lock(&min_mutex);\n");
+		out.write("      if(memcmp(&partial_min, &min_now, vsize)<0) {\n");
+		out.write("         memcpy(&min_now, &partial_min, vsize);\n");
+		out.write("      }\n");
+		out.write("      pthread_mutex_unlock(&min_mutex);\n");
+		out.write("      sleep(id);\n");
+		out.write("   }\n\n");
+	}
+
+	private int getSizeOfGroupFromStabiliserChainComponentSizes(List<Integer> stabiliserChainComponentSizes) {
+		int numberOfNonTrivialGroupElements;
+		numberOfNonTrivialGroupElements = stabiliserChainComponentSizes.get(0);
+		for(int i=1; i<stabiliserChainComponentSizes.size(); i++) {
+			numberOfNonTrivialGroupElements *= stabiliserChainComponentSizes.get(i);
+		}
+		return numberOfNonTrivialGroupElements;
 	}
 
 	private void writeRepLocalSearch(List<String> groupInfo, FileWriter out,
@@ -465,172 +528,165 @@ public class SymmetryApplier {
 			int groupInfoCounter, int setCounter) throws IOException {
 		int setSize = Integer.parseInt(StringHelper.trimWhitespace(groupInfo
 				.get(groupInfoCounter + 1)));
-		if (Config.SIEVE) {
-			writeRepEnumerateBasicSieve(groupInfo, out, groupInfoCounter,
-					setCounter, setSize);
-		} else {
-			out.write("   {\n");
-			out.write("      int j;\n");
-			out.write("      State tmp_now, current_min;\n");
-	
-			out.write("      memcpy(&tmp_now, &min_now, vsize);\n");
-			out.write("      memcpy(&current_min, &min_now, vsize);\n");
-			if(Config.OPENMP) {
-				out.write("      #pragma omp parallel for private(j,tmp_now,current_min)\n");
-			}
-			out.write("      for(j=0; j<" + setSize + "; j++) {\n");
-			out.write("         applyPermToState(&tmp_now,&(elementset_"
-					+ setCounter + "[j]));\n");
-			out.write("         if(" + compare("&tmp_now", "&current_min")
-					+ ") {\n");
-			out.write("            memcpy(&current_min,&tmp_now,vsize);\n");
-			out.write("         }\n");
-			out.write("         memcpy(&tmp_now,&min_now,vsize);\n");
-			out.write("      }\n");
-			out.write("      memcpy(&min_now,&current_min,vsize);\n\n");
-			out.write("   }\n");
-		}
+		out.write("   {\n");
+		out.write("      int j;\n");
+		out.write("      State tmp_now, current_min;\n");
+
+		out.write("      memcpy(&tmp_now, &min_now, vsize);\n");
+		out.write("      memcpy(&current_min, &min_now, vsize);\n");
+		out.write("      for(j=0; j<" + setSize + "; j++) {\n");
+		out.write("         applyPermToState(&tmp_now,&(elementset_"
+				+ setCounter + "[j]));\n");
+		out.write("         if(" + compare("&tmp_now", "&current_min")
+				+ ") {\n");
+		out.write("            memcpy(&current_min,&tmp_now,vsize);\n");
+		out.write("         }\n");
+		out.write("         memcpy(&tmp_now,&min_now,vsize);\n");
+		out.write("      }\n");
+		out.write("      memcpy(&min_now,&current_min,vsize);\n\n");
+		out.write("   }\n");
 	}
 
-	private void writeRepEnumerateBasicSieve(List<String> groupInfo,
-			FileWriter out, int groupInfoCounter, int setCounter, int setSize)
-			throws IOException {
-
-		if(Config.NO_CORES == 0) {
-			// Use iterator and accumulator
-			
-
-			
-			
-			
-			
-		} else {
-			
-			
-			
-			
-			
-			out.write("   {\n");
-			out.write("      State ");
-			for(int i=1; i<=Config.NO_CORES; i++) {
-				out.write("min" + i + ", ");
-			}
-			out.write("*minptr;\n");
-			out.write("      sieve {\n");
-			for(int i=1; i<=Config.NO_CORES; i++) {
-				out.write("         {\n");
-				out.write("            State tmp_now, current_min;\n");
-				out.write("            outer_memcpy(&tmp_now, &min_now, vsize);\n");
-				out.write("            imm_memcpy(&current_min, &tmp_now, vsize);\n");
-				out.write("            for(int j=" + ((i-1)*setSize/Config.NO_CORES) + "; j<" + (i*setSize/Config.NO_CORES) + "; j++) {\n");
-				out.write("               applyPermToState(&tmp_now,&(elementset_" + setCounter + "[j]));\n");
-				out.write("               if(imm_memcmp(&tmp_now,&current_min,vsize)<0) {\n");
-				out.write("                  imm_memcpy(&current_min,&tmp_now,vsize);\n");
-				out.write("               }\n");
-				out.write("               outer_memcpy(&tmp_now,&min_now,vsize);\n");
-				out.write("            }\n");
-				out.write("            delayed_memcpy(&min" + i + ",&current_min,vsize);\n");
-				out.write("         }\n");
-				if(i<Config.NO_CORES) {
-					out.write("         splithere;\n");
-				}
-			}
-			out.write("      }\n");
-			out.write("      minptr = &min1;\n");
-			for (int i = 2; i <= Config.NO_CORES; i++) {
-				out.write("      if(memcmp(&min" + i + ",minptr,vsize)<0) {\n");
-				out.write("         minptr = &min" + i + ";\n");
-				out.write("      }\n");
-			}
-			out.write("      memcpy(&min_now,minptr,vsize);\n");
-			out.write("   }\n");
-		}
-		
-	}
 
 	private int writeRepEnumerateStabiliserChain(List<String> groupInfo,
 			FileWriter out, int groupInfoCounter, int setCounter)
 			throws IOException {
-		int stabChainSize = Integer.parseInt(StringHelper
-				.trimWhitespace(groupInfo.get(groupInfoCounter + 1)));
-		// make an array which stores the number of reps
-		// for each partitioning
+		final int stabiliserChainSize = getSizeOfStabiliserChain(groupInfo, groupInfoCounter);
+		List<Integer> stabiliserChainComponentSizes = getStabiliserChainComponentSizes(groupInfo, groupInfoCounter, stabiliserChainSize);
+		System.out.println(stabiliserChainComponentSizes);
+		
+		List<String> start = new ArrayList<String>();
+		List<String> end = new ArrayList<String>();
 
-		int partitionCounter = 0;
-		int[] partitionSize = new int[stabChainSize];
-		while (partitionCounter < stabChainSize) {
-			if (groupInfo.get(groupInfoCounter).contains("coset")) {
-				String[] cosetInfo = groupInfo.get(groupInfoCounter).split(":");
-				partitionSize[partitionCounter] = Integer.parseInt(StringHelper
-						.trimWhitespace(cosetInfo[1]));
-				partitionCounter++;
-			}
-			groupInfoCounter++;
+		
+		for(int i=0; i<stabiliserChainSize; i++) {
+			start.add("0");
+			end.add(stabiliserChainComponentSizes.get(i).toString());
 		}
+		
 		out.write("   {\n");
+
+		out.write("   State originalForThisStrategy;\n");
+		out.write("   memcpy(&originalForThisStrategy,&min_now,vsize);\n\n");
+
+		outputSimsEnumeration(out, setCounter, stabiliserChainSize, start, end, "min_now", "&originalForThisStrategy");
+
+		out.write("   } /* End of sims enumeration */\n");
+
+		return newValueOfGroupInfoCounter(groupInfoCounter, groupInfo, stabiliserChainSize);
+
+	}
+
+	private void outputSimsEnumeration(FileWriter out, int setCounter, final int stabiliserChainSize, List<String> start, List<String> end, String minName, String originalName) throws IOException {
+		System.out.println("Stabiliser chain size is " + stabiliserChainSize);
+		
 		out.write("   int ");
-		for (partitionCounter = 0; partitionCounter < stabChainSize; partitionCounter++) {
-			out.write("i" + partitionCounter);
-			if (partitionCounter < (stabChainSize - 1)) {
+		for (int counter = 0; counter < stabiliserChainSize; counter++) {
+			out.write("i" + counter);
+			if (counter < (stabiliserChainSize - 1)) {
 				out.write(", ");
 			} else {
 				out.write(";\n\n");
 			}
 		}
-		out.write("   State partialImages[" + stabChainSize + "];\n\n");
-		out.write("   State originalForThisStrategy;\n");
-		out.write("   memcpy(&originalForThisStrategy,&min_now,vsize);\n\n");
-		for (partitionCounter = 0; partitionCounter < stabChainSize; partitionCounter++) {
-			for (int whiteSpaceCounter = 0; whiteSpaceCounter < partitionCounter + 1; whiteSpaceCounter++) {
+		out.write("   State partialImages[" + stabiliserChainSize + "];\n\n");
+		for (int counter = 0; counter < stabiliserChainSize; counter++) {
+			for (int whiteSpaceCounter = 0; whiteSpaceCounter < counter + 1; whiteSpaceCounter++) {
 				out.write("   ");
 			}
-			int partitionIndex = stabChainSize - partitionCounter - 1;
-			out.write("for(i" + partitionIndex + "=0; i" + partitionIndex + "<"
-					+ partitionSize[partitionIndex] + "; i" + partitionIndex
+			int partitionIndex = stabiliserChainSize - counter - 1;
+			out.write("for(i" + partitionIndex + "=" + start.get(partitionIndex) + "; ");
+			
+			
+			out.write("(i" + partitionIndex + "<"
+					+ end.get(partitionIndex) + ")");
+			
+			if(Config.PTHREADS) {
+				out.write(" && (count<(end-start))");			
+			}
+			
+			out.write("; i" + partitionIndex
 					+ "++) {\n");
-			for (int whiteSpaceCounter = 0; whiteSpaceCounter < partitionCounter + 2; whiteSpaceCounter++) {
-				out.write("   ");
-			}
-			if (partitionCounter == 0) {
+
+			indent(out, counter+2);
+
+			if (counter == 0) {
 				out.write("memcpy(&partialImages[" + partitionIndex
-						+ "],&originalForThisStrategy,vsize);\n");
+						+ "]," + originalName + ",vsize);\n");
 			} else {
 				out.write("memcpy(&partialImages[" + partitionIndex
 						+ "],&partialImages[" + (partitionIndex + 1)
 						+ "],vsize);\n");
 			}
-			for (int whiteSpaceCounter = 0; whiteSpaceCounter < partitionCounter + 2; whiteSpaceCounter++) {
+			for (int whiteSpaceCounter = 0; whiteSpaceCounter < counter + 2; whiteSpaceCounter++) {
 				out.write("   ");
 			}
 			out.write("applyPermToState(&partialImages[" + partitionIndex
 					+ "],&elementset_" + setCounter + "[" + partitionIndex
 					+ "][i" + partitionIndex + "]);\n\n");
 		}
-		for (partitionCounter = 0; partitionCounter < stabChainSize; partitionCounter++) {
-			out.write("   ");
+
+		if(Config.PTHREADS) {
+			indent(out, stabiliserChainSize+1);
+			out.write("count++;\n");
 		}
-		out
-				.write("   if(" + compare("&partialImages[0]", "&min_now")
-						+ ") {\n");
-		for (partitionCounter = 0; partitionCounter < stabChainSize; partitionCounter++) {
-			out.write("   ");
-		}
-		out.write("      memcpy(&min_now,&partialImages[0],vsize);\n");
-		for (partitionCounter = 0; partitionCounter < stabChainSize; partitionCounter++) {
-			out.write("   ");
-		}
-		out.write(" }\n");
-		for (int partitionIndex = stabChainSize; partitionIndex > 0; partitionIndex--) {
-			for (partitionCounter = 0; partitionCounter < partitionIndex; partitionCounter++) {
-				out.write("   ");
-			}
+		
+		indent(out,stabiliserChainSize+1);
+		out	.write("if(" + compare("&partialImages[0]", "&" + minName) + ") {\n");
+
+		indent(out, stabiliserChainSize+2);
+		out.write("memcpy(&" + minName + ",&partialImages[0],vsize);\n");
+
+		indent(out,stabiliserChainSize+1);
+		out.write("}\n");
+
+		for (int i = stabiliserChainSize; i > 0; i--) {
+			indent(out, i);
 			out.write("}\n");
 		}
-		out.write("   } /* End of sims enumeration */\n");
-		return groupInfoCounter;
 	}
 
-	private void writeRepApproxMarkers(FileWriter out, int procsminus1)
+	private List<Integer> getStabiliserChainComponentSizes(List<String> groupInfo, int groupInfoCounter, int stabChainSize) {
+		List<Integer> partitionSize = new ArrayList<Integer>();
+
+		int partitionCounter = 0;
+		while(partitionCounter < stabChainSize) {
+			if (groupInfo.get(groupInfoCounter).contains("coset")) {
+				String[] cosetInfo = groupInfo.get(groupInfoCounter).split(":");
+				partitionSize.add(Integer.parseInt(StringHelper
+						.trimWhitespace(cosetInfo[1])));
+				partitionCounter++;
+			}
+			groupInfoCounter++;
+		}
+		return partitionSize;
+	}
+
+	private int newValueOfGroupInfoCounter(int groupInfoCounter, List<String> groupInfo, int stabiliserChainSize) {
+		int partitionCounter = 0;
+		while(partitionCounter < stabiliserChainSize) {
+			if (groupInfo.get(groupInfoCounter).contains("coset")) {
+				partitionCounter++;
+			}
+			groupInfoCounter++;
+		}
+		return groupInfoCounter;
+	}
+	
+	
+	private int getSizeOfStabiliserChain(List<String> groupInfo, int groupInfoCounter) {
+		int stabChainSize = Integer.parseInt(StringHelper
+				.trimWhitespace(groupInfo.get(groupInfoCounter + 1)));
+		return stabChainSize;
+	}
+
+	private void indent(FileWriter out, int numberOfTabs) throws IOException {
+		for (int counter = 0; counter < numberOfTabs; counter++) {
+			out.write("   ");
+		}
+	}
+
+	private void writeRepApproxMarkers(FileWriter out, final int procsminus1)
 			throws IOException {
 		out.write("   Marker markers[" + procsminus1 + "], orig_markers["
 				+ procsminus1 + "], temp;\n");
@@ -646,8 +702,7 @@ public class SymmetryApplier {
 		out.write("      for(j=i+1; j<" + procsminus1 + "; j++) {\n");
 		out.write("         if(lt(markers,i,j,orig_now)) {\n");
 		out.write("            memcpy(&temp,&markers[i],sizeof(Marker));\n");
-		out
-				.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
+		out.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
 		out.write("            memcpy(&markers[j],&temp,sizeof(Marker));\n");
 		out.write("         }\n");
 		out.write("      }\n");
@@ -676,8 +731,7 @@ public class SymmetryApplier {
 		out.write("      for(j=i+1; j<" + procsminus1 + "; j++) {\n");
 		out.write("         if(lt(markers,i,j,orig_now)) {\n");
 		out.write("            memcpy(&temp,&markers[i],sizeof(Marker));");
-		out
-				.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
+		out.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
 		out.write("            memcpy(&markers[j],&temp,sizeof(Marker));\n");
 		out.write("            applyPrSwapToState(&min_now,i+1,j+1);\n");
 		out.write("         }\n");
@@ -685,152 +739,10 @@ public class SymmetryApplier {
 		out.write("   }\n");
 	}
 
-	private void writeSegment(FileWriter out) throws IOException {
-		out.write("void segment(State *s) {\n\n");
-		out.write("   char *partitionString = constructPartition(s);\n\n");
-		out.write("   struct perm** traversalChain;\n");
-		out.write("   int noLevels;\n");
-		out.write("   int* cosetsPerLevel;\n");
-		out.write("   int index = isKey(partitionString);\n\n");
-		out.write("   if(index!=-1) {\n");
-		out.write("      free(partitionString);\n");
-		out.write("      if(stabiliserNoLevels[index]==0) {\n");
-		out.write("         return;\n");
-		out.write("      }\n\n");
-		out.write("      traversalChain = stabiliserValues[index];\n");
-		out.write("      noLevels = stabiliserNoLevels[index];\n");
-		out.write("      cosetsPerLevel = stabiliserCosetsPerLevel[index];\n");
-		out.write("   } else {\n");
-		out.write("      printf(\"%s\",partitionString);\n");
-		out.write("      char line[256];\n");
-		out.write("      fgets(line,256,stdin);\n");
-		out.write("      if(strncmp(line,\"identity\",8)==0) {\n");
-		out
-				.write("         stabiliserKeys[noStabilisers] = partitionString;\n");
-		out.write("         stabiliserNoLevels[noStabilisers] = 0;\n");
-		out.write("         noStabilisers++;\n");
-		out.write("         return;\n");
-		out.write("      }\n\n");
-		out
-				.write("      sscanf(line,\"%d\",&stabiliserNoLevels[noStabilisers]);\n");
-		out
-				.write("      stabiliserCosetsPerLevel[noStabilisers] = (int*)malloc(stabiliserNoLevels[noStabilisers]*sizeof(int));\n");
-		out
-				.write("      traversalChain = (struct perm**)malloc(stabiliserNoLevels[noStabilisers]*sizeof(struct perm*));\n\n");
-		out.write("      int i;\n");
-		out
-				.write("      for(i=0; i<stabiliserNoLevels[noStabilisers]; i++) {\n");
-		out.write("         fgets(line,256,stdin);\n");
-		out
-				.write("	        sscanf(line,\"%d\",&stabiliserCosetsPerLevel[noStabilisers][i]);\n");
-		out
-				.write("         traversalChain[i] = (struct perm*)malloc(stabiliserCosetsPerLevel[noStabilisers][i]*sizeof(struct perm));\n");
-		out.write("         traversalChain[i][0] = constructPerm(\"\");\n");
-		out.write("         int j;\n");
-		out
-				.write("         for(j=1; j<stabiliserCosetsPerLevel[noStabilisers][i]; j++) {\n");
-		out.write("            fgets(line,256,stdin);\n");
-		out.write("            traversalChain[i][j] = constructPerm(line);\n");
-		out.write("         }\n");
-		out.write("      }\n\n");
-		out.write("      stabiliserKeys[noStabilisers] = partitionString;\n");
-		out.write("      stabiliserValues[noStabilisers] = traversalChain;\n");
-		out.write("      noLevels = stabiliserNoLevels[noStabilisers];\n");
-		out
-				.write("      cosetsPerLevel = stabiliserCosetsPerLevel[noStabilisers];\n\n");
-		out.write("      noStabilisers++;\n\n");
-		out.write("   }\n\n");
-		out.write("   // Do minimisation\n");
-		out.write("   int levelCounters[noLevels];\n\n");
-		out.write("   int i;\n");
-		out.write("   for(i=0; i<noLevels; i++) {\n");
-		out.write("      levelCounters[i] = 0;\n");
-		out.write("   }\n\n");
-		out.write("   State partialImages[noLevels];\n");
-		out.write("   State original_s;\n");
-		out.write("   memcpy(&original_s,s,vsize);\n");
-		out.write("   memcpy(&partialImages[noLevels-1],&original_s,vsize);\n");
-		out
-				.write("   applyPermToState(&partialImages[noLevels-1],&traversalChain[noLevels-1][0]);\n");
-		out.write("   for(i=noLevels-2; i>=0; i--) {\n");
-		out
-				.write("      memcpy(&partialImages[i],&partialImages[i+1],vsize);\n");
-		out
-				.write("      applyPermToState(&partialImages[i],&traversalChain[i][0]);\n");
-		out.write("   }\n\n");
-		out.write("   for(;;) {\n");
-		out.write("      if(memcmp(&partialImages[0],s,vsize)<0) {\n");
-		out.write("         memcpy(s,&partialImages[0],vsize);\n");
-		out.write("      }\n");
-		out.write("      int finished = 1;\n");
-		out.write("      for(i=noLevels-1; i>=0; i--) {\n");
-		out.write("         if(levelCounters[i]<cosetsPerLevel[i]-1) {\n");
-		out.write("            finished = 0;\n");
-		out.write("            break;\n");
-		out.write("         }\n");
-		out.write("      }\n\n");
-		out.write("      if(finished) {\n");
-		out.write("         break;\n");
-		out.write("      }\n\n");
-		out.write("      int levelToUpdate = 0;\n\n");
-		out.write("      for(;;) {\n");
-		out
-				.write("         if(levelCounters[levelToUpdate]<cosetsPerLevel[levelToUpdate]-1) {\n");
-		out.write("            levelCounters[levelToUpdate]++;\n");
-		out.write("            for(i=levelToUpdate; i>=0; i--) {\n");
-		out.write("               if(i==noLevels-1) {\n");
-		out
-				.write("                  memcpy(&partialImages[i],&original_s,vsize);\n");
-		out.write("               } else {\n");
-		out
-				.write("                  memcpy(&partialImages[i],&partialImages[i+1],vsize);\n");
-		out.write("               }\n");
-		out
-				.write("               applyPermToState(&partialImages[i],&traversalChain[i][levelCounters[i]]);\n");
-		out.write("            }\n");
-		out.write("            break;\n");
-		out.write("         } else {\n");
-		out.write("            levelCounters[levelToUpdate++]=0;\n");
-		out.write("         }\n");
-		out.write("      }\n");
-		out.write("   }\n");
-		out.write("}\n");
-	}
-
-	private void writeIsKey(FileWriter out) throws IOException {
-		out.write("int isKey(char* s) {\n");
-		out.write("   int i;\n");
-		out.write("   for(i=0; i<noStabilisers; i++) {\n");
-		out.write("      if(strcmp(s,stabiliserKeys[i])==0) {\n");
-		out.write("         return i;\n");
-		out.write("      }\n");
-		out.write("   }\n");
-		out.write("   return -1;\n");
-		out.write("}\n\n");
-	}
-
-	private void writeSegmentDataStructuresAndMacros(FileWriter out)
-			throws IOException {
-		out
-				.write("#define CACHE_SIZE (NO_PROCS+NO_CHANS)*(NO_PROCS+NO_CHANS)\n");
-		out.write("int noStabilisers = 0;\n");
-		out.write("char* stabiliserKeys[CACHE_SIZE];\n");
-		out.write("struct perm** stabiliserValues[CACHE_SIZE];\n");
-		out.write("int stabiliserNoLevels[CACHE_SIZE];\n");
-		out.write("int* stabiliserCosetsPerLevel[CACHE_SIZE];\n\n");
-	}
-
-	private void writeFreePerm(FileWriter out) throws IOException {
-		out.write("void freePerm(struct perm p) {\n");
-		out.write("   free(p.pr);\n");
-		out.write("   free(p.ch);\n");
-		out.write("}\n\n");
-	}
-
 	/* Methods to apply a permutation to a state, without transpositions */
 
 	protected void writeApplyPermToStateBasic(FileWriter fw) throws IOException {
-		fw.write("void applyPermToState(State *s, struct perm *alpha) {\n");
+		fw.write("void applyPermToState(State *s, perm_t *alpha) {\n");
 		fw.write("   int j, slot;\n");
 		fw.write("   State temp;\n");
 		fw.write("   memcpy(&temp, s, vsize);\n\n");
@@ -1046,14 +958,8 @@ public class SymmetryApplier {
 
 	private void writeApplyPermToStateTranspositions(FileWriter fw)
 			throws IOException {
-		if(Config.SIEVE) {
-			fw.write("immediate ");
-		}
 		fw.write("void applyPermToState(State *s, ");
-		if(Config.SIEVE) {
-			fw.write("outer ");
-		}
-		fw.write("struct perm *alpha) {\n");
+		fw.write("perm_t *alpha) {\n");
 		fw.write("   int i;\n");
 		fw.write("   for(i=0; i<alpha->prLength; i=i+2) {\n");
 		fw.write("      applyPrSwapToState(s,alpha->pr[i],alpha->pr[i+1]);\n");
@@ -1065,9 +971,6 @@ public class SymmetryApplier {
 	}
 
 	private void writeApplyChSwapToState(FileWriter fw) throws IOException {
-		if(Config.SIEVE) {
-			fw.write("immediate ");
-		}
 		fw.write("void applyChSwapToState(State *s, int a, int b) {\n");
 		fw.write("   uchar tempCid;\n");
 		fw.write("   int slot;\n");
@@ -1078,9 +981,6 @@ public class SymmetryApplier {
 	}
 
 	private void writeApplyPrSwapToState(FileWriter fw) throws IOException {
-		if(Config.SIEVE) {
-			fw.write("immediate ");
-		}
 		fw.write("void applyPrSwapToState(State *s, int a, int b) {\n");
 		fw.write("   uchar tempPid;\n");
 		fw.write("   int slot;\n");
@@ -1327,9 +1227,6 @@ public class SymmetryApplier {
 	}
 
 	private void writePreprocessorMacros(FileWriter out) throws IOException {
-		if(Config.OPENMP) {
-			out.write("#include <omp.h>\n");
-		}
 		
 		if (!usingMarkers()) {
 			out.write("#include \"group.h\"\n\n");
@@ -1343,49 +1240,6 @@ public class SymmetryApplier {
 		out
 				.write("#define QVAR(state,cid,var,type) ((type *)QSEG(state,cid))->var\n\n");
 
-		if (Config.SIEVE) {
-			out
-					.write("immediate void imm_memcpy(char* a, char* b, int size) {\n");
-			out.write("   for(int i=0; i<size; i++) {\n");
-			out.write("      a[i] = b[i];\n");
-			out.write("   }\n");
-			out.write("}\n\n");
-
-			out.write("immediate void outer_memcpy(char* a, outer char* b, int size) {\n");
-			out.write("   for(int i=0; i<size; i++) {\n");
-			out.write("      a[i] = b[i];\n");
-			out.write("   }\n");
-			out.write("}\n\n");
-
-			out.write("sieve void delayed_memcpy(outer char* a, char* b, int size) {\n");
-			out.write("   for(int i=0; i<size; i++) {\n");
-			out.write("      a[i] = b[i];\n");
-			out.write("   }\n");
-			out.write("}\n\n");
-
-			out.write("immediate int imm_memcmp(char* a, char*b, int size) {\n");
-			out.write("   for(int i=0; i<size; i++) {\n");
-			out.write("      if(a[i]<b[i]) {\n");
-			out.write("         return -1;\n");
-			out.write("      }\n");
-			out.write("      if(a[i]>b[i]) {\n");
-			out.write("         return 1;\n");
-			out.write("      }\n");
-			out.write("   }\n");
-			out.write("   return 0;\n");
-			out.write("}\n\n");
-			  
-			out.write("#define imm_memcpy(a,b,size) imm_memcpy((char*)a,(char*)b,size)\n");
-			out.write("#define outer_memcpy(a,b,size) outer_memcpy((char*)a,(outer char*)b,size)\n");
-			out.write("#define delayed_memcpy(a,b,size) delayed_memcpy((outer char*)a,(char*)b,size)\n");
-			out.write("#define imm_memcmp(a,b,size) imm_memcmp((char*)a,(char*)b,size)\n\n");
-
-			out.write("/* The follwing #defines are necessary for compilation with VectorC in C++ mode */\n");
-			out.write("#define this _this\n");
-			out.write("#define creat(a,b) 0\n");
-			out.write("#define write(a,b,c) 0\n");
-			out.write("#define close(a)\n\n");
-		}
 
 	}
 
@@ -1420,6 +1274,25 @@ public class SymmetryApplier {
 		out.close();
 	}
 
+	private void dealWithSymmetryThreadFiles() throws IOException {
+		if(Config.PTHREADS) {
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("Copying files for multi-threaded symmetry reduction:");
+			
+			copyTextFile(Config.COMMON + "symmetry_threads.c", "symmetry_threads.c");
+			copyTextFile(Config.COMMON + "symmetry_threads.h", "symmetry_threads.h");
+		}
+	}
+
+	private void dealWithSegmentFiles() throws IOException {
+		if(Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("Copying files for segmented strategy:");
+			
+			copyTextFile(Config.COMMON + "segment.h", "segment.h");
+		}
+	}
+	
 	private void dealWithGroupFiles() throws IOException, InterruptedException {
 		ProgressPrinter.printSeparator();
 		ProgressPrinter.println("Copying template files for computing with permutations:");
@@ -1737,7 +1610,7 @@ public class SymmetryApplier {
 	private void writeConstructPartition(FileWriter fw) throws IOException {
 		writeGlobalVariablesForPartitionConstruction(fw);
 
-		fw.write("char* constructPartition(State *s) {\n");
+		fw.write("char* constructPartition(const State *s) {\n");
 		fw.write("   int processClasses[NO_PROCS];\n");
 		fw.write("   int channelClasses[NO_CHANS];\n");
 		fw.write("   int noProcessClasses = 0;\n");
@@ -1858,7 +1731,7 @@ public class SymmetryApplier {
 	}
 
 	private void writeEqualProcesses(FileWriter fw) throws IOException {
-		fw.write("int equalProcesses(void* p1, void* p2, int i, int j, int pt, State* s) {\n\n");
+		fw.write("int equalProcesses(const void* p1, const void* p2, const int i, const int j, const int pt, const State* s) {\n\n");
 
 		Map<String, EnvEntry> globalVariables = typeInfo.getEnv()
 		.getTopEntries();
@@ -2056,11 +1929,11 @@ public class SymmetryApplier {
 			int proctypeIdentifier = proctypeId(proctypeName);
 			fw.write("   if(a==" + j + ") {\n");
 			fw.write("      P" + proctypeIdentifier + " temp;\n");
-			fw.write("      " + memcpy + "(&temp,SEG(s,a),sizeof(P"
+			fw.write("      memcpy(&temp,SEG(s,a),sizeof(P"
 					+ proctypeIdentifier + "));\n");
-			fw.write("      " + memcpy + "(SEG(s,a),SEG(s,b),sizeof(P"
+			fw.write("      memcpy(SEG(s,a),SEG(s,b),sizeof(P"
 					+ proctypeIdentifier + "));\n");
-			fw.write("      " + memcpy + "(SEG(s,b),&temp,sizeof(P"
+			fw.write("      memcpy(SEG(s,b),&temp,sizeof(P"
 					+ proctypeIdentifier + "));\n");
 			fw.write("      tempPid = VAR(s,a,_pid,P" + proctypeIdentifier
 					+ ");\n");
@@ -2078,11 +1951,11 @@ public class SymmetryApplier {
 			int chantypeIdentifier = j + 1;
 			fw.write("   if(a==" + j + ") {\n");
 			fw.write("      Q" + chantypeIdentifier + " temp;\n");
-			fw.write("      " + memcpy + "(&temp,QSEG(s,a),sizeof(Q"
+			fw.write("      memcpy(&temp,QSEG(s,a),sizeof(Q"
 					+ chantypeIdentifier + "));\n");
-			fw.write("      " + memcpy + "(QSEG(s,a),QSEG(s,b),sizeof(Q"
+			fw.write("      memcpy(QSEG(s,a),QSEG(s,b),sizeof(Q"
 					+ chantypeIdentifier + "));\n");
-			fw.write("      " + memcpy + "(QSEG(s,b),&temp,sizeof(Q"
+			fw.write("      memcpy(QSEG(s,b),&temp,sizeof(Q"
 					+ chantypeIdentifier + "));\n");
 			fw.write("      tempCid = QVAR(s,a,_t,Q" + chantypeIdentifier
 					+ ");\n");
@@ -2508,16 +2381,21 @@ public class SymmetryApplier {
 
 	private static void copyTextFile(String sourceName, String destName)
 			throws IOException {
-		ProgressPrinter.print("   Copying " + sourceName + " -> " + destName + " ... ");
-		BufferedReader br = new BufferedReader(new FileReader(sourceName));
-		BufferedWriter bw = new BufferedWriter(new FileWriter(destName));
-		String line;
-		while ((line = br.readLine()) != null) {
-			bw.write(line + "\n");
+		try {
+			ProgressPrinter.print("   Copying " + sourceName + " -> " + destName + " ... ");
+			BufferedReader br = new BufferedReader(new FileReader(sourceName));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(destName));
+			String line;
+			while ((line = br.readLine()) != null) {
+				bw.write(line + "\n");
+			}
+			br.close();
+			bw.close();
+			ProgressPrinter.println("[OK]");
+		} catch(FileNotFoundException e) {
+			System.out.println("\n\nError: could not find file \"" + sourceName + "\".");
+			System.exit(1);
 		}
-		br.close();
-		bw.close();
-		ProgressPrinter.println("[OK]");
 	}
 
 }

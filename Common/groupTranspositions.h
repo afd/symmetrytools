@@ -6,14 +6,15 @@
 #define NO_PROCS <NO_PROCS>
 #define NO_CHANS <NO_CHANS>
 
-struct perm {
+typedef struct perm_s {
   int *pr;
   int *ch;
   int prLength;
   int chLength;
-};
+} perm_t;
 
 /* PERMUTATION METHODS */
-struct perm constructPerm(char *transpositionsstring);
-void displayPerm(struct perm alpha);
-struct perm identityPerm();
+perm_t constructPerm(char *transpositionsstring);
+void displayPerm(perm_t alpha);
+perm_t identityPerm();
+void freePerm(perm_t);
