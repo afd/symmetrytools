@@ -45,5 +45,10 @@ public class TargetPC extends Target {
 		result += "} vec_uchar;\n\n";
 		return result;
 	}
+
+	@Override
+	public String getVectorBoolCharTypename() {
+		return "vec_char";
+	}
 	
 }

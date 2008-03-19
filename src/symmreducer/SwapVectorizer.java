@@ -43,7 +43,7 @@ public class SwapVectorizer {
 		numberOfPidVariablesForChannel = new int[typeInfo.getNoStaticChannels()];
 		numberOfChannelVariablesForChannel = new int[typeInfo.getNoStaticChannels()];
 		
-		target = new TargetPC();
+		target = new TargetPPU();
 	}
 	
 	public void writeIdSwappingDataStructuresAndProcedures(FileWriter out) throws IOException {
@@ -325,46 +325,23 @@ public class SwapVectorizer {
 	}
 
 	public void writeProcessSwaps(FileWriter out, String one, String two) throws IOException {
-/*		out.write("\n");
-		out.write(target.vectorCharType() + " vec_x;\n");
-		out.write(target.vectorCharType() + " vec_a;\n");
-		out.write(target.vectorCharType() + " vec_b;\n");
-		out.write(target.vectorCharType() + " vec_is_a;\n");
-		out.write(target.vectorCharType() + " vec_is_b;\n");
 
-		out.write("\n");
+		out.write("   " + target.getVectorUnsignedCharTypename() + " x;\n");
+	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
+	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
+		out.write("   " + target.getVectorBoolCharTypename() + " is_a;\n");
+		out.write("   " + target.getVectorBoolCharTypename() + " is_b;\n\n");
+
+		out.write(target.getSplatsInstruction("vec_a", "a"));
 		
-		out.write(target.getSplatsInstruction("vec_a", one));
-		out.write(target.getSplatsInstruction("vec_b", one));
-
-		for(int i=0; i<numberOfPidReferencesToSwap; i+=16) {
-			out.write("vec_x = *(" + target.vectorCharType() + "*)(&(s->process_ids[" + i + "]));\n");
-
-			out.write(target.getCompareEqualInstruction("vec_is_a", "vec_x", "vec_a"));
-			out.write(target.getCompareEqualInstruction("vec_is_b", "vec_x", "vec_b"));
-
-			out.write(target.getSelectInstruction("vec_x", "vec_is_a", "vec_b", "vec_x"));
-			out.write(target.getSelectInstruction("vec_x", "vec_is_b", "vec_a", "vec_x"));
-
-			out.write("*(" + target.vectorCharType() + "*)(&(s->process_ids[" + i + "])) = vec_x;\n");
-			out.write("\n");
-		}*/
+	    out.write(target.getSplatsInstruction("vec_b", "b"));
 
 		for(int i=0; i<numberOfPidReferencesToSwap; i+=16) {
 
 			out.write("   {\n");
-			out.write("      " + target.getVectorUnsignedCharTypename() + " x;\n");
-		    out.write("      " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
-		    out.write("      " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
-			out.write("      " + target.getVectorUnsignedCharTypename() + " is_a;\n");
-			out.write("      " + target.getVectorUnsignedCharTypename() + " is_b;\n");
 	
 			out.write("      x = *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
-	
-		    out.write(target.getSplatsInstruction("vec_a", "a"));
-	
-		    out.write(target.getSplatsInstruction("vec_b", "b"));
-		    
+			    
 			out.write(target.getCompareEqualInstruction("is_a", "x", "vec_a"));
 	
 			out.write(target.getCompareEqualInstruction("is_b", "x", "vec_b"));
@@ -390,14 +367,45 @@ public class SwapVectorizer {
 	}
 
 	public void writeChannelSwaps(FileWriter out) throws IOException {
-		out.write("   for(slot = 0; slot < " + numberOfChannelReferencesToSwap + "; slot++) {\n");
+
+		out.write("   " + target.getVectorUnsignedCharTypename() + " x;\n");
+	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
+	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
+		out.write("   " + target.getVectorBoolCharTypename() + " is_a;\n");
+		out.write("   " + target.getVectorBoolCharTypename() + " is_b;\n\n");
+
+		out.write(target.getSplatsInstruction("vec_a", "a"));
+		
+	    out.write(target.getSplatsInstruction("vec_b", "b"));
+
+		for(int i=0; i<numberOfChannelReferencesToSwap; i+=16) {
+
+			out.write("   {\n");
+	
+			out.write("      x = *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
+			    
+			out.write(target.getCompareEqualInstruction("is_a", "x", "vec_a"));
+	
+			out.write(target.getCompareEqualInstruction("is_b", "x", "vec_b"));
+	
+			out.write(target.getSelectInstruction("x", "is_a", "vec_b", "x"));
+			
+			out.write(target.getSelectInstruction("x", "is_b", "vec_a", "x"));
+	
+			out.write("      *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
+		
+			out.write("   }\n");
+		}			
+		
+		
+/*		out.write("   for(slot = 0; slot < " + numberOfChannelReferencesToSwap + "; slot++) {\n");
 		out.write("      if(s->channel_ids[slot]==a) {\n");
 		out.write("         s->channel_ids[slot] = b;\n");
 		out.write("      }\n");
 		out.write("      else if(s->channel_ids[slot]==b) {\n");
 		out.write("         s->channel_ids[slot] = a;\n");
 		out.write("      }\n");
-		out.write("   }\n");
+		out.write("   }\n");*/
 	}
 
 	

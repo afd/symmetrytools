@@ -17,5 +17,7 @@ public abstract class Target {
 	public abstract String getVectorUnsignedCharDefinition();
 
 	public abstract String getVectorUnsignedCharTypename();
+
+	public abstract String getVectorBoolCharTypename();
 	
 }

@@ -10,31 +10,32 @@ public class TargetPPU extends Target {
 
 	@Override
 	public String getSplatsInstruction(String dest, String source) {
-		// TODO Auto-generated method stub
-		return null;
+		return "      " + dest + " = vec_splats((uchar)" + source + ");\n";
 	}
 
 	@Override
 	public String getCompareEqualInstruction(String dest, String source1, String source2) {
-		// TODO Auto-generated method stub
-		return null;
+		return "      " + dest + " = vec_cmpeq(" + source1 + ", " + source2 + ");\n";
 	}
 
 	@Override
 	public String getSelectInstruction(String dest, String condition, String resultOne, String resultZero) {
-		// TODO Auto-generated method stub
-		return null;
+		return "      " + dest + " = vec_sel(" + resultZero + ", " + resultOne + ", " + condition + ");\n";
 	}
 
 	@Override
 	public String getVectorUnsignedCharTypename() {
-		return "vec_char";
+		return "vector unsigned char";
+	}
+
+	@Override
+	public String getVectorBoolCharTypename() {
+		return "vector bool char";
 	}
 
 	@Override
 	public String getVectorUnsignedCharDefinition() {
-		// TODO Auto-generated method stub
-		return null;
+		return "#include <altivec.h>\n#include <vec_types.h>\n\n";
 	}
 
 }

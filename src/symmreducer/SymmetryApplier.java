@@ -35,7 +35,7 @@ public class SymmetryApplier {
 
 	private static final boolean SEPARATE_SWAP_FUNCTIONS = false;
 
-	private static final boolean VECTORIZE_ID_SWAPPING = true	;
+	private static final boolean VECTORIZE_ID_SWAPPING = true;
 
 	SwapVectorizer swapVectorizer = null;
 	
@@ -457,16 +457,16 @@ public class SymmetryApplier {
 				.get(groupInfoCounter + 1)));
 		out.write("   {\n");
 		out.write("      int j;\n");
-		out.write("      State current_min, tmp_now;\n");
+		out.write("      " + stateType + " current_min, tmp_now;\n");
 		out.write("      do {\n");
-		out.write("         memcpy(&current_min,&min_now,vsize);\n\n");
+		out.write("         " + memoryCopy + "(&current_min,&min_now,vsize);\n\n");
 		out.write("         for(j=0; j<" + setSize + "; j++) {\n");
-		out.write("            memcpy(&tmp_now,&min_now,vsize);\n");
+		out.write("            " + memoryCopy + "(&tmp_now,&min_now,vsize);\n");
 		out.write("            applyPermToState(&tmp_now,&(elementset_"
 				+ setCounter + "[j]));\n");
 		// this could probably be made more efficient
 		out.write("            if(" + compare("&tmp_now", "&min_now") + ") {\n");
-		out.write("               memcpy(&min_now,&tmp_now,vsize);\n");
+		out.write("               " + memoryCopy + "(&min_now,&tmp_now,vsize);\n");
 		out.write("            }\n");
 		out.write("         }\n");
 		out.write("      } while(" + memoryCompare + "(&min_now,&current_min,vsize)!=0);\n\n");
