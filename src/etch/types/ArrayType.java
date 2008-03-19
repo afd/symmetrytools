@@ -89,5 +89,9 @@ public class ArrayType extends ConstructedType implements VisibleType {
 		
 		return result;
 	}
+
+	public static boolean isArray(VisibleType t) {
+		return t instanceof ArrayType;
+	}
 	
 }

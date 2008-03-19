@@ -69,4 +69,28 @@ public class ChanType extends ConstructedType implements VisibleType {
 		return result;
 	}
 
+	public static boolean isChan(VisibleType t) {
+		return t instanceof ChanType;
+	}
+
+	public static boolean containsChanType(List<VisibleType> typeList) {
+		for (VisibleType vt : typeList) {
+			if (isChan(vt)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	
+	public static int getNumberOfChanTypes(List<VisibleType> typeList) {
+		int result = 0;
+		for(VisibleType vt : typeList) {
+			if(isChan(vt)) {
+				result++;
+			}
+		}
+		return result;
+	}
+	
 }

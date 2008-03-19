@@ -13,7 +13,6 @@ import src.symmextractor.SymmExtractor;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
-import src.utilities.Strategy;
 
 public class SymmReducer extends SymmExtractor {
 

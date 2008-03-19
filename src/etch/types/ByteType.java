@@ -25,5 +25,9 @@ public class ByteType extends NumericType {
 		return (!SymmetrySettings.CHECKING_SYMMETRY && t instanceof PidType) ||
 			(SymmetrySettings.CHECKING_SYMMETRY && t instanceof PidType && isPidLiteral) || t instanceof ByteType || t instanceof ShortType || t instanceof IntType;
 	}
+
+	public static boolean isByte(VisibleType type) {
+		return type instanceof ByteType;
+	}
 	
 }

@@ -11,6 +11,7 @@ import java.util.Set;
 
 import src.etch.checker.Checker;
 import src.etch.env.ChannelEntry;
+import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
 import src.promela.node.AChannelIvarassignment;
@@ -56,6 +57,18 @@ public class StaticChannelDiagramExtractor extends Checker {
 		return Collections.unmodifiableList(staticChannelNames);
 	}
 
+	public int getNoStaticChannels() {
+		return staticChannelNames.size();
+	}
+
+	public int proctypeId(String proctypeName) {
+		return getProctypeNames().indexOf(proctypeName);
+	}
+	
+	public Map<String, EnvEntry> getGlobalVariables() {
+		return getEnv().getTopEntries();
+	}
+	
 	public Set<ChannelEntry> getDistinctChannelSignatures() {
 		return Collections.unmodifiableSet(distinctChannelSignatures);
 	}
