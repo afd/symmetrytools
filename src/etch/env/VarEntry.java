@@ -6,14 +6,11 @@ public class VarEntry extends EnvEntry {
 
 	private VisibleType type;
 
-	private VisibleType widestAssignment;
-
 	private boolean isHidden;
 	
 	public VarEntry(VisibleType type, boolean isHidden, int lineOfDeclaration) {
 		super(lineOfDeclaration);
 		this.type = type;
-		this.widestAssignment = null;
 		this.isHidden = isHidden;
 	}
 
@@ -37,8 +34,6 @@ public class VarEntry extends EnvEntry {
 		return "variable";
 	}
 
-	public VisibleType getNarrowestType() {
-		return widestAssignment;
-	}
+
 
 }
