@@ -17,7 +17,6 @@ import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmreducer.targets.Target;
 import src.symmreducer.targets.TargetPC;
-import src.symmreducer.targets.TargetPPU;
 
 public class SwapVectorizer {
 
@@ -43,7 +42,7 @@ public class SwapVectorizer {
 		numberOfPidVariablesForChannel = new int[typeInfo.getNoStaticChannels()];
 		numberOfChannelVariablesForChannel = new int[typeInfo.getNoStaticChannels()];
 		
-		target = new TargetPPU();
+		target = new TargetPC();
 	}
 	
 	public void writeIdSwappingDataStructuresAndProcedures(FileWriter out) throws IOException {
@@ -119,10 +118,12 @@ public class SwapVectorizer {
 
 				int numberOfPidTypes = PidType.getNumberOfPidTypes(flattenedFieldTypes);
 				
+				int pidTypeCount = 0;
+				
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
 					if (PidType.isPid(flattenedFieldTypes.get(j))) {
 
-						String index = (numberOfPidReferencesToSwap+j) + " + slot*" + numberOfPidTypes;
+						String index = numberOfPidReferencesToSwap + " + slot*" + numberOfPidTypes + " + " + pidTypeCount;
 
 						extractIdentifierVariablesFunctionBody += "      s->process_ids[" + index + "] = " +
 						    "((Q" + (i + 1) + " *)QSEG((&(s->state))," + i + "))->contents[slot].fld" + j + ";\n";
@@ -130,7 +131,8 @@ public class SwapVectorizer {
 
 						replaceIdentifierVariablesFunction += "      ((Q" + (i + 1) + " *)QSEG((&(s->state))," + i + "))->contents[slot].fld" + j + 
 						 " = s->process_ids[" + index + "];\n";
-						
+
+						pidTypeCount++;
 					}
 				}
 
@@ -161,7 +163,7 @@ public class SwapVectorizer {
 						if(ChanType.isChan(reference.getType())) {
 							extractIdentifierVariablesFunctionBody += "   s->channel_ids[" + numberOfChannelReferencesToSwap + "] = " + reference + ";\n";
 							extractIdentifierVariablesFunctionBody += "   " + reference + " = 0;\n\n";
-							replaceIdentifierVariablesFunction += "   " + reference + " = s->channel_ids[" + numberOfChannelReferencesToSwap + "] = " + reference + ";\n\n";
+							replaceIdentifierVariablesFunction += "   " + reference + " = s->channel_ids[" + numberOfChannelReferencesToSwap + "];\n\n";
 							numberOfChannelReferencesToSwap++;
 							numberOfChannelVariablesForProcess[i]++;
 						}
@@ -185,11 +187,13 @@ public class SwapVectorizer {
 				+ "))->Qlen; slot++) {\n";
 
 				int numberOfChanTypes = ChanType.getNumberOfChanTypes(flattenedFieldTypes);
+
+				int chanTypeCount = 0;
 				
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
 					if (ChanType.isChan(flattenedFieldTypes.get(j))) {
 
-						String index = (numberOfChannelReferencesToSwap+j) + " + slot*" + numberOfChanTypes;
+						String index = numberOfChannelReferencesToSwap + " + slot*" + numberOfChanTypes + " + " + chanTypeCount;
 
 						extractIdentifierVariablesFunctionBody += "      s->channel_ids[" + index + "] = " +
 						    "((Q" + (i + 1) + " *)QSEG((&(s->state))," + i + "))->contents[slot].fld" + j + ";\n";
@@ -197,7 +201,8 @@ public class SwapVectorizer {
 
 						replaceIdentifierVariablesFunction += "      ((Q" + (i + 1) + " *)QSEG((&(s->state))," + i + "))->contents[slot].fld" + j + 
 						 " = s->channel_ids[" + index + "];\n";
-						
+
+						chanTypeCount++;
 					}
 				}
 
@@ -218,11 +223,23 @@ public class SwapVectorizer {
 		replaceIdentifierVariablesFunction += "}\n\n";
 
 		
-		
+		out.write("#define TOPSPIN_VECTORS\n\n");
 		out.write("\ntypedef struct AugmentedState_s {\n");
 		out.write("   State state;\n");
-		out.write("   uchar process_ids[" + numberOfPidReferencesToSwap + "]" + alignmentSpecifier() + ";\n");
-		out.write("   uchar channel_ids[" + numberOfChannelReferencesToSwap + "]"  + alignmentSpecifier() + ";\n");
+
+		if(numberOfPidReferencesToSwap > 0) {
+			out.write("   uchar process_ids[" + numberOfPidReferencesToSwap + "]" + alignmentSpecifier() + ";\n");
+			extractIdentifierVariablesFunctionHeader += "   for(slot=0; slot<" + numberOfPidReferencesToSwap + "; slot++) {\n";
+			extractIdentifierVariablesFunctionHeader += "      s->process_ids[slot] = 0;\n";
+			extractIdentifierVariablesFunctionHeader += "   }\n\n";
+		}
+		if(numberOfChannelReferencesToSwap > 0) {
+			out.write("   uchar channel_ids[" + numberOfChannelReferencesToSwap + "]"  + alignmentSpecifier() + ";\n");
+			extractIdentifierVariablesFunctionHeader += "   for(slot=0; slot<" + numberOfChannelReferencesToSwap + "; slot++) {\n";
+			extractIdentifierVariablesFunctionHeader += "      s->channel_ids[slot] = 0;\n";
+			extractIdentifierVariablesFunctionHeader += "   }\n\n";
+		}
+
 		out.write("} AugmentedState;\n\n");
 
 		out.write(target.getVectorUnsignedCharDefinition());
@@ -231,12 +248,6 @@ public class SwapVectorizer {
 
 		writeAugmentedMemcmp(out);
 
-		extractIdentifierVariablesFunctionHeader += "   for(slot=0; slot<" + numberOfPidReferencesToSwap + "; slot++) {\n";
-		extractIdentifierVariablesFunctionHeader += "      s->process_ids[slot] = 0;\n";
-		extractIdentifierVariablesFunctionHeader += "   }\n\n";
-		extractIdentifierVariablesFunctionHeader += "   for(slot=0; slot<" + numberOfChannelReferencesToSwap + "; slot++) {\n";
-		extractIdentifierVariablesFunctionHeader += "      s->channel_ids[slot] = 0;\n";
-		extractIdentifierVariablesFunctionHeader += "   }\n\n";
 		
 		out.write(extractIdentifierVariablesFunctionHeader);
 		out.write(extractIdentifierVariablesFunctionBody);
@@ -266,146 +277,153 @@ public class SwapVectorizer {
 	}
 
 	private void writeFirstProcessIdentifierForProcessArray(FileWriter out) throws IOException {
-		out.write("const int first_process_id_for_process[" + typeInfo.getNoProcesses() + "] = { ");
-		for(int i=0; i<typeInfo.getNoProcesses(); i++) {
-			out.write(String.valueOf(firstProcessIdForProcess(i)));
-			if(i<typeInfo.getNoProcesses()-1) {
-				out.write(", ");
+		if(numberOfPidReferencesToSwap > 0) {
+			out.write("const int first_process_id_for_process[" + typeInfo.getNoProcesses() + "] = { ");
+			for(int i=0; i<typeInfo.getNoProcesses(); i++) {
+				out.write(String.valueOf(firstProcessIdForProcess(i)));
+				if(i<typeInfo.getNoProcesses()-1) {
+					out.write(", ");
+				}
 			}
+			out.write("};\n");
 		}
-		out.write("};\n");
 	}
 
 	private void writeFirstProcessIdentifierForChannelArray(FileWriter out) throws IOException {
-		out.write("const int first_process_id_for_channel[" + typeInfo.getNoStaticChannels() + "] = { ");
-		for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
-			out.write(String.valueOf(firstProcessIdForChannel(i)));
-			if(i<typeInfo.getNoStaticChannels()-1) {
-				out.write(", ");
+		if(numberOfPidReferencesToSwap > 0) {
+			out.write("const int first_process_id_for_channel[" + typeInfo.getNoStaticChannels() + "] = { ");
+			for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
+				out.write(String.valueOf(firstProcessIdForChannel(i)));
+				if(i<typeInfo.getNoStaticChannels()-1) {
+					out.write(", ");
+				}
 			}
+			out.write("};\n");
 		}
-		out.write("};\n");
 	}
 
 	private void writeFirstChannelIdentifierForProcessArray(FileWriter out) throws IOException {
-		out.write("const int first_channel_id_for_process[" + typeInfo.getNoProcesses() + "] = { ");
-		for(int i=0; i<typeInfo.getNoProcesses(); i++) {
-			out.write(String.valueOf(firstChannelIdForProcess(i)));
-			if(i<typeInfo.getNoProcesses()-1) {
-				out.write(", ");
+		if(numberOfChannelReferencesToSwap > 0) {
+			out.write("const int first_channel_id_for_process[" + typeInfo.getNoProcesses() + "] = { ");
+			for(int i=0; i<typeInfo.getNoProcesses(); i++) {
+				out.write(String.valueOf(firstChannelIdForProcess(i)));
+				if(i<typeInfo.getNoProcesses()-1) {
+					out.write(", ");
+				}
 			}
+			out.write("};\n");
 		}
-		out.write("};\n");
 	}
 
 	private void writeFirstChannelIdentifierForChannelArray(FileWriter out) throws IOException {
-		out.write("const int first_channel_id_for_channel[" + typeInfo.getNoStaticChannels() + "] = { ");
-		for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
-			out.write(String.valueOf(firstChannelIdForChannel(i)));
-			if(i<typeInfo.getNoStaticChannels()-1) {
-				out.write(", ");
+		if(numberOfChannelReferencesToSwap > 0) {
+			out.write("const int first_channel_id_for_channel[" + typeInfo.getNoStaticChannels() + "] = { ");
+			for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
+				out.write(String.valueOf(firstChannelIdForChannel(i)));
+				if(i<typeInfo.getNoStaticChannels()-1) {
+					out.write(", ");
+				}
 			}
+			out.write("};\n");
 		}
-		out.write("};\n");
 	}
 	
 	
 	private void writeAugmentedMemcmp(FileWriter out) throws IOException {
 		out.write("int augmented_memcmp(AugmentedState* s1, AugmentedState* s2, int vsize) {\n");
 		out.write("   int temp = memcmp(&(s1->state), &(s2->state), vsize);\n");
-		out.write("   return (temp!=0 ? temp : memcmp(&(s1->process_ids[0]), &(s2->process_ids[0]), " + (numberOfPidReferencesToSwap+numberOfChannelReferencesToSwap) + "*sizeof(uchar)));\n");
+		if(numberOfPidReferencesToSwap>0) {
+			out.write("   return (temp!=0 ? temp : memcmp(&(s1->process_ids[0]), &(s2->process_ids[0]), " + (numberOfPidReferencesToSwap+numberOfChannelReferencesToSwap) + "*sizeof(uchar)));\n");
+		} else if(numberOfChannelReferencesToSwap > 0) {
+			out.write("   return (temp!=0 ? temp : memcmp(&(s1->channel_ids[0]), &(s2->channel_ids[0]), " + numberOfChannelReferencesToSwap + "*sizeof(uchar)));\n");
+		} else {
+			out.write("   return temp;\n");
+		}
 		out.write("}\n\n");
 	}
 
 	private void writeAugmentedMemcpy(FileWriter out) throws IOException {
 		out.write("void augmented_memcpy(AugmentedState* dest, AugmentedState* source, int vsize) {\n");
 		out.write("   memcpy(&(dest->state), &(source->state), vsize);\n");
-		out.write("   memcpy(&(dest->process_ids[0]), &(source->process_ids[0]), " + (numberOfPidReferencesToSwap+numberOfChannelReferencesToSwap) + "*sizeof(uchar));\n");
+
+		if(numberOfPidReferencesToSwap>0) {
+			out.write("   memcpy(&(dest->process_ids[0]), &(source->process_ids[0]), " + (numberOfPidReferencesToSwap+numberOfChannelReferencesToSwap) + "*sizeof(uchar));\n");
+		} else if(numberOfChannelReferencesToSwap > 0) {
+			out.write("   memcpy(&(dest->channel_ids[0]), &(source->channel_ids[0]), " + numberOfChannelReferencesToSwap + "*sizeof(uchar));\n");
+		}
 		out.write("}\n\n");
 	}
 
 	public void writeProcessSwaps(FileWriter out, String one, String two) throws IOException {
 
-		out.write("   " + target.getVectorUnsignedCharTypename() + " x;\n");
-	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
-	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
-		out.write("   " + target.getVectorBoolCharTypename() + " is_a;\n");
-		out.write("   " + target.getVectorBoolCharTypename() + " is_b;\n\n");
-
-		out.write(target.getSplatsInstruction("vec_a", "a"));
+		if(numberOfPidReferencesToSwap > 0) {
 		
-	    out.write(target.getSplatsInstruction("vec_b", "b"));
-
-		for(int i=0; i<numberOfPidReferencesToSwap; i+=16) {
-
-			out.write("   {\n");
+			out.write("   " + target.getVectorUnsignedCharTypename() + " x;\n");
+		    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
+		    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
+			out.write("   " + target.getVectorBoolCharTypename() + " is_a;\n");
+			out.write("   " + target.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write("      x = *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
-			    
-			out.write(target.getCompareEqualInstruction("is_a", "x", "vec_a"));
-	
-			out.write(target.getCompareEqualInstruction("is_b", "x", "vec_b"));
-	
-			out.write(target.getSelectInstruction("x", "is_a", "vec_b", "x"));
+			out.write(target.getSplatsInstruction("vec_a", "a"));
 			
-			out.write(target.getSelectInstruction("x", "is_b", "vec_a", "x"));
+		    out.write(target.getSplatsInstruction("vec_b", "b"));
 	
-			out.write("      *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "])) = x;\n");
+			for(int i=0; i<numberOfPidReferencesToSwap; i+=16) {
+	
+				out.write("   {\n");
 		
-			out.write("   }\n");
-		}			
+				out.write("      x = *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
+				    
+				out.write(target.getCompareEqualInstruction("is_a", "x", "vec_a"));
+		
+				out.write(target.getCompareEqualInstruction("is_b", "x", "vec_b"));
+		
+				out.write(target.getSelectInstruction("x", "is_a", "vec_b", "x"));
+				
+				out.write(target.getSelectInstruction("x", "is_b", "vec_a", "x"));
+		
+				out.write("      *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "])) = x;\n");
+			
+				out.write("   }\n");
+			}			
+		}
 
-		
-/*		out.write("   for(slot = 0; slot < " + numberOfPidReferencesToSwap + "; slot++) {\n");
-		out.write("      if(s->process_ids[slot]==" + one + ") {\n");
-		out.write("         s->process_ids[slot] = " + two + ";\n");
-		out.write("      }\n");
-		out.write("      else if(s->process_ids[slot]==" + two + ") {\n");
-		out.write("         s->process_ids[slot] = " + one + ";\n");
-		out.write("      }\n");
-		out.write("   }\n");*/
 	}
 
 	public void writeChannelSwaps(FileWriter out) throws IOException {
 
-		out.write("   " + target.getVectorUnsignedCharTypename() + " x;\n");
-	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
-	    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
-		out.write("   " + target.getVectorBoolCharTypename() + " is_a;\n");
-		out.write("   " + target.getVectorBoolCharTypename() + " is_b;\n\n");
-
-		out.write(target.getSplatsInstruction("vec_a", "a"));
-		
-	    out.write(target.getSplatsInstruction("vec_b", "b"));
-
-		for(int i=0; i<numberOfChannelReferencesToSwap; i+=16) {
-
-			out.write("   {\n");
+		if(numberOfChannelReferencesToSwap > 0) {
+			out.write("   " + target.getVectorUnsignedCharTypename() + " x;\n");
+		    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_a;\n");
+		    out.write("   " + target.getVectorUnsignedCharTypename() + " vec_b;\n");
+			out.write("   " + target.getVectorBoolCharTypename() + " is_a;\n");
+			out.write("   " + target.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write("      x = *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
-			    
-			out.write(target.getCompareEqualInstruction("is_a", "x", "vec_a"));
-	
-			out.write(target.getCompareEqualInstruction("is_b", "x", "vec_b"));
-	
-			out.write(target.getSelectInstruction("x", "is_a", "vec_b", "x"));
+			out.write(target.getSplatsInstruction("vec_a", "a+1"));
 			
-			out.write(target.getSelectInstruction("x", "is_b", "vec_a", "x"));
+		    out.write(target.getSplatsInstruction("vec_b", "b+1"));
 	
-			out.write("      *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
+			for(int i=0; i<numberOfChannelReferencesToSwap; i+=16) {
+	
+				out.write("   {\n");
 		
-			out.write("   }\n");
-		}			
+				out.write("      x = *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
+				    
+				out.write(target.getCompareEqualInstruction("is_a", "x", "vec_a"));
 		
+				out.write(target.getCompareEqualInstruction("is_b", "x", "vec_b"));
 		
-/*		out.write("   for(slot = 0; slot < " + numberOfChannelReferencesToSwap + "; slot++) {\n");
-		out.write("      if(s->channel_ids[slot]==a) {\n");
-		out.write("         s->channel_ids[slot] = b;\n");
-		out.write("      }\n");
-		out.write("      else if(s->channel_ids[slot]==b) {\n");
-		out.write("         s->channel_ids[slot] = a;\n");
-		out.write("      }\n");
-		out.write("   }\n");*/
+				out.write(target.getSelectInstruction("x", "is_a", "vec_b", "x"));
+				
+				out.write(target.getSelectInstruction("x", "is_b", "vec_a", "x"));
+		
+				out.write("      *(" + target.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
+			
+				out.write("   }\n");
+			}			
+		
+		}		
+
 	}
 
 	

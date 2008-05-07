@@ -48,7 +48,7 @@ public class TargetPC extends Target {
 
 	@Override
 	public String getVectorBoolCharTypename() {
-		return "vec_char";
+		return "vec_uchar";
 	}
 	
 }

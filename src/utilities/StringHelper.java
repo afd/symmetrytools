@@ -4,6 +4,15 @@ import java.util.StringTokenizer;
 
 public class StringHelper {
 
+	public static boolean isWhitespace(String line) {
+		for(int i=0; i<line.length(); i++) {
+			if(!Character.isWhitespace(line.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public static String removeWhitespace(String s) {
 
 		StringTokenizer strtok = new StringTokenizer(s," ");
@@ -21,8 +30,13 @@ public class StringHelper {
 		int beginNonWhitespace;
 		int endNonWhitespace;
 		
-		for(beginNonWhitespace = 0; beginNonWhitespace < s.length() && s.charAt(beginNonWhitespace)==' '; beginNonWhitespace++);
-		for(endNonWhitespace = s.length(); endNonWhitespace > 0 && s.charAt(endNonWhitespace-1)==' '; endNonWhitespace--);
+		for(beginNonWhitespace = 0; beginNonWhitespace < s.length() && Character.isWhitespace(s.charAt(beginNonWhitespace)); beginNonWhitespace++);
+
+		if(beginNonWhitespace==s.length()) {
+			return "";
+		}
+		
+		for(endNonWhitespace = s.length(); endNonWhitespace > 0 && Character.isWhitespace(s.charAt(endNonWhitespace-1)); endNonWhitespace--);
 
 		return s.substring(beginNonWhitespace,endNonWhitespace);
 	}

@@ -34,6 +34,8 @@ public class SymmExtractor extends Check {
 	private StaticChannelDiagramExtractor extractor;
 	private Group autSCD;
 	private Group largestValidSubgroup;
+	private boolean requiredCosetSearch = false;
+	private int sizeOfLargestValidSubgroup = -1;
 	
 	public SymmExtractor(String sourceName) throws IOException {
 		super(sourceName);
@@ -105,6 +107,9 @@ public class SymmExtractor extends Check {
 		Group baseGroup = new Group(safeGenerators);
 
 		if(someGeneratorsInvalid) {
+			
+			requiredCosetSearch  = true;
+			
 			startGAP();
 
 			// Send Aut(SCD) = G to GAP, and H, the initial valid subgroup.
@@ -160,6 +165,13 @@ public class SymmExtractor extends Check {
 				}
 			}
 			largestValidSubgroup = getFinalGroupFromGAP();
+
+			if(Config.TESTING_IN_PROGRESS) {
+				gapWriter.write("Size(H);\n");
+				gapWriter.flush();
+				sizeOfLargestValidSubgroup  = Integer.parseInt(gapReader.readLine());
+			}
+	
 			if(Config.PROFILE) {
 				Profile.LARGEST_VALID_END = System.currentTimeMillis();
 				gapWriter.write("Size(H);\n");
@@ -168,6 +180,16 @@ public class SymmExtractor extends Check {
 			}
 		} else {
 			largestValidSubgroup = baseGroup;
+
+			if(Config.TESTING_IN_PROGRESS) {
+				startGAP();
+				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
+				gapWriter.write("Size(H);\n");
+				gapWriter.flush();
+				sizeOfLargestValidSubgroup  = Integer.parseInt(gapReader.readLine());
+			}
+			
+			
 			if(!Config.DETECT_ONLY) {
 				startGAP();
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
@@ -271,19 +293,19 @@ public class SymmExtractor extends Check {
 			StaticChannelDiagramExtractor extractor) {
 
 		try {
-			FileWriter fw = new FileWriter(Config.TEMP_FILES+"graph.saucy");
+			FileWriter fw = new FileWriter(Config.COMMON+"graph.saucy");
 			fw.write(extractor.directedSaucyRepresentation());
 			fw.close();
 		} catch(FileNotFoundException e) {
-			System.out.println("Error while trying to create file \"" + Config.TEMP_FILES+"graph.saucy\".  Make sure that the directory " + Config.TEMP_FILES + " exists, and that you have write permission.");
+			System.out.println("Error while trying to create file \"" + Config.COMMON+"graph.saucy\".  Make sure that the directory " + Config.COMMON + " exists, and that you have write permission.");
 			System.exit(1);
 		} catch (IOException e) {
-			System.out.println("An error occurred while trying to create the file \"" + Config.TEMP_FILES+"graph.saucy\".");
+			System.out.println("An error occurred while trying to create the file \"" + Config.COMMON+"graph.saucy\".");
 			System.exit(1);
 		}
 		
 		ProgressPrinter.println("Computing the group Aut(C(P)) using directed saucy.");
-		String saucyGenerators = computeAutomorphismsOfDirectedGraph(Config.TEMP_FILES+"graph.saucy");
+		String saucyGenerators = computeAutomorphismsOfDirectedGraph(Config.COMMON+"graph.saucy");
 		
 		autSCD = new Group(saucyGenerators, extractor);
 	}
@@ -388,6 +410,14 @@ public class SymmExtractor extends Check {
 
 	public void printGAPError() throws IOException {
 		System.out.println((new BufferedReader(new InputStreamReader(gap.getErrorStream()))).readLine());
+	}
+
+	public int getSizeOfGroup() {
+		return sizeOfLargestValidSubgroup;
+	}
+
+	public boolean requiredCosetSearch() {
+		return requiredCosetSearch;
 	}
 
 }

@@ -82,7 +82,7 @@ public class SymmReducer extends SymmExtractor {
     	default:
     		Assert.assertTrue(false);
     	}
-    	
+
     	// Ensure that GAP has finished processing before running the perl program
     	gapWriter.write("Size(H);\n");
     	gapWriter.write("GeneratorsOfGroup(H);\n");

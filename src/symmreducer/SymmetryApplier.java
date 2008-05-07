@@ -35,15 +35,13 @@ public class SymmetryApplier {
 
 	private static final boolean SEPARATE_SWAP_FUNCTIONS = false;
 
-	private static final boolean VECTORIZE_ID_SWAPPING = true;
-
 	SwapVectorizer swapVectorizer = null;
 	
-	private static final String stateType = VECTORIZE_ID_SWAPPING ? "AugmentedState" : "State";
+	private static final String stateType = Config.VECTORIZE_ID_SWAPPING ? "AugmentedState" : "State";
 
-	private static final String memoryCopy = VECTORIZE_ID_SWAPPING ? "augmented_memcpy" : "memcpy";
+	private static final String memoryCopy = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcpy" : "memcpy";
 
-	private static final String memoryCompare = VECTORIZE_ID_SWAPPING ? "augmented_memcmp" : "memcmp";
+	private static final String memoryCompare = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcmp" : "memcmp";
 
 	protected StaticChannelDiagramExtractor typeInfo;
 
@@ -84,6 +82,7 @@ public class SymmetryApplier {
 		List<String> lines = readFile("sympan.c");
 		FileWriter out = new FileWriter("sympan.c");
 
+
 		for (int counter = 0; counter < lines.size(); counter++) {
 
 			if (lineInvolvesHashStore(lines, counter)) {
@@ -102,7 +101,7 @@ public class SymmetryApplier {
 
 				writePreprocessorMacros(out);
 
-				if(VECTORIZE_ID_SWAPPING) {
+				if(Config.VECTORIZE_ID_SWAPPING) {
 					swapVectorizer = new SwapVectorizer(typeInfo);
 					swapVectorizer.writeIdSwappingDataStructuresAndProcedures(out);
 				}
@@ -218,6 +217,11 @@ public class SymmetryApplier {
 
 		for (int groupInfoCounter = 0; groupInfoCounter < groupInfo
 				.size(); groupInfoCounter++) {
+
+			if(groupInfo.get(groupInfoCounter).contains("parallel")) {
+				continue;
+			}
+			
 			// Sims method
 			if (Config.USE_STABILISER_CHAIN
 					&& groupInfo.get(groupInfoCounter).contains(
@@ -365,7 +369,7 @@ public class SymmetryApplier {
 				writeRepApproxMarkers(out, procsminus1);
 			}
 		} else {
-			if(VECTORIZE_ID_SWAPPING) {
+			if(Config.VECTORIZE_ID_SWAPPING) {
 				out.write("   memcpy(&(min_now.state),orig_now, vsize);\n");
 				out.write("   extractIdentifierVariables(&min_now);\n");
 			} else {
@@ -378,6 +382,7 @@ public class SymmetryApplier {
 			int groupInfoCounter = 0;
 			int setCounter = 1;
 			while (groupInfoCounter < groupInfo.size()) {
+
 				// ENUMERATION STRATEGY WITH SIMS METHOD
 				if (Config.USE_STABILISER_CHAIN
 						&& groupInfo.get(groupInfoCounter).contains(
@@ -395,7 +400,7 @@ public class SymmetryApplier {
 							setCounter);
 					setCounter++;
 				}
-
+				
 				// MINIMISING SET STRATEGY
 				if (groupInfo.get(groupInfoCounter).contains("<minimise>")) {
 					writeRepMinimisingSet(groupInfo, out, groupInfoCounter,
@@ -420,7 +425,7 @@ public class SymmetryApplier {
 
 		}
 
-		if(VECTORIZE_ID_SWAPPING) {
+		if(Config.VECTORIZE_ID_SWAPPING) {
 			out.write("   replaceIdentifierVariables(&min_now);\n");
 			out.write("   return &(min_now.state);\n");
 		} else {
@@ -502,11 +507,9 @@ public class SymmetryApplier {
 			throws IOException {
 		final int stabiliserChainSize = getSizeOfStabiliserChain(groupInfo, groupInfoCounter);
 		List<Integer> stabiliserChainComponentSizes = getStabiliserChainComponentSizes(groupInfo, groupInfoCounter, stabiliserChainSize);
-		System.out.println(stabiliserChainComponentSizes);
-		
+
 		List<String> start = new ArrayList<String>();
 		List<String> end = new ArrayList<String>();
-
 		
 		for(int i=0; i<stabiliserChainSize; i++) {
 			start.add("0");
@@ -527,7 +530,6 @@ public class SymmetryApplier {
 	}
 
 	protected void outputSimsEnumeration(FileWriter out, int setCounter, final int stabiliserChainSize, List<String> start, List<String> end, String minName, String originalName) throws IOException {
-		System.out.println("Stabiliser chain size is " + stabiliserChainSize);
 		
 		out.write("   int ");
 		for (int counter = 0; counter < stabiliserChainSize; counter++) {
@@ -936,7 +938,7 @@ public class SymmetryApplier {
 		fw.write("void applyChSwapToState(" + stateType + " *s, int a, int b) {\n");
 		fw.write("   uchar tempCid;\n");
 		fw.write("   int slot;\n");
-		if(VECTORIZE_ID_SWAPPING) {
+		if(Config.VECTORIZE_ID_SWAPPING) {
 			swapVectorizer.writeChannelSwaps(fw);
 		} else {
 			swapProctypeLocalChannelVariables(fw);
@@ -951,7 +953,7 @@ public class SymmetryApplier {
 		fw.write("   uchar tempPid;\n");
 		fw.write("   int slot;\n");
 
-		if(VECTORIZE_ID_SWAPPING) {
+		if(Config.VECTORIZE_ID_SWAPPING) {
 			swapVectorizer.writeProcessSwaps(fw, "a", "b");
 		} else {
 			swapGlobalPidVariables(fw,"a","b");
@@ -1801,6 +1803,13 @@ public class SymmetryApplier {
 	}
 
 	private void writeLt(FileWriter fw) throws IOException {
+		if(Config.VECTORIZE_ID_SWAPPING) {
+			fw.write("int lt(const AugmentedState *s, const AugmentedState *t) {\n");
+			fw.write("   return memcmp(&(s->state), &(t->state),vsize)<0;\n");
+			fw.write("}\n\n");
+			return;
+		}
+		
 		fw.write("int lt(State *s, State *t) {\n");
 		fw.write("  int slot;\n\n");
 
@@ -1921,7 +1930,7 @@ public class SymmetryApplier {
 			fw.write("   if(a==" + j + ") {\n");
 			swapTwoProcesses(fw, proctypeIdentifier, "a", "b");
 
-			if(VECTORIZE_ID_SWAPPING) {
+			if(Config.VECTORIZE_ID_SWAPPING) {
 				swapVectorizer.swapTwoProcesses(fw, j, "a", "b");
 			}
 
@@ -1965,7 +1974,7 @@ public class SymmetryApplier {
 			fw.write("      QVAR(s,b,_t,Q" + chantypeIdentifier
 					+ ") = tempCid;\n");
 
-			if(VECTORIZE_ID_SWAPPING) {
+			if(Config.VECTORIZE_ID_SWAPPING) {
 				swapVectorizer.swapTwoChannels(fw, j, "a", "b");
 			}
 			

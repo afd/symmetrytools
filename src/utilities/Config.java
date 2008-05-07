@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 public class Config {
@@ -11,7 +13,6 @@ public class Config {
 	public static final String VERSION = "2.0";
 	public static String SAUCY = null;
 	public static String GAP = null;
-	public static String TEMP_FILES = null;
 	public static String COMMON = null;
 	public static int TIME_BOUND = 0;
 	public static int NO_CONJUGATES = 0;
@@ -22,9 +23,10 @@ public class Config {
 	public static boolean USE_STABILISER_CHAIN = true;
 	public static boolean PROFILE = false;
 	public static boolean DETECT_ONLY = false;
+	public static boolean VECTORIZE_ID_SWAPPING = false;
 
-	public static int NO_CORES = 0; /* If this is 0, an iteratorclass is used for splitting
-										If > 0 then explicit loops are generated */
+	public static int NO_CORES = 1;
+	
 	public static boolean PTHREADS = false;
 	
 	public static boolean isOSWindows() {
@@ -52,11 +54,7 @@ public class Config {
 				System.out.println("No common directory specified.");
 			}
 
-			if(TEMP_FILES==null) {
-				System.out.println("No temporary directory specified.");
-			}
-
-			if(GAP==null || SAUCY==null ||COMMON==null || TEMP_FILES==null) {
+			if(GAP==null || SAUCY==null ||COMMON==null) {
 				System.exit(1);
 			}
 			
@@ -73,71 +71,168 @@ public class Config {
 		System.exit(0);
 	}
 
-	private static boolean timeboundset = false;
-	private static boolean conjugatesset = false;
-	private static boolean transpositionsset = false;
-	private static boolean profileset = false;
-	private static boolean strategyset = false;
-	private static boolean stabiliserchainset = false;
-	private static boolean pthreadsset = false;
-	private static boolean coresset = false;
+	private static Map<String, Integer> previouslySetOptions = new HashMap<String,Integer>();
 
-	private static void processConfigurationLine(String line, int n) {
+	public static boolean TESTING_IN_PROGRESS = false;
+	
+	private static void processConfigurationLine(String line, int lineNumber) {
+		if(StringHelper.isWhitespace(line)) {
+			return;
+		}
+		
 		try {
 			StringTokenizer strtok = new StringTokenizer(line,"=");
 			if(strtok.countTokens()!=2) {
 				throw new Exception();
 			} else {
-				String name = strtok.nextToken().toLowerCase();
-				String value = strtok.nextToken();
-			
-				if(name.equals("gap") && GAP==null) {
-					GAP = value;
-				} else if(name.equals("saucy") && SAUCY==null) {
-					SAUCY = value;
-				} else if(name.equals("tempfiles") && TEMP_FILES==null) {
-					TEMP_FILES = value;
-				} else if(name.equals("common") && COMMON==null) {
-					COMMON = value;
-				} else if(name.equals("timebound") && !timeboundset) {
-					timeboundset = true;
-					TIME_BOUND = Integer.parseInt(value);
-				} else if(name.equals("conjugates") && !conjugatesset) {
-					conjugatesset = true;
-					NO_CONJUGATES = Integer.parseInt(value);
-				} else if(name.equals("symmetryfile") && AUTOS_FILE==null) {
-					AUTOS_FILE = value;
-					AUTOMATIC_DETECTION = false;
-				} else if(name.equals("transpositions") && !transpositionsset) {
-					transpositionsset = true;
-					USE_TRANSPOSITIONS = Boolean.parseBoolean(value.toLowerCase());
-				} else if(name.equals("stabiliserchain") && !stabiliserchainset) {
-					stabiliserchainset = true;
-					USE_STABILISER_CHAIN = Boolean.parseBoolean(value.toLowerCase());
-				} else if(name.equals("profile") && !profileset) {
-					profileset = true;
-					PROFILE = Boolean.parseBoolean(value.toLowerCase());
-				} else if(name.equals("strategy") && !strategyset) {
-					strategyset = true;
-					REDUCTION_STRATEGY = Strategy.valueOf(value.toUpperCase());
-					if(REDUCTION_STRATEGY==null) {
-						System.out.println("Unknown reduction strategy -- defaulting to " + Strategy.FAST);
-						REDUCTION_STRATEGY = Strategy.FAST;
-					}
-				} else if(name.equals("pthreads") && !pthreadsset) {
-					pthreadsset = true;
-					PTHREADS = Boolean.parseBoolean(value.toUpperCase());
-				} else if(name.equals("cores") && !coresset) {
-					coresset = true;
-					NO_CORES = Integer.parseInt(value);
-				} else if(name.equals("quiet")) {
-					ProgressPrinter.QUIET_MODE = Boolean.parseBoolean(value);
+				String name = StringHelper.trimWhitespace(strtok.nextToken().toLowerCase());
+				String value = StringHelper.trimWhitespace(strtok.nextToken());
+
+				if(previouslySetOptions.containsKey(name)) {
+					System.out.println("Ignoring redefinition of \"" + name + "\" at line " + lineNumber + " of config.txt.");
 				} else {
-					System.out.println("Line " + n + " of configuration file redefines a configuration item, or refers to an item which does not exist.");
+
+					previouslySetOptions.put(name, lineNumber);
+					
+					if(name.equals("gap")) {
+						GAP = value;
+					} else if(name.equals("saucy")) {
+						SAUCY = value;
+					} else if(name.equals("common")) {
+						COMMON = value;
+					} else if(name.equals("timebound")) {
+						TIME_BOUND = safelyParseIntegerOption(value, lineNumber);
+					} else if(name.equals("conjugates")) {
+						NO_CONJUGATES = safelyParseIntegerOption(value, lineNumber);
+					} else if(name.equals("symmetryfile")) {
+						AUTOS_FILE = value;
+						AUTOMATIC_DETECTION = false;
+					} else if(name.equals("transpositions")) {
+						USE_TRANSPOSITIONS = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("stabiliserchain")) {
+						USE_STABILISER_CHAIN = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("profile")) {
+						PROFILE = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("strategy")) {
+						REDUCTION_STRATEGY = safelyParseStrategyOption(value, lineNumber);
+					} else if(name.equals("pthreads")) {
+						PTHREADS = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("cores")) {
+						NO_CORES = safelyParseIntegerOption(value, lineNumber);
+					} else if(name.equals("quiet")) {
+						ProgressPrinter.QUIET_MODE = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("vectorise")) {
+						VECTORIZE_ID_SWAPPING = safelyParseBooleanOption(value, lineNumber);
+					} else {
+						System.out.println("Unknown configuration option '" + name + "' ignored at line " + lineNumber + " of config.txt.");
+					}
 				}
 			}
 		} catch(Exception e) {
-			System.out.println("Line " + n + " of configuration file badly formed.");
+			System.out.println("Ignoring line " + lineNumber + " of configuration file - it does not have the form option=value.");
 		}
+	}
+
+	/* Method to return an integer given a string.
+	 * If the string does not correspond to an integer,
+	 * 0 is returned.
+	 */
+	private static int safelyParseIntegerOption(final String value, final int lineNumber) {
+		if(value.equals("")) {
+			System.out.println("No integer specified on right hand side of '=' at line " + lineNumber + " of config.txt.  Defaulting to '0'.");
+			return 0;
+		}
+
+		try {
+			return Integer.parseInt(value);
+		} catch (Exception e) {
+			System.out.println("Badly formed integer value '" + value + "' interpreted as '0' at line " + lineNumber + " of config.txt.");
+			return 0;
+		}
+	}
+
+	private static Strategy safelyParseStrategyOption(final String value, final int lineNumber) {
+		if(value.equals("")) {
+			System.out.println("No strategy specified on right hand side of '=' at line " + lineNumber + " of config.txt.  Defaulting to 'FAST'.");
+			return Strategy.FAST;
+		}
+		
+		try {
+			Strategy result = Strategy.valueOf(value.toUpperCase());
+			if(result == null) {
+				System.out.println("Badly formed strategy '" + value + "' interpreted as 'FAST' at line " + lineNumber + " of config.txt.");
+				result = Strategy.FAST;
+			}
+			return result;
+		} catch(IllegalArgumentException e) {
+			System.out.println("Badly formed strategy '" + value + "' interpreted as 'FAST' at line " + lineNumber + " of config.txt.");
+			return Strategy.FAST;
+		}
+	}
+
+	/* Method to return a boolean given a case-insensitive string.
+	 * If the string does not correspond to a boolean, 'false' is
+	 * returned.
+	 */
+	private static boolean safelyParseBooleanOption(final String value, final int lineNumber) {
+		if(value.equals("")) {
+			System.out.println("No boolean specified on right hand side of '=' at line " + lineNumber + " of config.txt.  Defaulting to 'false'.");
+			return false;
+		}
+
+		if(!(value.toLowerCase().equals("true") || value.toLowerCase().equals("false"))) {
+			System.out.println("Badly formed boolean value '" + value + "' interpreted as 'false' at line " + lineNumber + " of config.txt.");
+			return false;
+		}
+		return Boolean.parseBoolean(value.toLowerCase());
+	}
+
+	public static void printOptions() {
+
+		System.out.println("");
+		System.out.println("Configuration file options:");
+		System.out.println("");
+		System.out.println(" OPTION           PURPOSE                                                                 DEFAULT ");
+		System.out.println(" ------           -------                                                                 ------- ");
+		System.out.println("");
+		System.out.println("  gap              Path: location of gap package                                          N/A - compulsory");
+		System.out.println("  saucy            Path: location of saucy program                                        N/A - compulsory");
+		System.out.println("  common           Path: location of 'Common' folder, part of TopSpin distribution        N/A - compulsory");
+		System.out.println("");
+		System.out.println("  transpositions   Boolean: apply group elements as transpositions?                       true");
+		System.out.println("  stabiliserchain  Boolean: use stabiliser chain for enumeration?                         true");
+		System.out.println("  conjugates       Integer: no. of random conjugates when finding largest valid subgroup  0");
+		System.out.println("  timebound        Integer: max. seconds allowed for finding largest valid subgroup       0 => search indefinitely");
+		System.out.println("  symmetryfile     Bypass symmetry detection by providing a file of group generators      No file specified");
+		System.out.println("");
+		System.out.println("  strategy         Symmetry reduction strategy.  Options are:                             FAST");
+		System.out.println("                     FAST, ENUMERATE, HILLCLIMBING, SEGMENT,");
+		System.out.println("                     FLATTEN, EXACTMARKERS, APPROXMARKERS");
+		System.out.println("");
+		System.out.println("  pthreads         Boolean: parallelise symmetry reduction using pthreads                 false");
+		System.out.println("  cores            Integer: number of cores for parallel symmetry reduction               1");
+		System.out.println("  vectorise        Boolean: use vector SIMD instructions for symmetry reduction           false");
+		System.out.println("");
+		System.out.println("  profile          Boolean: output profiling information?                                 false");
+		System.out.println("  quiet            Boolean: run TopSpin in quiet mode                                     false");
+
+		
+		
+	}
+
+	public static void printConfiguration() {
+		ProgressPrinter.println("Configuration settings:");
+		ProgressPrinter.println("    Symmetry detection method: " + (Config.AUTOMATIC_DETECTION?"static channel diagram analysis":"manual"));
+
+		if(!Config.AUTOMATIC_DETECTION) {
+			ProgressPrinter.println("    Generators given in: " + Config.AUTOS_FILE);
+		} else {
+			ProgressPrinter.println("    Using " + Config.NO_CONJUGATES + " random conjugate" + (Config.NO_CONJUGATES==1?"":"s"));
+			ProgressPrinter.println("    Timeout for finding largest valid subgroup: " + Config.TIME_BOUND + " seconds");
+		}
+		ProgressPrinter.println("    Reduction strategy: " + Config.REDUCTION_STRATEGY);
+		ProgressPrinter.println("    Using transpositions to represent permutations: " + Config.USE_TRANSPOSITIONS);
+		ProgressPrinter.println("    Using stabiliser chain for enumeration: " + Config.USE_STABILISER_CHAIN);
+		ProgressPrinter.println("    Using vectorisation: " + Config.VECTORIZE_ID_SWAPPING);
 	}
 }

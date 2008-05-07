@@ -15,7 +15,11 @@ public class TopSpin {
 	public static void main(String args[]) throws IOException, InterruptedException {
 
 		if(args.length==0 || args.length>2 || (args.length==2 && !(args[0].equals("check")||args[0].equals("detect")))) {
+			System.out.println("");
 			System.out.println("Usage: topspin [check,detect] <filename>");
+			
+			Config.printOptions();
+
 			System.exit(0);
 		}
 		
@@ -50,20 +54,11 @@ public class TopSpin {
 		ProgressPrinter.printSeparator();
 		ProgressPrinter.println("TopSPIN version " + Config.VERSION);
 		ProgressPrinter.printSeparator();
-		ProgressPrinter.println("Configuration settings:");
-		ProgressPrinter.println("    Symmetry detection method: " + (Config.AUTOMATIC_DETECTION?"static channel diagram analysis":"manual"));
-		if(!Config.AUTOMATIC_DETECTION) {
-			ProgressPrinter.println("    Generators given in: " + Config.AUTOS_FILE);
-		} else {
-			ProgressPrinter.println("    Using " + Config.NO_CONJUGATES + " random conjugate" + (Config.NO_CONJUGATES==1?"":"s"));
-			ProgressPrinter.println("    Timeout for finding largest valid subgroup: " + Config.TIME_BOUND + " seconds");
-		}
-		ProgressPrinter.println("    Reduction strategy: " + Config.REDUCTION_STRATEGY);
-		ProgressPrinter.println("    Using transpositions to represent permutations: " + Config.USE_TRANSPOSITIONS);
-		ProgressPrinter.println("    Using stabiliser chain for enumeration: " + Config.USE_STABILISER_CHAIN);
+		Config.printConfiguration();
 		ProgressPrinter.printSeparator();
 
 		if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
+
 		SymmReducer reducer = new SymmReducer(args[args.length-1]);
 		reducer.reduce();
 		reducer.destroyGAP();
