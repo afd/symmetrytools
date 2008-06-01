@@ -27,7 +27,7 @@ proctype resource_allocator() {
     ::
        atomic {
 	 /* The resource allocator blocks until there is at least one request waiting to be serviced */
-	 (client_channels?[request]||client_channels[1]?[request]||client_channels[2]?[request]||
+	 (client_channels[0]?[request]||client_channels[1]?[request]||client_channels[2]?[request]||
 	  client_channels[3]?[request]||client_channels[4]?[request]||client_channels[5]?[request]||
 	  client_channels[6]?[request]);
 

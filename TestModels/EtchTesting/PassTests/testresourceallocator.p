@@ -4,7 +4,7 @@
 */
  
 mtype = {request,confirmation,finished}
-chan client_channels = [1] of {mtype};
+chan client_channels[3] = [1] of {mtype};
 byte resource_user = 255;
 byte priorities[3]
 

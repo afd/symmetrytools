@@ -365,7 +365,7 @@ tclose:/* check if originator has terminated call */
 	 messchan=null;messbit=0;goto tclose                           
       :: (messbit==0 && dev==on) -> /* connection is terminated 
 	   */
-	 self?messchan,messbit,0;
+	 self?messchan,messbit;
 	 partner[selfid]=null;partnerid=6;
 	 
 	 messchan=null;messbit=0;

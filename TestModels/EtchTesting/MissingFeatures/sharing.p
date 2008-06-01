@@ -30,7 +30,7 @@ proctype client(byte id) {
 					     client_channels[shareswith[id]]?finished;
 					  :: else -> skip
 					fi
-	 :: else skip
+					     :: else skip
        fi;
 
        /* Send a finished message back to the resource allocator */
