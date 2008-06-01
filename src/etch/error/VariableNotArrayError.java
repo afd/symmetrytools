@@ -30,7 +30,7 @@ public class VariableNotArrayError extends Error {
     }
 
     public String message() {
-	return "variable \"" + variableName + "\" is used as an array, but has type \"" + type + "\".";
+	return "variable \"" + variableName + "\" is used as an array, but has type \"" + type + "\"";
     } 
 
 }

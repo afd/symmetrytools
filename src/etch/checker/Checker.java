@@ -27,10 +27,8 @@ import src.etch.error.IncomparableTypesException;
 import src.etch.error.JumpToUndefinedLabelError;
 import src.etch.error.LiteralValueTooLargeError;
 import src.etch.error.NameAlreadyUsedError;
-import src.etch.error.NoInitError;
 import src.etch.error.NotBoolError;
 import src.etch.error.NotNumericError;
-import src.etch.error.PidIndexedArrayWithWrongLengthError;
 import src.etch.error.SubtypingError;
 import src.etch.error.VariableNotArrayError;
 import src.etch.error.VariableNotChannelError;
@@ -60,10 +58,12 @@ import src.etch.types.TypeVariableType;
 import src.etch.types.VisibleType;
 import src.promela.NodeHelper;
 import src.promela.node.*;
+import src.symmextractor.error.NoInitError;
+import src.symmextractor.error.PidIndexedArrayWithWrongLengthError;
 
 public class Checker extends InlineProcessor {
 	
-	private ErrorTable errorTable = new ErrorTable();
+	protected ErrorTable errorTable = new ErrorTable();
 
 	private Environment env = new Environment();
 
@@ -854,7 +854,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	private boolean isTypeOfNumericConstant(VisibleType t) {
-		return isNumeric(t) && ((NumericType) t).isTypeOfConstant();
+		return (t instanceof NumericType) && ((NumericType) t).isTypeOfConstant();
 	}
 
 	private boolean isBang(Token operator) {

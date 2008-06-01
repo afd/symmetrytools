@@ -24,8 +24,10 @@ import java.io.StringReader;
 
 import src.etch.typeinference.Substituter;
 import src.promela.lexer.Lexer;
+import src.promela.lexer.LexerException;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
+import src.promela.parser.ParserException;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
@@ -37,7 +39,7 @@ public class Check {
 	protected Node theAST;
 	protected String sourceName;
 	
-	public Check(String sourceName) {
+	public Check(String sourceName) throws ParserException, IOException, LexerException {
 
 		if(Config.PROFILE) { Profile.PARSE_START = System.currentTimeMillis(); }
 
@@ -46,16 +48,38 @@ public class Check {
 		BufferedReader br = null;
 		try {
 			br = getBufferForInputSpecification(sourceName);
-		} catch (FileNotFoundException e1) {
-			System.out.println("Can't access source file " + sourceName);
-			System.exit(1);
+		} catch (FileNotFoundException e) {
+			ProgressPrinter.println("Can not access source file " + sourceName);
+			if(Config.TESTING_IN_PROGRESS) {
+				throw e;
+			} else {
+				System.exit(1);
+			}
 		}
 		
 		try {
 			theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
-		} catch (Exception e) {
-			System.out.println(e);
-			System.exit(1);
+		} catch (ParserException e) {
+			if(Config.TESTING_IN_PROGRESS) {
+				throw e;
+			} else {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		} catch (LexerException e) {
+			if(Config.TESTING_IN_PROGRESS) {
+				throw e;
+			} else {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		} catch (IOException e) {
+			if(Config.TESTING_IN_PROGRESS) {
+				throw e;
+			} else {
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
 		
 		if(Config.PROFILE) { Profile.PARSE_END = System.currentTimeMillis(); }
@@ -63,8 +87,18 @@ public class Check {
 	}
 
 	public static BufferedReader getBufferForInputSpecification(String sourceName) throws FileNotFoundException {
+		
+		// Check that the source really exists!
+		try {
+			new FileReader(sourceName);
+		} catch(FileNotFoundException e) {
+			throw e;
+		}
+
 		BufferedReader br = null;
 		try {
+
+			
 			Process p = Runtime.getRuntime().exec("cpp " + sourceName);
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			String programForParsing = "";
@@ -91,7 +125,7 @@ public class Check {
 		return br;
 	}
 
-	public boolean isWellTyped(boolean isPidSensitive) {
+	public boolean typecheck(boolean isPidSensitive) {
 		ProgressPrinter.println("\nTypechecking input specification...\n");
 
 		
@@ -100,7 +134,9 @@ public class Check {
 		Substituter substituter = chk.unify();
 	
 		if (chk.getErrorTable().hasErrors()) {
-			System.out.println(chk.getErrorTable().output("while processing " + sourceName));
+			if(!ProgressPrinter.QUIET_MODE) {
+				System.out.println(chk.getErrorTable().output("while processing " + sourceName));
+			}
 			return false;
 		}
 
@@ -116,7 +152,7 @@ public class Check {
 		return true;
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ParserException, IOException, LexerException {
 
 		if (args.length < 1) {
 			System.out.println("Usage: check filename");
@@ -125,6 +161,6 @@ public class Check {
 
 		boolean isPidSensitive = (args.length > 1) && (args[1].equals("-symm"));
 
-		new Check(args[0]).isWellTyped(isPidSensitive);
+		new Check(args[0]).typecheck(isPidSensitive);
 	}
 }

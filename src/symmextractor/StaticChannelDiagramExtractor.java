@@ -14,6 +14,7 @@ import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
+import src.promela.node.AArrayIvar;
 import src.promela.node.AChannelIvarassignment;
 import src.promela.node.AFifoReceive;
 import src.promela.node.AFifoRecvPoll;
@@ -32,6 +33,7 @@ import src.promela.node.ASortedSend;
 import src.promela.node.PArgLst;
 import src.promela.node.PIvar;
 import src.promela.node.TSeparator;
+import src.symmextractor.error.GlobalArrayOfChannelsError;
 import src.utilities.StringHelper;
 
 public class StaticChannelDiagramExtractor extends Checker {
@@ -284,9 +286,7 @@ public class StaticChannelDiagramExtractor extends Checker {
 		}
 
 		else {
-			// TODO DISOBEYING RESTRICTIONS
-			System.out.println("Global arrays of channels are not permitted when applying symmetry reduction. <useful message on how to remodel>");
-			System.exit(0);
+			errorTable.add(node.getLBracket().getLine(), new GlobalArrayOfChannelsError( ((AArrayIvar)channel).getName().getText()));
 		}
 	}
 

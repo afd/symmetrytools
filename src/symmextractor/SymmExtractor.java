@@ -18,7 +18,9 @@ import src.etch.typeinference.Substituter;
 import src.group.Group;
 import src.group.Permutation;
 import src.promela.lexer.Lexer;
+import src.promela.lexer.LexerException;
 import src.promela.parser.Parser;
+import src.promela.parser.ParserException;
 import src.utilities.CommunicatingProcess;
 import src.utilities.Config;
 import src.utilities.ErrorStreamHandler;
@@ -35,48 +37,75 @@ public class SymmExtractor extends Check {
 	private Group autSCD;
 	private Group largestValidSubgroup;
 	private boolean requiredCosetSearch = false;
-	private int sizeOfLargestValidSubgroup = -1;
+	private long sizeOfLargestValidSubgroup = -1;
+	private boolean isWellTyped;
+	public boolean obeysSymmetryRestrictions;
 	
-	public SymmExtractor(String sourceName) throws IOException {
+	public SymmExtractor(String sourceName) throws IOException, ParserException, LexerException {
 		super(sourceName);
 	}
 
+	public boolean isWellTyped() {
+		return isWellTyped;
+	}
+	
 	public StaticChannelDiagramExtractor extract() throws IOException {
 
 		if(Config.PROFILE) { Profile.EXTRACT_START = System.currentTimeMillis(); }
 		extractor = new StaticChannelDiagramExtractor();
-		if(isWellTyped(true)) {
+		
+		isWellTyped = typecheck(true);
+		
+		if(isWellTyped) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Reparsing source without inlines");
 			reparseSourceWithoutInlines();
 			theAST.apply(extractor);
-			Substituter substituter = extractor.unify();
-			applyTypeSubstitutions(extractor, substituter);
-			if(Config.PROFILE) { Profile.EXTRACT_END = System.currentTimeMillis(); }
 
-			if(Config.PROFILE) { Profile.SAUCY_START = System.currentTimeMillis(); }
-			ProgressPrinter.printSeparator();
-			computeStaticChannelDiagramAutomorphisms(extractor);
-			if(Config.PROFILE) { Profile.SAUCY_END = System.currentTimeMillis(); }
+			obeysSymmetryRestrictions = checkSymmetryResrictionsAreObeyed(extractor);
+				
+			if(obeysSymmetryRestrictions) {
 			
-			ProgressPrinter.println("Saucy computed the following generators for Aut(SCD(P)):");
-			ProgressPrinter.println("   Aut(SCD(P)) = " + autSCD);
-
-			if(Config.PROFILE) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
-			computeLargestValidSubgroup();
-
-			ProgressPrinter.printSeparator();
-			ProgressPrinter.println("The group:");
-			ProgressPrinter.println("   G = " + largestValidSubgroup);
-			ProgressPrinter.println("is a valid group for symmetry reduction.");
-			ProgressPrinter.printSeparator();
-
-			return extractor;
+				Substituter substituter = extractor.unify();
+				applyTypeSubstitutions(extractor, substituter);
+				if(Config.PROFILE) { Profile.EXTRACT_END = System.currentTimeMillis(); }
+	
+				if(Config.PROFILE) { Profile.SAUCY_START = System.currentTimeMillis(); }
+				ProgressPrinter.printSeparator();
+				computeStaticChannelDiagramAutomorphisms(extractor);
+				if(Config.PROFILE) { Profile.SAUCY_END = System.currentTimeMillis(); }
+				
+				ProgressPrinter.println("Saucy computed the following generators for Aut(SCD(P)):");
+				ProgressPrinter.println("   Aut(SCD(P)) = " + autSCD);
+	
+				if(Config.PROFILE) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
+				computeLargestValidSubgroup();
+	
+				ProgressPrinter.printSeparator();
+				ProgressPrinter.println("The group:");
+				ProgressPrinter.println("   G = " + largestValidSubgroup);
+				ProgressPrinter.println("is a valid group for symmetry reduction.");
+				ProgressPrinter.printSeparator();
+	
+				return extractor;
+			}
 		}
 		if(Config.PROFILE) { Profile.EXTRACT_END = System.currentTimeMillis(); }
 		return null;
 	}
 
+
+	private boolean checkSymmetryResrictionsAreObeyed(StaticChannelDiagramExtractor extractor) {
+		if(extractor.getErrorTable().hasErrors()) {
+			if(!ProgressPrinter.QUIET_MODE) {
+				System.out.println(extractor.getErrorTable().output("while processing " + sourceName));
+			}
+			return false;
+		}
+		
+		return true;
+
+	}
 
 	protected void reparseSourceWithoutInlines() {
 		InlineReplacer inlineReplacer = new InlineReplacer();
@@ -169,7 +198,7 @@ public class SymmExtractor extends Check {
 			if(Config.TESTING_IN_PROGRESS) {
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
-				sizeOfLargestValidSubgroup  = Integer.parseInt(gapReader.readLine());
+				sizeOfLargestValidSubgroup  = Long.parseLong(gapReader.readLine());
 			}
 	
 			if(Config.PROFILE) {
@@ -186,7 +215,7 @@ public class SymmExtractor extends Check {
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
-				sizeOfLargestValidSubgroup  = Integer.parseInt(gapReader.readLine());
+				sizeOfLargestValidSubgroup  = Long.parseLong(gapReader.readLine());
 			}
 			
 			
@@ -412,7 +441,7 @@ public class SymmExtractor extends Check {
 		System.out.println((new BufferedReader(new InputStreamReader(gap.getErrorStream()))).readLine());
 	}
 
-	public int getSizeOfGroup() {
+	public long getSizeOfGroup() {
 		return sizeOfLargestValidSubgroup;
 	}
 

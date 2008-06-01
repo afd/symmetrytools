@@ -8,6 +8,8 @@ import java.util.StringTokenizer;
 
 import junit.framework.Assert;
 import src.etch.typeinference.Substituter;
+import src.promela.lexer.LexerException;
+import src.promela.parser.ParserException;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.SymmExtractor;
 import src.utilities.Config;
@@ -16,7 +18,7 @@ import src.utilities.ProgressPrinter;
 
 public class SymmReducer extends SymmExtractor {
 
-	public SymmReducer(String sourceName) throws IOException {
+	public SymmReducer(String sourceName) throws IOException, ParserException, LexerException {
 		super(sourceName);
 	}
 
@@ -136,7 +138,7 @@ public class SymmReducer extends SymmExtractor {
 		StaticChannelDiagramExtractor extractor;
 		Assert.assertNotNull(Config.AUTOS_FILE);
 		extractor = new StaticChannelDiagramExtractor();
-		if(isWellTyped(true)) {
+		if(typecheck(true)) {
 			System.out.println("Reparsing source without inlines");
 			reparseSourceWithoutInlines();
 			theAST.apply(extractor);

@@ -1,4 +1,6 @@
-package src.etch.error;
+package src.symmextractor.error;
+
+import src.etch.error.Error;
 
 
 public class NoInitError extends Error {

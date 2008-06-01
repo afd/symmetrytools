@@ -6,5 +6,5 @@ public abstract class Error {
 	public static int RIGHT = 1;
 	public static int UNARY = 2;
 
-	abstract String message();
+	public abstract String message();
 }

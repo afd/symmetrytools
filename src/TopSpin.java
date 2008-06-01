@@ -4,15 +4,19 @@ import java.io.IOException;
 
 
 import src.etch.checker.Check;
+import src.promela.lexer.LexerException;
+import src.promela.parser.ParserException;
 import src.symmextractor.SymmExtractor;
 import src.symmreducer.SymmReducer;
+import src.utilities.AbsentConfigurationFileException;
+import src.utilities.BadConfigurationFileException;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
 
 public class TopSpin {
 
-	public static void main(String args[]) throws IOException, InterruptedException {
+	public static void main(String args[]) throws IOException, InterruptedException, BadConfigurationFileException, AbsentConfigurationFileException, ParserException, LexerException {
 
 		if(args.length==0 || args.length>2 || (args.length==2 && !(args[0].equals("check")||args[0].equals("detect")))) {
 			System.out.println("");
@@ -23,30 +27,25 @@ public class TopSpin {
 			System.exit(0);
 		}
 		
+		String filename = args[1];
 		if(args.length==2 && args[0].equals("check")) {
-			System.out.println("File: " + args[1]);
+			System.out.println("File: " + filename);
 			System.out.println("Type-check only");
-			Check check = new Check(args[1]);
+			Check check = new Check(filename);
 		
-			check.isWellTyped(true);
+			check.typecheck(true);
 			System.exit(0);
 		}
 
 		Config.readConfigFile("config.txt");
 		
 		if(args.length==2 && args[0].equals("detect")) {
-			Config.DETECT_ONLY = true;
-			if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
-			Config.AUTOMATIC_DETECTION = true;
-			System.out.println("File: " + args[1]);
-			System.out.println("Detect symmetry only");
-			System.out.println("Using " + Config.NO_CONJUGATES + " random conjugate" + (Config.NO_CONJUGATES==1?"":"s"));
-			System.out.println("Timeout for finding largest valid subgroup: " + Config.TIME_BOUND + " seconds");
 
-			if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
 			SymmExtractor extractor = new SymmExtractor(args[args.length-1]);
-			extractor.extract();
-			extractor.destroyGAP();
+			if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
+
+			doAutomaticSymmetryDetection(filename, extractor);
+
 			if(Config.PROFILE) { Profile.TOPSPIN_END = System.currentTimeMillis(); Profile.show(); }
 			System.exit(0);
 		}
@@ -60,10 +59,28 @@ public class TopSpin {
 		if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
 
 		SymmReducer reducer = new SymmReducer(args[args.length-1]);
-		reducer.reduce();
-		reducer.destroyGAP();
+
+		doAutomaticSymmetryReduction(reducer);
+
 		if(Config.PROFILE) { Profile.TOPSPIN_END = System.currentTimeMillis(); Profile.show(); }
 		
+	}
+
+	public static void doAutomaticSymmetryReduction(SymmReducer reducer) throws IOException, InterruptedException {
+		reducer.reduce();
+		reducer.destroyGAP();
+	}
+
+	public static void doAutomaticSymmetryDetection(String filename, SymmExtractor extractor) throws IOException, InterruptedException {
+		Config.DETECT_ONLY = true;
+		Config.AUTOMATIC_DETECTION = true;
+		
+		ProgressPrinter.println("File: " + filename);
+		ProgressPrinter.println("Detect symmetry only");
+		ProgressPrinter.println("Using " + Config.NO_CONJUGATES + " random conjugate" + (Config.NO_CONJUGATES==1?"":"s"));
+		ProgressPrinter.println("Timeout for finding largest valid subgroup: " + Config.TIME_BOUND + " seconds");
+		extractor.extract();
+		extractor.destroyGAP();
 	}
 
 }

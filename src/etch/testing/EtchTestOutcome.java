@@ -1,4 +1,6 @@
-package src.etch.tests;
+package src.etch.testing;
+
+import src.testing.TestOutcome;
 
 public enum EtchTestOutcome implements TestOutcome {
 	WellTyped, BadlyTyped, LexerError, ParserError, EtchFailure, ParsePass;

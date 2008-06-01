@@ -1,4 +1,4 @@
-package src.etch.tests;
+package src.testing;
 
 public interface TestOutcome {
 

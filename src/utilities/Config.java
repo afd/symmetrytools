@@ -28,12 +28,38 @@ public class Config {
 	public static int NO_CORES = 1;
 	
 	public static boolean PTHREADS = false;
+
+	private static Map<String, Integer> previouslySetOptions = new HashMap<String,Integer>();
+
+	public static void resetConfiguration() {
+		
+		SAUCY = null;
+		GAP = null;
+		COMMON = null;
+		TIME_BOUND = 0;
+		NO_CONJUGATES = 0;
+		AUTOMATIC_DETECTION = true;
+		AUTOS_FILE = null;
+		REDUCTION_STRATEGY = Strategy.FAST;
+		USE_TRANSPOSITIONS = true;
+		USE_STABILISER_CHAIN = true;
+		PROFILE = false;
+		DETECT_ONLY = false;
+		VECTORIZE_ID_SWAPPING = false;
+		NO_CORES = 1;
+		PTHREADS = false;
+		previouslySetOptions = new HashMap<String,Integer>();
+
+	}
+	
 	
 	public static boolean isOSWindows() {
 		return System.getProperty("os.name").length()>="Windows".length() && System.getProperty("os.name").substring(0,7).equals("Windows");
 	}
 	
-	public static void readConfigFile(String filename) {
+	
+	
+	public static void readConfigFile(String filename) throws BadConfigurationFileException, AbsentConfigurationFileException {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(filename));
 			String line;
@@ -55,12 +81,21 @@ public class Config {
 			}
 
 			if(GAP==null || SAUCY==null ||COMMON==null) {
+				if(TESTING_IN_PROGRESS) {
+					throw new BadConfigurationFileException();
+				}
 				System.exit(1);
 			}
 			
 		} catch (FileNotFoundException e) {
+			if(TESTING_IN_PROGRESS) {
+				throw new AbsentConfigurationFileException();
+			}
 			configurationError();
 		} catch (IOException e) {
+			if(TESTING_IN_PROGRESS) {
+				throw new BadConfigurationFileException();
+			}
 			configurationError();
 		}
 	
@@ -70,8 +105,6 @@ public class Config {
 		System.out.println("Error opening configuration file \"config.txt\", which should be located in the directory from which you run TopSPIN.");
 		System.exit(0);
 	}
-
-	private static Map<String, Integer> previouslySetOptions = new HashMap<String,Integer>();
 
 	public static boolean TESTING_IN_PROGRESS = false;
 	

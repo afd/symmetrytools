@@ -1,4 +1,4 @@
-package src.etch.tests;
+package src.etch.testing;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -12,8 +12,11 @@ import src.promela.lexer.LexerException;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
+import src.testing.SystemErrorTestOutcome;
+import src.testing.TestCase;
+import src.testing.TestOutcome;
 
-public class EtchTestCase extends TopSpinTestCase {
+public class EtchTestCase extends TestCase {
 
 	public EtchTestCase(String filename, EtchTestOutcome outcome) {
 		super(filename, outcome);
@@ -43,9 +46,14 @@ public class EtchTestCase extends TopSpinTestCase {
 		} catch (IOException e) {
 				actualOutcome = SystemErrorTestOutcome.IOError;
 		} catch (Exception e) {
+			e.printStackTrace();
 				actualOutcome = EtchTestOutcome.EtchFailure;
 		}
 		
+	}
+
+	public TestOutcome getOutcome() {
+		return actualOutcome;
 	}
 
 }
