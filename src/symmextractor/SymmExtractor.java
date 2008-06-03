@@ -210,7 +210,7 @@ public class SymmExtractor extends Check {
 		} else {
 			largestValidSubgroup = baseGroup;
 
-			if(Config.TESTING_IN_PROGRESS) {
+			if(Config.DETECT_ONLY && Config.TESTING_IN_PROGRESS) {
 				startGAP();
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
 				gapWriter.write("Size(H);\n");
@@ -222,6 +222,13 @@ public class SymmExtractor extends Check {
 			if(!Config.DETECT_ONLY) {
 				startGAP();
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
+
+				if(Config.TESTING_IN_PROGRESS) {
+					gapWriter.write("Size(H);\n");
+					gapWriter.flush();
+					sizeOfLargestValidSubgroup  = Long.parseLong(gapReader.readLine());
+				}
+			
 			} else if(Config.PROFILE) {
 				Profile.LARGEST_VALID_END = System.currentTimeMillis();
 				startGAP();
@@ -398,6 +405,7 @@ public class SymmExtractor extends Check {
 	}
 	
 	protected void startGAP() throws IOException {
+		
 		if(Config.PROFILE) { Profile.GAP_LAUNCH_START = System.currentTimeMillis(); }
 
 		String gapString;

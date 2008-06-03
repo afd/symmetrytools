@@ -20,8 +20,8 @@ public class SymmExtractorTestCase extends TestCase {
 
 	public SymmExtractorTestCase(String foldername, String modelFilename, SymmExtractorTestOutcome expectedOutcome) {
 
-		super("TestModels/SymmExtractorTests/" + foldername + modelFilename, expectedOutcome);
-		this.foldername = "TestModels/SymmExtractorTests/" + foldername;
+		super(foldername + modelFilename, expectedOutcome);
+		this.foldername = foldername;
 	
 	}
 
