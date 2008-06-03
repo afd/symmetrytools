@@ -1,0 +1,3 @@
+strategy=enumerate
+transpositions=false
+stabiliserchain=false

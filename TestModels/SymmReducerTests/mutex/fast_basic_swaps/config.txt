@@ -1,0 +1,3 @@
+strategy=fast
+transpositions=true
+stabiliserchain=false
