@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import src.symmextractor.testing.SymmExtractorFailTestOutcome;
-import src.symmextractor.testing.SymmExtractorTestCase;
-import src.testing.Tester;
 import src.testing.TestCase;
+import src.testing.Tester;
 
 public class EtchTester {
 
@@ -114,6 +112,7 @@ public class EtchTester {
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/ParseFailTests/misc1.p",  EtchTestOutcome.ParserError));
 
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failfielddoesnotexist.p",  EtchTestOutcome.BadlyTyped));
 		
 		
 		

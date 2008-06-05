@@ -24,7 +24,9 @@ public class TypeEntry extends EnvEntry {
 	}
 
 	public VisibleType getFieldType(String fieldName) {
-		Assert.assertTrue(fieldNames.contains(fieldName));
+		if(!fieldNames.contains(fieldName)) {
+			return null;
+		}
 		return fieldTypes.get(fieldNames.indexOf(fieldName));
 	}
 

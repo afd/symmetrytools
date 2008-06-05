@@ -8,6 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import src.symmreducer.targets.Target;
+import src.symmreducer.targets.TargetPC;
+import src.symmreducer.targets.TargetPPU;
+
 public class Config {
 
 	public static final String VERSION = "2.0";
@@ -60,6 +64,7 @@ public class Config {
 	
 	
 	public static void readConfigFile(String filename) throws BadConfigurationFileException, AbsentConfigurationFileException {
+		Target.setTargetArchitecture(new TargetPC());
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(filename));
 			String line;
@@ -156,6 +161,15 @@ public class Config {
 						ProgressPrinter.QUIET_MODE = safelyParseBooleanOption(value, lineNumber);
 					} else if(name.equals("vectorise")) {
 						VECTORIZE_ID_SWAPPING = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("target")) {
+						String upperCaseValue = value.toUpperCase();
+						if(upperCaseValue.equals("PC")) {
+							Target.setTargetArchitecture(new TargetPC());
+						} else if(upperCaseValue.equals("PPU")) {
+							Target.setTargetArchitecture(new TargetPPU());
+						} else {
+							System.out.println("Unknown target '" + value + "' at line " + lineNumber + " of config.txt.  Defaulting to PC target.");
+						}
 					} else {
 						System.out.println("Unknown configuration option '" + name + "' ignored at line " + lineNumber + " of config.txt.");
 					}

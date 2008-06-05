@@ -2,6 +2,16 @@ package src.symmreducer.targets;
 
 public abstract class Target {
 
+	private static Target targetArchitecture;
+
+	public static Target getTargetArchitecture() {
+		return targetArchitecture;
+	}
+
+	public static void setTargetArchitecture(Target t) {
+		targetArchitecture = t;
+	}
+
 	public abstract int alignmentValue();
 
 	public boolean requiresAlignment() {

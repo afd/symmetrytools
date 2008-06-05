@@ -314,7 +314,7 @@ public class Checker extends InlineProcessor {
 			addError(node.getDot(), new VariableNotRecordError(t.name()));
 			return;
 		} 
-
+		
 		VisibleType fieldType = ((TypeEntry)env.get(t.name())).getFieldType(node.getName()
 						.getText());
 		if (fieldType == null) {
