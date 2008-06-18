@@ -13,7 +13,7 @@ import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
 
-class SensitiveVariableReference {
+public class SensitiveVariableReference {
 
 	private String reference;
 	private VisibleType type;
@@ -23,7 +23,7 @@ class SensitiveVariableReference {
 		this.type = type;
 	}
 		
-	VisibleType getType() {
+	public VisibleType getType() {
 		return type;
 	}
 	

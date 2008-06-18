@@ -28,6 +28,7 @@ import src.promela.lexer.LexerException;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
+import src.symmextractor.SymmetryChecker;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
@@ -99,7 +100,7 @@ public class Check {
 		try {
 
 			
-			Process p = Runtime.getRuntime().exec("cpp " + sourceName);
+			Process p = Runtime.getRuntime().exec("cpp \"" + sourceName + "\"");
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			String programForParsing = "";
 			String line;
@@ -129,7 +130,7 @@ public class Check {
 		ProgressPrinter.println("\nTypechecking input specification...\n");
 
 		
-		Checker chk = new Checker(isPidSensitive);
+		Checker chk = (isPidSensitive ? new SymmetryChecker() : new Checker());
 		theAST.apply(chk);
 		Substituter substituter = chk.unify();
 	

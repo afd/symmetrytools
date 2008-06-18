@@ -8,9 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import src.symmreducer.targets.Target;
-import src.symmreducer.targets.TargetPC;
-import src.symmreducer.targets.TargetPPU;
+import src.symmreducer.paralleltargets.CellParallelTarget;
+import src.symmreducer.paralleltargets.ParallelTarget;
+import src.symmreducer.paralleltargets.PthreadsParallelTarget;
+import src.symmreducer.vectortargets.CellSPUVectorTarget;
+import src.symmreducer.vectortargets.VectorTarget;
+import src.symmreducer.vectortargets.DummyVectorTarget;
+import src.symmreducer.vectortargets.PowerPCVectorTarget;
 
 public class Config {
 
@@ -31,10 +35,13 @@ public class Config {
 
 	public static int NO_CORES = 1;
 	
-	public static boolean PTHREADS = false;
+	public static boolean PARALLELISE = false;
 
 	private static Map<String, Integer> previouslySetOptions = new HashMap<String,Integer>();
 
+	public static VectorTarget vectorTarget;
+	public static ParallelTarget parallelTarget;
+	
 	public static void resetConfiguration() {
 		
 		SAUCY = null;
@@ -51,7 +58,7 @@ public class Config {
 		DETECT_ONLY = false;
 		VECTORIZE_ID_SWAPPING = false;
 		NO_CORES = 1;
-		PTHREADS = false;
+		PARALLELISE = false;
 		previouslySetOptions = new HashMap<String,Integer>();
 
 	}
@@ -64,7 +71,8 @@ public class Config {
 	
 	
 	public static void readConfigFile(String filename) throws BadConfigurationFileException, AbsentConfigurationFileException {
-		Target.setTargetArchitecture(new TargetPC());
+		vectorTarget = new DummyVectorTarget();
+
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(filename));
 			String line;
@@ -153,8 +161,8 @@ public class Config {
 						PROFILE = safelyParseBooleanOption(value, lineNumber);
 					} else if(name.equals("strategy")) {
 						REDUCTION_STRATEGY = safelyParseStrategyOption(value, lineNumber);
-					} else if(name.equals("pthreads")) {
-						PTHREADS = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("parallelise")) {
+						PARALLELISE = safelyParseBooleanOption(value, lineNumber);
 					} else if(name.equals("cores")) {
 						NO_CORES = safelyParseIntegerOption(value, lineNumber);
 					} else if(name.equals("quiet")) {
@@ -164,9 +172,14 @@ public class Config {
 					} else if(name.equals("target")) {
 						String upperCaseValue = value.toUpperCase();
 						if(upperCaseValue.equals("PC")) {
-							Target.setTargetArchitecture(new TargetPC());
-						} else if(upperCaseValue.equals("PPU")) {
-							Target.setTargetArchitecture(new TargetPPU());
+							vectorTarget = new DummyVectorTarget();
+							parallelTarget = new PthreadsParallelTarget();
+						} else if(upperCaseValue.equals("POWERPC")) {
+							vectorTarget = new PowerPCVectorTarget();
+							parallelTarget = new PthreadsParallelTarget();
+						} else if(upperCaseValue.equals("CELL")) {
+							vectorTarget = new CellSPUVectorTarget();
+							parallelTarget = new CellParallelTarget();
 						} else {
 							System.out.println("Unknown target '" + value + "' at line " + lineNumber + " of config.txt.  Defaulting to PC target.");
 						}

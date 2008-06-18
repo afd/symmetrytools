@@ -14,7 +14,6 @@ import src.etch.env.MtypeEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
-import src.etch.error.ArithmeticOnPidError;
 import src.etch.error.ArrayWithLengthZeroError;
 import src.etch.error.AssignmentMismatchError;
 import src.etch.error.ElementDoesNotExistError;
@@ -124,10 +123,14 @@ public class Checker extends InlineProcessor {
 
 	}
 	
-	public Checker(boolean checkingSymmetry) {
+	protected Checker(boolean checkingSymmetry) {
 		SymmetrySettings.CHECKING_SYMMETRY = checkingSymmetry;
 	}
 
+	public Checker() {
+		this(false);
+	}
+		
 	public ErrorTable getErrorTable() {
 		return errorTable;
 	}
@@ -267,23 +270,13 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAIncrementAssignment(AIncrementAssignment node) {
-		if(SymmetrySettings.CHECKING_SYMMETRY && getOut(node) instanceof PidType) {
-			errorTable.add(node.getPlusPlus().getLine(),new ArithmeticOnPidError());
-		}
-		
 		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
 				.getPlusPlus(), Error.UNARY);
-	
 	}
 
 	public void outADecrementAssignment(ADecrementAssignment node) {
-		if(SymmetrySettings.CHECKING_SYMMETRY && getOut(node) instanceof PidType) {
-			errorTable.add(node.getMinusMinus().getLine(),new ArithmeticOnPidError());
-		}
-		
 		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
 				.getMinusMinus(), Error.UNARY);
-
 	}
 
 	public void outASingleVarref(ASingleVarref node) {
@@ -768,7 +761,7 @@ public class Checker extends InlineProcessor {
 	
 	public void processCommunication(PVarref chan, List<VisibleType> argTypes, Token operator) {
 		Type type = getOutType(chan);
-
+		
 		if ((type != null) && (argTypes!=null)) {
 			List<Type> typeVariables = createTypeVariablesForCommunication(operator,
 					argTypes);

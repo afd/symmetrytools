@@ -106,7 +106,7 @@ public class SymmExtractor extends Check {
 		return true;
 
 	}
-
+	
 	protected void reparseSourceWithoutInlines() {
 		InlineReplacer inlineReplacer = new InlineReplacer();
 		theAST.apply(inlineReplacer);

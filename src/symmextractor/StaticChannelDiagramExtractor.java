@@ -9,12 +9,11 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
-import src.etch.checker.Checker;
+import junit.framework.Assert;
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
-import src.promela.node.AArrayIvar;
 import src.promela.node.AChannelIvarassignment;
 import src.promela.node.AFifoReceive;
 import src.promela.node.AFifoRecvPoll;
@@ -33,10 +32,9 @@ import src.promela.node.ASortedSend;
 import src.promela.node.PArgLst;
 import src.promela.node.PIvar;
 import src.promela.node.TSeparator;
-import src.symmextractor.error.GlobalArrayOfChannelsError;
 import src.utilities.StringHelper;
 
-public class StaticChannelDiagramExtractor extends Checker {
+public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	
 	protected List<ProcessEntry> processEntries = new ArrayList<ProcessEntry>();
 
@@ -48,11 +46,9 @@ public class StaticChannelDiagramExtractor extends Checker {
 
 	private List<Integer> colourPermutation;
 	private List<Integer> colourPartition;
-
-	private boolean inProctype = false;
 	
 	public StaticChannelDiagramExtractor() {
-		super(true);
+		super();
 	}
 	
 	public List<String> getStaticChannelNames() {
@@ -124,7 +120,7 @@ public class StaticChannelDiagramExtractor extends Checker {
 			addChannelEntry((ChannelEntry) iter.next());
 		}
 	}
-
+	
 	private String constructSaucyOutput(List edges) {
 		// Number of nodes
 		String result = (processEntries.size() + staticChannelNames.size())
@@ -237,10 +233,8 @@ public class StaticChannelDiagramExtractor extends Checker {
 	}
 
 	public void caseAProctype(AProctype node) {
-		inProctype = true;
 		super.caseAProctype(node);
 		proctypeNames.add(node.getName().getText());
-		inProctype = false;
 	}
 
 	public void outARunFactor(ARunFactor node) {
@@ -265,29 +259,13 @@ public class StaticChannelDiagramExtractor extends Checker {
 	}
 
 	public void outAChannelIvarassignment(AChannelIvarassignment node) {
-
-		if(inTypedef) {
-			// TODO DISOBEYING RESTRICTIONS
-			System.out.println("Dynamic channel creation is not permitted when applying symmetry reduction, therefore channels cannot be initialised inside a user defined type. <useful message on how to remodel>");
-			System.exit(0);
-		}
-		
-
-		if(inProctype) {
-			// TODO DISOBEYING RESTRICTIONS
-			System.out.println("Dynamic channel creation is not permitted when applying symmetry reduction, therefore channels cannot be initialised inside a proctype. <useful message on how to remodel>");
-			System.exit(0);
-		}
 		
 		PIvar channel = (PIvar) node.parent();
 		
-		if (channel instanceof ASingleIvar) {
-			staticChannelNames.add((((ASingleIvar) channel)).getName().getText());
-		}
+		Assert.assertTrue(channel instanceof ASingleIvar);
 
-		else {
-			errorTable.add(node.getLBracket().getLine(), new GlobalArrayOfChannelsError( ((AArrayIvar)channel).getName().getText()));
-		}
+		staticChannelNames.add((((ASingleIvar) channel)).getName().getText());
+
 	}
 
 	private void addChannelEntry(ChannelEntry channelEntry) {

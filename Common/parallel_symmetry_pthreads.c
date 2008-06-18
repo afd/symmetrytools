@@ -1,4 +1,4 @@
-#include "symmetry_threads.h"
+#include "parallel_symmetry_pthreads.h"
 
 #if (NUM_THREADS<=0)
 #error Compile with option -DNUM_THREADS=X where X is a positive number

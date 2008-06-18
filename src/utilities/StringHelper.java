@@ -1,5 +1,7 @@
 package src.utilities;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.StringTokenizer;
 
 public class StringHelper {
@@ -112,4 +114,11 @@ public class StringHelper {
 		}
 		return result;
 	}
+	
+	public static void indent(FileWriter out, int numberOfTabs) throws IOException {
+		for (int counter = 0; counter < numberOfTabs; counter++) {
+			out.write("   ");
+		}
+	}
+
 }

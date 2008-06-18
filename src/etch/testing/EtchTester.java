@@ -114,6 +114,8 @@ public class EtchTester {
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failfielddoesnotexist.p",  EtchTestOutcome.BadlyTyped));
 		
+		testCases.add(new EtchTestCase("TestModels/SymmExtractorTests/BadlyTyped/failincrementpid.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/SymmExtractorTests/BadlyTyped/faildecrementpid.p", EtchTestOutcome.WellTyped));
 		
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
@@ -127,6 +129,7 @@ public class EtchTester {
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failbadinlines2.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failbadinlines3.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failemailmissingchanneltwo.p", EtchTestOutcome.BadlyTyped));
+		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/fail_bad_use_of_local_keyword.p", EtchTestOutcome.BadlyTyped));
 		
 		return testCases;
 	}

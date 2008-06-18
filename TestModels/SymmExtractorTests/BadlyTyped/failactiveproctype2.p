@@ -1,3 +1,8 @@
+proctype P() {
+	     skip;
+	     }
+
+
 active [10] proctype user() {
 		       do
 		       :: skip

@@ -15,7 +15,7 @@ import src.etch.types.ChanType;
 import src.etch.types.PidType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
-import src.symmreducer.targets.Target;
+import src.utilities.Config;
 
 public class SwapVectorizer {
 
@@ -210,10 +210,8 @@ public class SwapVectorizer {
 			}
 		}
 
-		if(Target.getTargetArchitecture().requiresAlignment()) {
-			numberOfPidReferencesToSwap = roundUp(numberOfPidReferencesToSwap, Target.getTargetArchitecture().alignmentValue());
-			numberOfChannelReferencesToSwap = roundUp(numberOfChannelReferencesToSwap, Target.getTargetArchitecture().alignmentValue());
-		}
+		numberOfPidReferencesToSwap = roundUp(numberOfPidReferencesToSwap, Config.vectorTarget.alignmentValue());
+		numberOfChannelReferencesToSwap = roundUp(numberOfChannelReferencesToSwap, Config.vectorTarget.alignmentValue());
 		
 		extractIdentifierVariablesFunctionBody += "}\n\n";
 		replaceIdentifierVariablesFunction += "}\n\n";
@@ -238,7 +236,7 @@ public class SwapVectorizer {
 
 		out.write("} AugmentedState;\n\n");
 
-		out.write(Target.getTargetArchitecture().getVectorUnsignedCharDefinition());
+		out.write(Config.vectorTarget.getVectorUnsignedCharDefinition());
 		
 		writeAugmentedMemcpy(out);
 
@@ -259,8 +257,8 @@ public class SwapVectorizer {
 	}
 
 	private String alignmentSpecifier() {
-		if(Target.getTargetArchitecture().requiresAlignment()) {
-			return " __attribute__((aligned(" + Target.getTargetArchitecture().alignmentValue() + ")))";
+		if(Config.vectorTarget.alignmentValue() > 1) {
+			return " __attribute__((aligned(" + Config.vectorTarget.alignmentValue() + ")))";
 		}
 		return "";
 	}
@@ -354,31 +352,31 @@ public class SwapVectorizer {
 
 		if(numberOfPidReferencesToSwap > 0) {
 		
-			out.write("   " + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + " x;\n");
-		    out.write("   " + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + " vec_a;\n");
-		    out.write("   " + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + " vec_b;\n");
-			out.write("   " + Target.getTargetArchitecture().getVectorBoolCharTypename() + " is_a;\n");
-			out.write("   " + Target.getTargetArchitecture().getVectorBoolCharTypename() + " is_b;\n\n");
+			out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
+		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_a;\n");
+		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_b;\n");
+			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
+			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write(Target.getTargetArchitecture().getSplatsInstruction("vec_a", "a"));
+			out.write(Config.vectorTarget.getSplatsInstruction("vec_a", "a"));
 			
-		    out.write(Target.getTargetArchitecture().getSplatsInstruction("vec_b", "b"));
+		    out.write(Config.vectorTarget.getSplatsInstruction("vec_b", "b"));
 	
 			for(int i=0; i<numberOfPidReferencesToSwap; i+=16) {
 	
 				out.write("   {\n");
 		
-				out.write("      x = *(" + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
+				out.write("      x = *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
 				    
-				out.write(Target.getTargetArchitecture().getCompareEqualInstruction("is_a", "x", "vec_a"));
+				out.write(Config.vectorTarget.getCompareEqualInstruction("is_a", "x", "vec_a"));
 		
-				out.write(Target.getTargetArchitecture().getCompareEqualInstruction("is_b", "x", "vec_b"));
+				out.write(Config.vectorTarget.getCompareEqualInstruction("is_b", "x", "vec_b"));
 		
-				out.write(Target.getTargetArchitecture().getSelectInstruction("x", "is_a", "vec_b", "x"));
+				out.write(Config.vectorTarget.getSelectInstruction("x", "is_a", "vec_b", "x"));
 				
-				out.write(Target.getTargetArchitecture().getSelectInstruction("x", "is_b", "vec_a", "x"));
+				out.write(Config.vectorTarget.getSelectInstruction("x", "is_b", "vec_a", "x"));
 		
-				out.write("      *(" + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "])) = x;\n");
+				out.write("      *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "])) = x;\n");
 			
 				out.write("   }\n");
 			}			
@@ -389,31 +387,31 @@ public class SwapVectorizer {
 	public void writeChannelSwaps(FileWriter out) throws IOException {
 
 		if(numberOfChannelReferencesToSwap > 0) {
-			out.write("   " + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + " x;\n");
-		    out.write("   " + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + " vec_a;\n");
-		    out.write("   " + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + " vec_b;\n");
-			out.write("   " + Target.getTargetArchitecture().getVectorBoolCharTypename() + " is_a;\n");
-			out.write("   " + Target.getTargetArchitecture().getVectorBoolCharTypename() + " is_b;\n\n");
+			out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
+		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_a;\n");
+		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_b;\n");
+			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
+			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write(Target.getTargetArchitecture().getSplatsInstruction("vec_a", "a+1"));
+			out.write(Config.vectorTarget.getSplatsInstruction("vec_a", "a+1"));
 			
-		    out.write(Target.getTargetArchitecture().getSplatsInstruction("vec_b", "b+1"));
+		    out.write(Config.vectorTarget.getSplatsInstruction("vec_b", "b+1"));
 	
 			for(int i=0; i<numberOfChannelReferencesToSwap; i+=16) {
 	
 				out.write("   {\n");
 		
-				out.write("      x = *(" + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
+				out.write("      x = *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
 				    
-				out.write(Target.getTargetArchitecture().getCompareEqualInstruction("is_a", "x", "vec_a"));
+				out.write(Config.vectorTarget.getCompareEqualInstruction("is_a", "x", "vec_a"));
 		
-				out.write(Target.getTargetArchitecture().getCompareEqualInstruction("is_b", "x", "vec_b"));
+				out.write(Config.vectorTarget.getCompareEqualInstruction("is_b", "x", "vec_b"));
 		
-				out.write(Target.getTargetArchitecture().getSelectInstruction("x", "is_a", "vec_b", "x"));
+				out.write(Config.vectorTarget.getSelectInstruction("x", "is_a", "vec_b", "x"));
 				
-				out.write(Target.getTargetArchitecture().getSelectInstruction("x", "is_b", "vec_a", "x"));
+				out.write(Config.vectorTarget.getSelectInstruction("x", "is_b", "vec_a", "x"));
 		
-				out.write("      *(" + Target.getTargetArchitecture().getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
+				out.write("      *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
 			
 				out.write("   }\n");
 			}			

@@ -27,11 +27,10 @@ public class TopSpin {
 			System.exit(0);
 		}
 		
-		String filename = args[1];
 		if(args.length==2 && args[0].equals("check")) {
-			System.out.println("File: " + filename);
+			System.out.println("File: " + args[1]);
 			System.out.println("Type-check only");
-			Check check = new Check(filename);
+			Check check = new Check(args[1]);
 		
 			check.typecheck(true);
 			System.exit(0);
@@ -44,7 +43,7 @@ public class TopSpin {
 			SymmExtractor extractor = new SymmExtractor(args[args.length-1]);
 			if(Config.PROFILE) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
 
-			doAutomaticSymmetryDetection(filename, extractor);
+			doAutomaticSymmetryDetection(args[1], extractor);
 
 			if(Config.PROFILE) { Profile.TOPSPIN_END = System.currentTimeMillis(); Profile.show(); }
 			System.exit(0);

@@ -108,7 +108,15 @@ public class SymmReducer extends SymmExtractor {
     	
     	if(Config.PROFILE) { Profile.CODE_GENERATION_START = System.currentTimeMillis(); 	}
 
-    	new SymmetryApplier(sourceName,extractor,groupGenerators).applySymmetry();
+    	SymmetryApplier symmetryApplier;
+    	
+    	if(Config.PARALLELISE) {
+    		symmetryApplier = new SymmetryApplierParallel(sourceName, extractor, groupGenerators);
+    	} else {
+    		symmetryApplier = new SymmetryApplier(sourceName, extractor, groupGenerators);
+    	}
+    	
+    	symmetryApplier.applySymmetry();
     	
     	if(Config.PROFILE) { Profile.CODE_GENERATION_END = System.currentTimeMillis(); 	}
 
@@ -117,7 +125,7 @@ public class SymmReducer extends SymmExtractor {
     	ProgressPrinter.println("To generate an executable verifier use the following command:");
     	ProgressPrinter.print("   gcc -o sympan sympan.c group.c");
     	    	
-    	if(Config.PTHREADS) {
+    	if(Config.PARALLELISE) {
     		ProgressPrinter.print(" symmetry_threads.c -DNUM_THREADS=...");
     	}
     	

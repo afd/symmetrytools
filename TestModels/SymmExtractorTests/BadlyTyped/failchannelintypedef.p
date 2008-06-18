@@ -1,11 +1,9 @@
-proctype client() {
-		  do
-		  :: skip
-		  od
-		  }
+typedef T {
+	 chan l = [1] of {byte};
+}
 
 proctype user() {
-		run client();
+		T l;
 		do
 		:: skip
 		od

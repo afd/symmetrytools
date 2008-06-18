@@ -17,14 +17,14 @@ import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ArrayType;
-import src.etch.types.ByteType;
 import src.etch.types.ChanType;
 import src.etch.types.PidType;
-import src.etch.types.ProductType;
-import src.etch.types.RecordType;
 import src.etch.types.SimpleType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmreducer.paralleltargets.StabiliserChainEnumeration;
+import src.symmreducer.strategies.Flatten;
+import src.symmreducer.strategies.Markers;
 import src.utilities.Config;
 import src.utilities.FileManager;
 import src.utilities.ProgressPrinter;
@@ -33,37 +33,47 @@ import src.utilities.StringHelper;
 
 public class SymmetryApplier {
 
-	private static final boolean SEPARATE_SWAP_FUNCTIONS = false;
-
 	SwapVectorizer swapVectorizer = null;
 	
-	private static final String stateType = Config.VECTORIZE_ID_SWAPPING ? "AugmentedState" : "State";
+	public static String stateType;
 
-	private static final String memoryCopy = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcpy" : "memcpy";
+	public static String memoryCopy;
 
-	private static final String memoryCompare = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcmp" : "memcmp";
+	public static String memoryCompare;
 
 	protected StaticChannelDiagramExtractor typeInfo;
 
 	private String specification;
 
 	private String groupGenerators;
+
+	private FileWriter symmetryGroupFile;
+
+	private FileWriter permutationFile;
 	
 	public SymmetryApplier(String specification,
 			StaticChannelDiagramExtractor typeInfo, String groupGenerators) {
 		this.specification = specification;
 		this.typeInfo = typeInfo;
 		this.groupGenerators = groupGenerators;
+
+		stateType = Config.VECTORIZE_ID_SWAPPING ? "AugmentedState" : "State";
+		memoryCopy = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcpy" : "memcpy";
+		memoryCompare = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcmp" : "memcmp";
+
 	}
 
 	public void applySymmetry() {
 		try {
+			createHeaderFileToContainGroupElements();
+			createHeaderFileToContainPermutationCode();
 			generatePanFiles();
 			dealWithSympanHeader();
 			dealWithSympanBody();
 			dealWithGroupFiles();
 			dealWithSegmentFiles();
-			dealWithSymmetryThreadFiles();
+			symmetryGroupFile.close();
+			permutationFile.close();
 		} catch (Exception e) {
 			System.out
 					.println("An error occurred while constructing the \"sympan\" files.");
@@ -72,9 +82,17 @@ public class SymmetryApplier {
 		}
 	}
 
+	private void createHeaderFileToContainPermutationCode() throws IOException {
+	    permutationFile = new FileWriter("apply_permutation.h");
+	}
+
+	private void createHeaderFileToContainGroupElements() throws IOException {
+	    symmetryGroupFile = new FileWriter("symmetry_group.h");
+	}
+
 	private void dealWithSympanBody() throws IOException {
 		List<String> groupInfo = null;
-		
+	
 		if(!usingMarkers()) {
 			groupInfo = readFile("groupinfo");
 		}
@@ -108,56 +126,21 @@ public class SymmetryApplier {
 
 				writeMinNow(out);
 
+				out.write("#include \"apply_permutation.h\"\n");
+				
 				if (Config.USE_TRANSPOSITIONS) {
 
-					if(SEPARATE_SWAP_FUNCTIONS) {
-						writeApplyPrSwapToStateAsSeparateFunctions(out);
-						
-						out.write("typedef void (*swap_function_t)(State*);\n\n");
-						out.write("swap_function_t swap_pr_table[" + typeInfo.getNoProcesses() + "][" + typeInfo.getNoProcesses() + "] = {\n");
-						
-						for(int i=0; i<typeInfo.getNoProcesses(); i++) {
-							out.write("      { ");
+					writeApplyPrSwapToState();
 
-							for(int j=0; j<typeInfo.getNoProcesses(); j++) {
-								
-								if((i==j)|| (getProctypeIdentifierFromProcessIdentifier(i)!=getProctypeIdentifierFromProcessIdentifier(j))) {
-									out.write("NULL");
-								} else if(i<j) {
-									out.write("applyPrSwapToState_" + i + "_" + j);
-								} else {
-									out.write("applyPrSwapToState_" + j + "_" + i);
-								}
-
-								
-								if(j<typeInfo.getNoProcesses() - 1) {
-									out.write(", ");
-								}
-							}
-						
-							out.write(" }");
-							if(i<typeInfo.getNoProcesses()-1) {
-								out.write(",");
-							}
-							out.write("\n");
-						}
-						out.write("};\n\n");
-						
-					} else {
-						writeApplyPrSwapToState(out);
-					}
 					if (!usingMarkers()) {
-						writeApplyChSwapToState(out);
-						writeApplyPermToStateTranspositions(out);
+						writeApplyChSwapToState();
+						writeApplyPermToStateTranspositions();
 					}
 				} else if (!usingMarkers()) {
 					writeApplyPermToStateBasic(out);
 				}
 
-				if(Config.PTHREADS) {
-					out.write("\n#include \"symmetry_threads.h\"\n\n");
-					out.write("pthread_mutex_t min_mutex = PTHREAD_MUTEX_INITIALIZER;\n\n");
-				}
+				writeParallelIncludeLines(out);
 				
 				if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
 					writeLt(out);
@@ -167,12 +150,9 @@ public class SymmetryApplier {
 					out.write("#include \"segment.h\"\n");
 
 				} else if (Config.REDUCTION_STRATEGY == Strategy.FLATTEN) {
-					writeFlatten(out);
+					Flatten.writeFlatten(out, typeInfo);
 				} else if (usingMarkers()) {
-					writeMarkers(out);
-					if (Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS) {
-						writeMarkPID(out);
-					}
+					Markers.writeMarkers(out, typeInfo);
 				}
 
 				if (!usingMarkers()) {
@@ -196,6 +176,10 @@ public class SymmetryApplier {
 		out.close();
 	}
 	
+	protected void writeParallelIncludeLines(FileWriter out) throws IOException {
+		// Overridden by parallel symmetry applier
+	}
+
 	private void writeMinNow(FileWriter out) throws IOException {
 		out.write(stateType + " min_now;\n\n");
 	}
@@ -215,6 +199,10 @@ public class SymmetryApplier {
 		int setCounter = 0;
 		int index = 0;
 
+		symmetryGroupFile.write("\nstatic void initialiseGroup() {\n");
+
+		out.write("   initialiseGroup();\n");
+		
 		for (int groupInfoCounter = 0; groupInfoCounter < groupInfo
 				.size(); groupInfoCounter++) {
 
@@ -227,7 +215,7 @@ public class SymmetryApplier {
 					&& groupInfo.get(groupInfoCounter).contains(
 							"<enumerate>")) {
 				groupInfoCounter = writeInstantiateStabiliserChain(
-						groupInfo, out, setCounter, groupInfoCounter);
+						groupInfo, setCounter, groupInfoCounter);
 			} else {
 				if (groupInfo.get(groupInfoCounter).contains("<")) {
 					// skip the line which says how many
@@ -237,16 +225,19 @@ public class SymmetryApplier {
 					index = 0;
 				} else {
 					groupInfoCounter = writeInstantiateElement(
-							groupInfo, out, setCounter, index++,
+							groupInfo, setCounter, index++,
 							groupInfoCounter);
 				}
 			}
 		}
+		
+		symmetryGroupFile.write("}\n");
+
 	}
 
-	private int writeInstantiateElement(List<String> groupInfo, FileWriter out,
+	private int writeInstantiateElement(List<String> groupInfo,
 			int setCounter, int index, int groupInfoCounter) throws IOException {
-		out.write("   elementset_" + setCounter + "[" + index
+		symmetryGroupFile.write("   elementset_" + setCounter + "[" + index
 				+ "]=constructPerm(\"");
 		String perm = groupInfo.get(groupInfoCounter);
 		while (perm.contains("\\")) {
@@ -254,16 +245,16 @@ public class SymmetryApplier {
 					+ groupInfo.get(++groupInfoCounter);
 		}
 		if (Config.USE_TRANSPOSITIONS) {
-			out.write(StringHelper.trimWhitespace(perm));
+			symmetryGroupFile.write(StringHelper.trimWhitespace(perm));
 		} else {
-			out.write(convertPerm(StringHelper.trimWhitespace(perm)));
+			symmetryGroupFile.write(convertPerm(StringHelper.trimWhitespace(perm)));
 		}
-		out.write("\");\n");
+		symmetryGroupFile.write("\");\n");
 		return groupInfoCounter;
 	}
 
 	private int writeInstantiateStabiliserChain(List<String> groupInfo,
-			FileWriter out, int setCounter, int groupInfoCounter)
+			int setCounter, int groupInfoCounter)
 			throws IOException {
 		setCounter++;
 
@@ -276,18 +267,18 @@ public class SymmetryApplier {
 			groupInfoCounter++;
 			int partitionSize = Integer.parseInt(StringHelper
 					.trimWhitespace(cosetInfo[1]));
-			out.write("\n   elementset_" + setCounter + "[" + partitionCounter
+			symmetryGroupFile.write("\n   elementset_" + setCounter + "[" + partitionCounter
 					+ "] = malloc(" + partitionSize
 					+ " * sizeof(perm_t));\n");
 			if (Config.USE_TRANSPOSITIONS) {
-				out.write("   elementset_" + setCounter + "["
+				symmetryGroupFile.write("   elementset_" + setCounter + "["
 						+ partitionCounter + "][0] = constructPerm(\"\");\n");
 			} else {
-				out.write("   elementset_" + setCounter + "["
+				symmetryGroupFile.write("   elementset_" + setCounter + "["
 						+ partitionCounter + "][0] = constructPerm(\"()\");\n");
 			}
 			for (int cosetrepCounter = 1; cosetrepCounter < partitionSize; cosetrepCounter++) {
-				out.write("   elementset_" + setCounter + "["
+				symmetryGroupFile.write("   elementset_" + setCounter + "["
 						+ partitionCounter + "][" + cosetrepCounter
 						+ "] = constructPerm(\"");
 				String perm = groupInfo.get(groupInfoCounter);
@@ -296,11 +287,11 @@ public class SymmetryApplier {
 							+ groupInfo.get(++groupInfoCounter);
 				}
 				if (Config.USE_TRANSPOSITIONS) {
-					out.write(StringHelper.trimWhitespace(perm));
+					symmetryGroupFile.write(StringHelper.trimWhitespace(perm));
 				} else {
-					out.write(convertPerm(StringHelper.trimWhitespace(perm)));
+					symmetryGroupFile.write(convertPerm(StringHelper.trimWhitespace(perm)));
 				}
-				out.write("\");\n");
+				symmetryGroupFile.write("\");\n");
 				groupInfoCounter++;
 			}
 			partitionCounter++;
@@ -324,6 +315,9 @@ public class SymmetryApplier {
 
 	private void writeGlobalVariablesForSymmetryGroups(List<String> groupInfo,
 			FileWriter out) throws IOException {
+
+		out.write("#include \"symmetry_group.h\"");
+		
 		int setcounter = 1; // NOW LOOK IN THE GROUP INFO FILE
 		// AND PUT THE APPROPRIATE
 		// DECLARATIONS
@@ -337,11 +331,11 @@ public class SymmetryApplier {
 				if (Config.USE_STABILISER_CHAIN
 						&& groupInfo.get(groupInfoCounter).contains(
 								"<enumerate>")) {
-					out.write("perm_t* elementset_");
+					symmetryGroupFile.write("static perm_t* elementset_");
 				} else {
-					out.write("perm_t elementset_");
+					symmetryGroupFile.write("static perm_t elementset_");
 				}
-				out.write(setcounter
+				symmetryGroupFile.write(setcounter
 						+ "["
 						+ StringHelper.trimWhitespace(groupInfo
 								.get(groupInfoCounter + 1)) + "];\n");
@@ -360,14 +354,7 @@ public class SymmetryApplier {
 		out.write("\nState *rep(State *orig_now) {\n\n");
 
 		if (usingMarkers()) {
-			int procsminus1 = typeInfo.getNoProcesses() - 1;
-			// FOR SIMPLICITY, I HAVE INCLUDED DUPLICATE CODE FOR
-			// EACH MARKERS STRATEGY.
-			if (Config.REDUCTION_STRATEGY == Strategy.EXACTMARKERS) {
-				writeRepExactMarkers(out, procsminus1);
-			} else if (Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS) {
-				writeRepApproxMarkers(out, procsminus1);
-			}
+			Markers.writeRepFunction(typeInfo, out);
 		} else {
 			if(Config.VECTORIZE_ID_SWAPPING) {
 				out.write("   memcpy(&(min_now.state),orig_now, vsize);\n");
@@ -505,8 +492,8 @@ public class SymmetryApplier {
 	private int writeRepEnumerateStabiliserChain(List<String> groupInfo,
 			FileWriter out, int groupInfoCounter, int setCounter)
 			throws IOException {
-		final int stabiliserChainSize = getSizeOfStabiliserChain(groupInfo, groupInfoCounter);
-		List<Integer> stabiliserChainComponentSizes = getStabiliserChainComponentSizes(groupInfo, groupInfoCounter, stabiliserChainSize);
+		final int stabiliserChainSize = StabiliserChainEnumeration.getSizeOfStabiliserChain(groupInfo, groupInfoCounter);
+		List<Integer> stabiliserChainComponentSizes = StabiliserChainEnumeration.getStabiliserChainComponentSizes(groupInfo, groupInfoCounter, stabiliserChainSize);
 
 		List<String> start = new ArrayList<String>();
 		List<String> end = new ArrayList<String>();
@@ -521,106 +508,12 @@ public class SymmetryApplier {
 		out.write("   " + stateType + " originalForThisStrategy;\n");
 		out.write("   " + memoryCopy + "(&originalForThisStrategy,&min_now,vsize);\n\n");
 
-		outputSimsEnumeration(out, setCounter, stabiliserChainSize, start, end, "min_now", "&originalForThisStrategy");
+		StabiliserChainEnumeration.outputSimsEnumeration(out, setCounter, stabiliserChainSize, start, end, "min_now", "&originalForThisStrategy");
 
 		out.write("   } /* End of sims enumeration */\n");
 
 		return newValueOfGroupInfoCounter(groupInfoCounter, groupInfo, stabiliserChainSize);
 
-	}
-
-	protected void outputSimsEnumeration(FileWriter out, int setCounter, final int stabiliserChainSize, List<String> start, List<String> end, String minName, String originalName) throws IOException {
-		
-		out.write("   int ");
-		for (int counter = 0; counter < stabiliserChainSize; counter++) {
-			out.write("i" + counter);
-			if (counter < (stabiliserChainSize - 1)) {
-				out.write(", ");
-			} else {
-				out.write(";\n\n");
-			}
-		}
-		out.write("   " + stateType + " partialImages[" + stabiliserChainSize + "];\n\n");
-
-		writeSimsEnumerationForLoops(out, setCounter, stabiliserChainSize, start, end, minName, originalName);
-
-	}
-
-	private void writeSimsEnumerationForLoop(FileWriter out, int setCounter, int level, final int stabiliserChainSize, List<String> start, List<String> end, String minName, String originalName) throws IOException {
-		indent(out, level+1);
-		
-		int partitionIndex = stabiliserChainSize - level - 1;
-
-		out.write("for(i" + partitionIndex + "=" + start.get(partitionIndex) + "; ");
-		out.write("(i" + partitionIndex + "<" + end.get(partitionIndex) + ")");
-		
-		if(Config.PTHREADS) {
-			out.write(" && (count<(end-start))");			
-		}
-		
-		out.write("; i" + partitionIndex + "++) {\n");
-		
-		indent(out, level+2);
-
-		out.write(memoryCopy + "(&partialImages[" + partitionIndex + "],");
-		if (level == 0) {
-			out.write(originalName);
-		} else {
-			out.write("&partialImages[" + (partitionIndex + 1) + "]");
-		}
-		out.write(",vsize);\n");
-		
-		indent(out,level+2);
-
-		out.write("applyPermToState(&partialImages[" + partitionIndex
-				+ "],&elementset_" + setCounter + "[" + partitionIndex
-				+ "][i" + partitionIndex + "]);\n\n");
-		
-		
-		if(level < stabiliserChainSize-1) {
-			writeSimsEnumerationForLoop(out, setCounter, level+1, stabiliserChainSize, start, end, minName, originalName);
-		} else {
-		
-			if(Config.PTHREADS) {
-				indent(out, stabiliserChainSize+1);
-				out.write("count++;\n");
-			}
-			
-			indent(out,stabiliserChainSize+1);
-			out	.write("if(" + compare("&partialImages[0]", "&" + minName) + ") {\n");
-	
-			indent(out, stabiliserChainSize+2);
-			out.write(memoryCopy + "(&" + minName + ",&partialImages[0],vsize);\n");
-	
-			indent(out,stabiliserChainSize+1);
-			out.write("}\n");
-
-		}	
-		
-		indent(out, level);
-		out.write("}\n");
-	
-	}
-	
-	
-	private void writeSimsEnumerationForLoops(FileWriter out, int setCounter, final int stabiliserChainSize, List<String> start, List<String> end, String minName, String originalName) throws IOException {
-		writeSimsEnumerationForLoop(out, setCounter, 0, stabiliserChainSize, start, end, minName, originalName);
-	}
-
-	protected List<Integer> getStabiliserChainComponentSizes(List<String> groupInfo, int groupInfoCounter, int stabChainSize) {
-		List<Integer> partitionSize = new ArrayList<Integer>();
-
-		int partitionCounter = 0;
-		while(partitionCounter < stabChainSize) {
-			if (groupInfo.get(groupInfoCounter).contains("coset")) {
-				String[] cosetInfo = groupInfo.get(groupInfoCounter).split(":");
-				partitionSize.add(Integer.parseInt(StringHelper
-						.trimWhitespace(cosetInfo[1])));
-				partitionCounter++;
-			}
-			groupInfoCounter++;
-		}
-		return partitionSize;
 	}
 
 	private int newValueOfGroupInfoCounter(int groupInfoCounter, List<String> groupInfo, int stabiliserChainSize) {
@@ -634,72 +527,6 @@ public class SymmetryApplier {
 		return groupInfoCounter;
 	}
 	
-	
-	protected int getSizeOfStabiliserChain(List<String> groupInfo, int groupInfoCounter) {
-		int stabChainSize = Integer.parseInt(StringHelper
-				.trimWhitespace(groupInfo.get(groupInfoCounter + 1)));
-		return stabChainSize;
-	}
-
-	private void indent(FileWriter out, int numberOfTabs) throws IOException {
-		for (int counter = 0; counter < numberOfTabs; counter++) {
-			out.write("   ");
-		}
-	}
-
-	private void writeRepApproxMarkers(FileWriter out, final int procsminus1)
-			throws IOException {
-		out.write("   Marker markers[" + procsminus1 + "], orig_markers["
-				+ procsminus1 + "], temp;\n");
-		out.write("   State tempstate;\n");
-		out.write("   int i, j, map[" + procsminus1 + "];\n\n");
-		out.write("   memcpy(&min_now,orig_now,vsize);\n");
-		out.write("   for(i=0; i<" + procsminus1 + "; i++) {\n");
-		out.write("      mark(&markers[i],orig_now,i+1);\n");
-		out.write("   }\n\n");
-		out.write("   memcpy(orig_markers,markers," + procsminus1
-				+ "*sizeof(Marker));\n\n");
-		out.write("   for(i=0; i<" + (procsminus1 - 1) + "; i++) {\n");
-		out.write("      for(j=i+1; j<" + procsminus1 + "; j++) {\n");
-		out.write("         if(lt(markers,i,j,orig_now)) {\n");
-		out.write("            memcpy(&temp,&markers[i],sizeof(Marker));\n");
-		out.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
-		out.write("            memcpy(&markers[j],&temp,sizeof(Marker));\n");
-		out.write("         }\n");
-		out.write("      }\n");
-		out.write("   }\n\n");
-		out.write("   for(i=0; i<" + procsminus1 + "; i++) {\n");
-		out.write("      for(j=" + (procsminus1 - 1) + "; j>=0; j--) {\n");
-		out.write("         if(eq(&markers[j],&orig_markers[i])) {\n");
-					/* Check the next one....find the smallest */
-		out.write("            map[i] = j;\n");
-		out.write("            break;\n");
-		out.write("         }\n");
-		out.write("      }\n");
-		out.write("   }\n\n");
-		out.write("   markPIDs(&min_now,map);\n");
-	}
-
-	private void writeRepExactMarkers(FileWriter out, int procsminus1)
-			throws IOException {
-		out.write("   Marker markers[" + procsminus1 + "], temp;\n");
-		out.write("   int i, j;\n");
-		out.write("   memcpy(&min_now,orig_now,vsize);\n");
-		out.write("   for(i=0; i<" + procsminus1 + "; i++) {\n");
-		out.write("      mark(&markers[i],orig_now,i+1);\n");
-		out.write("   }\n");
-		out.write("   for(i=0; i<" + (procsminus1 - 1) + "; i++) {\n");
-		out.write("      for(j=i+1; j<" + procsminus1 + "; j++) {\n");
-		out.write("         if(lt(markers,i,j,orig_now)) {\n");
-		out.write("            memcpy(&temp,&markers[i],sizeof(Marker));");
-		out.write("            memcpy(&markers[i],&markers[j],sizeof(Marker));\n");
-		out.write("            memcpy(&markers[j],&temp,sizeof(Marker));\n");
-		out.write("            applyPrSwapToState(&min_now,i+1,j+1);\n");
-		out.write("         }\n");
-		out.write("      }\n");
-		out.write("   }\n");
-	}
-
 	/* Methods to apply a permutation to a state, without transpositions */
 
 	protected void writeApplyPermToStateBasic(FileWriter fw) throws IOException {
@@ -916,98 +743,48 @@ public class SymmetryApplier {
 
 	/* Methods to apply a permutation to a state via transpositions */
 
-	private void writeApplyPermToStateTranspositions(FileWriter fw)
+	private void writeApplyPermToStateTranspositions()
 			throws IOException {
-		fw.write("void applyPermToState(" + stateType + " *s, ");
-		fw.write("perm_t *alpha) {\n");
-		fw.write("   int i;\n");
-		fw.write("   for(i=0; i<alpha->prLength; i=i+2) {\n");
-		if(SEPARATE_SWAP_FUNCTIONS) {
-			fw.write("   swap_pr_table[alpha->pr[i]][alpha->pr[i+1]](s);\n");			
-		} else {
-			fw.write("      applyPrSwapToState(s,alpha->pr[i],alpha->pr[i+1]);\n");
-		}
-		fw.write("   }\n\n");
-		fw.write("   for(i=0; i<alpha->chLength; i=i+2) {\n");
-		fw.write("      applyChSwapToState(s,alpha->ch[i],alpha->ch[i+1]);\n");
-		fw.write("   }\n\n");
-		fw.write("}\n\n");
+		permutationFile.write("void applyPermToState(" + stateType + " *s, ");
+		permutationFile.write("perm_t *alpha) {\n");
+		permutationFile.write("   int i;\n");
+		permutationFile.write("   for(i=0; i<alpha->prLength; i=i+2) {\n");
+		permutationFile.write("      applyPrSwapToState(s,alpha->pr[i],alpha->pr[i+1]);\n");
+		permutationFile.write("   }\n\n");
+		permutationFile.write("   for(i=0; i<alpha->chLength; i=i+2) {\n");
+		permutationFile.write("      applyChSwapToState(s,alpha->ch[i],alpha->ch[i+1]);\n");
+		permutationFile.write("   }\n\n");
+		permutationFile.write("}\n\n");
 	}
 
-	private void writeApplyChSwapToState(FileWriter fw) throws IOException {
-		fw.write("void applyChSwapToState(" + stateType + " *s, int a, int b) {\n");
-		fw.write("   uchar tempCid;\n");
-		fw.write("   int slot;\n");
+	private void writeApplyChSwapToState() throws IOException {
+		permutationFile.write("void applyChSwapToState(" + stateType + " *s, int a, int b) {\n");
+		permutationFile.write("   uchar tempCid;\n");
+		permutationFile.write("   int slot;\n");
 		if(Config.VECTORIZE_ID_SWAPPING) {
-			swapVectorizer.writeChannelSwaps(fw);
+			swapVectorizer.writeChannelSwaps(permutationFile);
 		} else {
-			swapProctypeLocalChannelVariables(fw);
-			swapChannelReferencesInChannels(fw);
+			swapProctypeLocalChannelVariables(permutationFile);
+			swapChannelReferencesInChannels(permutationFile);
 		}
-		swapChannels(fw);
-		fw.write("}\n\n");
+		swapChannels(permutationFile);
+		permutationFile.write("}\n\n");
 	}
 
-	private void writeApplyPrSwapToState(FileWriter fw) throws IOException {
-		fw.write("void applyPrSwapToState(" + stateType + " *s, int a, int b) {\n");
-		fw.write("   uchar tempPid;\n");
-		fw.write("   int slot;\n");
+	private void writeApplyPrSwapToState() throws IOException {
+		permutationFile.write("void applyPrSwapToState(" + stateType + " *s, int a, int b) {\n");
+		permutationFile.write("   uchar tempPid;\n");
+		permutationFile.write("   int slot;\n");
 
 		if(Config.VECTORIZE_ID_SWAPPING) {
-			swapVectorizer.writeProcessSwaps(fw, "a", "b");
+			swapVectorizer.writeProcessSwaps(permutationFile, "a", "b");
 		} else {
-			swapGlobalPidVariables(fw,"a","b");
-			swapLocalPidVariables(fw, "a", "b");
-			swapPidReferencesInChannels(fw, "a", "b");
+			swapGlobalPidVariables(permutationFile,"a","b");
+			swapLocalPidVariables(permutationFile, "a", "b");
+			swapPidReferencesInChannels(permutationFile, "a", "b");
 		}
-		swapProcesses(fw);
-		fw.write("}\n\n");
-	}
-
-	private void writeApplyPrSwapToStateAsSeparateFunctions(FileWriter fw) throws IOException {
-		
-		for (int i = 0; i < typeInfo.getProcessEntries().size()-1; i++) {
-		
-			for(int j = i+1; j< typeInfo.getProcessEntries().size()-1; j++) {
-			
-				if(processesHaveSameProctype(i, j)) {
-
-					writeSpecialisedApplySwapToState(fw, i, j);
-					
-				}
-				
-			}
-		}
-		
-	}
-
-	private boolean processesHaveSameProctype(int i, int j) {
-		return typeInfo.getProcessEntries().get(i).getProctypeName().equals(typeInfo.getProcessEntries().get(j).getProctypeName());
-	}
-	
-	
-	
-	private void writeSpecialisedApplySwapToState(FileWriter fw, int i, int j) throws IOException {
-		fw.write("void applyPrSwapToState_" + i + "_" + j + "(State *s) {\n");
-		fw.write("   uchar tempPid;\n");
-		fw.write("   int slot;\n");
-		swapGlobalPidVariables(fw, String.valueOf(i), String.valueOf(j));
-
-		swapLocalPidVariables(fw, String.valueOf(i), String.valueOf(j));
-
-		swapPidReferencesInChannels(fw, String.valueOf(i), String.valueOf(j));
-
-		swapTwoProcesses(fw, getProctypeIdentifierFromProcessIdentifier(i), String.valueOf(i), String.valueOf(j));
-
-		fw.write("}\n\n");
-		
-	}
-
-	private int getProctypeIdentifierFromProcessIdentifier(int i) {
-		String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-				.get(i)).getProctypeName();
-		int proctypeIdentifier = typeInfo.proctypeId(proctypeName);
-		return proctypeIdentifier;
+		swapProcesses(permutationFile);
+		permutationFile.write("}\n\n");
 	}
 
 	private void swapGlobalPidVariables(FileWriter fw, String one, String two) throws IOException {
@@ -1289,16 +1066,6 @@ public class SymmetryApplier {
 		out.close();
 	}
 
-	private void dealWithSymmetryThreadFiles() throws IOException {
-		if(Config.PTHREADS) {
-			ProgressPrinter.printSeparator();
-			ProgressPrinter.println("Copying files for multi-threaded symmetry reduction:");
-			
-			FileManager.copyTextFile(Config.COMMON + "symmetry_threads.c", "symmetry_threads.c");
-			FileManager.copyTextFile(Config.COMMON + "symmetry_threads.h", "symmetry_threads.h");
-		}
-	}
-
 	private void dealWithSegmentFiles() throws IOException {
 		if(Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
 			ProgressPrinter.printSeparator();
@@ -1355,210 +1122,6 @@ public class SymmetryApplier {
 		char[] endings = { 'c', 'h', 'b', 't', 'm' };
 		for (char ending : endings) { // Copy pan files into sympan files
 			FileManager.copyTextFile("pan." + ending, "sympan." + ending);
-		}
-	}
-
-	private void writeMarkPID(FileWriter fw) throws IOException {
-		Map<String, EnvEntry> globalVariables = typeInfo.getGlobalVariables();
-
-		String referencePrefix = "s->";
-
-		fw.write("void markPIDs(State* s, int* map) {\n");
-
-		for (Iterator<String> iter = globalVariables.keySet().iterator(); iter
-				.hasNext();) {
-			String name = iter.next();
-			EnvEntry entry = globalVariables.get(name);
-			if ((entry instanceof VarEntry)
-					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-				List sensitiveReferences = SensitiveVariableReference.getSensitiveVariableReferences(name,
-						((VarEntry) entry).getType(), referencePrefix, typeInfo);
-				for (int i = 0; i < sensitiveReferences.size(); i++) {
-					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences
-							.get(i);
-					Assert.assertTrue(PidType.isPid(reference.getType()));
-					fw.write("   if(" + reference + ">0) "
-							+ reference + " = map["
-							+ reference + "-1]+1;\n");
-				}
-			}
-		}
-
-		String proctypeName = typeInfo.getProctypeNames().get(0);
-		ProctypeEntry proctype = (ProctypeEntry) typeInfo
-				.getEnvEntry(proctypeName);
-		Map<String, EnvEntry> localScope = proctype.getLocalScope();
-		for (String varName : localScope.keySet()) {
-			if (localScope.get(varName) instanceof VarEntry) {
-				VisibleType entryType = ((VarEntry) localScope.get(varName)).getType();
-				Assert.assertFalse(entryType instanceof ProductType);
-				if (entryType instanceof PidType) {
-					for (int j = 1; j < typeInfo.getNoProcesses(); j++) {
-						fw.write("   if(((P" + typeInfo.proctypeId(proctypeName)
-								+ " *)SEG(s," + j + "))->" + varName + ">0) "
-								+ "((P" + typeInfo.proctypeId(proctypeName)
-								+ " *)SEG(s," + j + "))->" + varName
-								+ " = map[ " + "((P" + typeInfo.proctypeId(proctypeName)
-								+ " *)SEG(s," + j + "))->" + varName
-								+ "-1]+1;\n");
-					}
-				}
-			}
-
-		}
-
-		List<String> staticChannelNames = typeInfo.getStaticChannelNames();
-		int chanId = 0;
-		for (String chanName : staticChannelNames) {
-			ProductType msgType = (ProductType) ((ChanType) ((ChannelEntry) typeInfo
-					.getEnvEntry(chanName)).getType()).getMessageType();
-			int chanLength = ((ChannelEntry) typeInfo.getEnvEntry(chanName))
-					.getLength();
-			for (int i = 0; i < msgType.getArity(); i++) {
-				Assert.assertTrue(msgType.getTypeOfPosition(i) instanceof VisibleType);
-				VisibleType fieldType = (VisibleType) msgType.getTypeOfPosition(i);
-
-				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
-				// doesn't
-				// allow
-				// this
-
-				if (fieldType instanceof PidType) {
-					for (int j = 0; j < chanLength; j++) {
-						fw.write("   if(((Q" + (chanId + 1) + "*)QSEG(s,"
-								+ chanId + "))->contents[" + j + "].fld" + i
-								+ ">0) " + "((Q" + (chanId + 1) + "*)QSEG(s,"
-								+ chanId + "))->contents[" + j + "].fld" + i
-								+ "=map[((Q" + (chanId + 1) + "*)QSEG(s,"
-								+ chanId + "))->contents[" + j + "].fld" + i
-								+ "-1]+1;\n");
-					}
-				}
-			}
-			chanId++;
-		}
-		
-		/* NOW SWAP AROUND THE pid-indexed ARRAYS */
-
-		fw.write("   uchar swapper[" + typeInfo.getNoProcesses() + "];\n");
-		fw.write("   swapper[0] = 0;\n");
-		fw.write("   int i;\n");
-		
-		for (Iterator<String> iter = globalVariables.keySet().iterator(); iter
-			.hasNext();) {
-			String name = iter.next();
-			EnvEntry entry = globalVariables.get(name);
-			if ((entry instanceof VarEntry)
-					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-				if(((VarEntry)entry).getType() instanceof ArrayType && ((ArrayType)((VarEntry)entry).getType()).getIndexType() instanceof PidType) {
-					fw.write("   for(i=1; i<" + typeInfo.getNoProcesses() + "; i++) swapper[i]=0;\n\n");
-					
-					for(int i=1; i<typeInfo.getNoProcesses(); i++) {
-						fw.write("   swapper[map[" + (i-1) + "]+1] = s->" + name + "[" + i + "];\n");
-					}
-
-					fw.write("   memcpy(s->" + name + ",swapper," + typeInfo.getNoProcesses() + ");\n\n");
-				
-				}
-			}
-		}
-			
-		
-		fw.write("}\n\n");
-
-	}
-
-	private void writeFlatten(FileWriter fw) throws IOException {
-		fw.write("void flatten(State *s) {\n");
-		writeFlattenSensitiveGlobals(fw);
-		writeFlattenSensitiveLocals(fw);
-		writeFlattenSensitiveChannels(fw);
-		fw.write("}\n\n");
-	}
-
-	private void writeFlattenSensitiveChannels(FileWriter fw)
-			throws IOException {
-		for (int i = 0; i < typeInfo.getNoStaticChannels(); i++) {
-
-			ChanType type = (ChanType) ((ChannelEntry) typeInfo
-					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
-							i))).getType();
-
-			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
-					.getMessageType(), typeInfo);
-
-			if (PidType.containsPidType(flattenedFieldTypes)
-					|| ChanType.containsChanType(flattenedFieldTypes)) {
-				fw.write("   for(slot=0; slot<((Q" + (i + 1) + " *)QSEG(s," + i
-						+ "))->Qlen; slot++) {\n");
-
-				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
-					if (PidType.isPid(flattenedFieldTypes.get(j))
-							|| ChanType.isChan(flattenedFieldTypes.get(j))) {
-						fw.write("      ((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "=0;\n");
-					}
-				}
-				fw.write("   }\n\n");
-			}
-		}
-	}
-
-	private void writeFlattenSensitiveLocals(FileWriter fw) throws IOException {
-		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-					.get(j)).getProctypeName();
-			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
-					+ " *)SEG(s," + j + "))->";
-
-			ProctypeEntry proctype = (ProctypeEntry) typeInfo
-					.getEnvEntry(proctypeName);
-			List<SensitiveVariableReference> referencesToFlatten = new ArrayList<SensitiveVariableReference>();
-
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter
-					.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToFlatten.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-							varName, ((VarEntry) localScope.get(varName))
-									.getType(), referencePrefix, typeInfo));
-				}
-			}
-
-			for (ListIterator iter = referencesToFlatten.listIterator(); iter
-					.hasNext();) {
-				SensitiveVariableReference reference = (SensitiveVariableReference) iter
-						.next();
-				Assert.assertTrue(PidType.isPid(reference.getType())
-						|| ChanType.isChan(reference.getType()));
-				fw.write("   " + reference + " = 0;\n");
-			}
-
-			fw.write("\n");
-		}
-	}
-
-	private void writeFlattenSensitiveGlobals(FileWriter fw) throws IOException {
-		Map<String, EnvEntry> globalVariables = typeInfo.getGlobalVariables();
-
-		String referencePrefix = "s->";
-
-		for (Iterator<String> iter = globalVariables.keySet().iterator(); iter
-				.hasNext();) {
-			String name = iter.next();
-			EnvEntry entry = globalVariables.get(name);
-			if ((entry instanceof VarEntry)
-					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-				List sensitiveReferences = SensitiveVariableReference.getSensitiveVariableReferences(name,
-						((VarEntry) entry).getType(), referencePrefix, typeInfo);
-				for (int i = 0; i < sensitiveReferences.size(); i++) {
-					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences
-							.get(i);
-					Assert.assertTrue(PidType.isPid(reference.getType()));
-					fw.write("   " + reference + " = 0;\n");
-				}
-			}
 		}
 	}
 
@@ -1984,240 +1547,6 @@ public class SymmetryApplier {
 		}
 	}
 
-	private String appendEq(String name, String eqMethod) {
-		return eqMethod + "(m1->" + name + "==m2->" + name + ")&&";
-	}
-
-	private String appendLt(String name, String ltMarkersMethod) {
-		return ltMarkersMethod + "   if(m1->" + name + "<m2->" + name
-				+ ") return 1;\n   if(m1->" + name + ">m2->" + name
-				+ ") return 0;\n";
-	}
-
-	private void writeMarkers(FileWriter fw) throws IOException {
-		String markerStruct = "#define bitvector unsigned int\n#define SET_1(bv,i) bv=bv|(1<<i)\n\ntypedef struct Marker {\n";
-		String markMethod = "void mark(Marker *marker, State* s, int i) {\n   int j;\n";
-		String eqMethod = "int eq(Marker* m1, Marker* m2) {\n   return ";
-		String ltMarkersMethod = "int lt_markers(Marker* m1, Marker* m2) {\n";
-		String ltMethod = "int lt(Marker* markers, int i, int j, State* s) {\n" +
-			"if(lt_markers(&markers[i],&markers[j])) return 1;\n" + 
-			"if(lt_markers(&markers[j],&markers[i])) return 0;\n\n";
-		
-		Map<String, EnvEntry> globalVariables = typeInfo.getGlobalVariables();
-		for (String name : globalVariables.keySet()) {
-			EnvEntry entry = globalVariables.get(name);
-			if ((entry instanceof VarEntry)
-					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-	
-				VisibleType entryType = ((VarEntry) entry).getType();
-	
-				Assert.assertFalse(entryType instanceof ChanType);
-				Assert.assertFalse(entryType instanceof ProductType);
-	
-				if (entryType instanceof ArrayType) {
-					Assert
-							.assertFalse(((ArrayType) entryType)
-									.getElementType() instanceof ChanType);
-					Assert
-							.assertFalse(((ArrayType) entryType)
-									.getElementType() instanceof ArrayType);
-					Assert
-							.assertFalse(((ArrayType) entryType)
-									.getElementType() instanceof ProductType);
-	
-					if (((ArrayType) entryType).getElementType() instanceof RecordType) {
-						System.out
-								.println("Markers do not currently support arrays of records");
-						System.exit(0);
-					}
-	
-					if (((ArrayType) entryType).getIndexType() instanceof PidType) {
-						if (((ArrayType) entryType).getElementType() instanceof PidType) {
-	
-							
-							markerStruct += "   uchar " + name + ";\n";
-							eqMethod = appendEq(name, eqMethod);
-							ltMarkersMethod = appendLt(name, ltMarkersMethod);
-	
-							markerStruct += "   uchar " + name + "_selfloop;\n";
-							eqMethod = appendEq(name + "_selfloop", eqMethod);
-							ltMarkersMethod = appendLt(name + "_selfloop", ltMarkersMethod);
-	
-							markMethod += "   marker->" + name + " = 0;\n";
-							markMethod += "   for(j=1; j<" + typeInfo.getNoProcesses()
-									+ "; j++) {\n";
-							markMethod += "      if(s->" + name + "[j]==i) marker->"
-									+ name + "++;\n";
-							markMethod += "   }\n";
-							markMethod += "   if(s->" + name + "[i]==i) marker->"
-									+ name + "_selfloop = 1; else marker->"
-									+ name + "_selfloop = 0;\n";
-							
-							ltMethod += "   if(s->" + name + "[i+1]==0) {\n" +
-								"      if(s->" + name + "[j+1]!=0) { return 1; }\n" +
-								"   } else {" +
-								"      if(lt_markers(&markers[s->" + name + "[i+1]-1],&markers[s->" + name + "[j+1]-1])) return 1;\n" +
-								"      if(lt_markers(&markers[s->" + name + "[j+1]-1],&markers[s->" + name + "[i+1]-1])) return 0;\n  }\n\n";
-
-							// TODO Need to add this code for local pid variables too.  Don't think we need it for non-pid arrays or non-pid locals.
-							
-						} else {
-							markerStruct += "   uchar " + name + ";\n";
-							eqMethod = appendEq(name, eqMethod);
-							ltMarkersMethod = appendLt(name, ltMarkersMethod);
-							markMethod += "   marker->" + name + " = s->"
-									+ name + "[i];\n";
-						}
-					} else {
-						Assert.assertTrue(((ArrayType) entryType)
-								.getIndexType() instanceof ByteType);
-						if (((ArrayType) entryType).getElementType() instanceof PidType) {
-							markerStruct += "   bitvector " + name + ";\n";
-							eqMethod = appendEq(name, eqMethod);
-							ltMarkersMethod = appendLt(name, ltMarkersMethod);
-							markMethod += "   marker->" + name + "=0;\n";
-							for (int i = 0; i < ((ArrayType) entryType)
-									.getLength(); i++) {
-								markMethod += "   if(s->" + name + "[" + i
-										+ "]==i) SET_1(marker->" + name + ","
-										+ i + ");\n";
-							}
-						}
-					}
-	
-				} else if (entryType instanceof PidType) {
-					markerStruct += "   uchar " + name + " : 1;\n";
-					eqMethod = appendEq(name, eqMethod);
-					ltMarkersMethod = appendLt(name, ltMarkersMethod);
-					markMethod += "   marker->" + name + " = s->" + name
-							+ "==i ? 1 : 0;\n";
-				} else if (entryType instanceof RecordType) {
-					System.out
-							.println("Markers do not currently support records");
-					System.exit(0);
-				}
-	
-			}
-		}
-	
-		Assert.assertEquals(typeInfo.getProctypeNames().size(), 2);
-	
-		Assert.assertEquals(typeInfo.getProctypeNames().get(1),
-				ProctypeEntry.initProctypeName);
-	
-		String proctypeName = typeInfo.getProctypeNames().get(0);
-		ProctypeEntry proctype = (ProctypeEntry) typeInfo
-				.getEnvEntry(proctypeName);
-		Map<String, EnvEntry> localScope = proctype.getLocalScope();
-		eqMethod = appendEq("_p", eqMethod);
-		ltMarkersMethod = appendLt("_p", ltMarkersMethod);
-		markerStruct += "   uchar _p;\n";
-		markMethod += "   marker->_p = ((P" + typeInfo.proctypeId(proctypeName)
-				+ " *)SEG(s,i))->_p;\n";
-	
-		for (String varName : localScope.keySet()) {
-			if (localScope.get(varName) instanceof VarEntry) {
-				VisibleType entryType = ((VarEntry) localScope.get(varName)).getType();
-				Assert.assertFalse(entryType instanceof ProductType);
-				if (entryType instanceof ArrayType) {
-					System.out
-							.println("Local array variables not yet supported with markers");
-					System.exit(0);
-				}
-				if (entryType instanceof RecordType) {
-					System.out
-							.println("Local record variables not yet supported with markers");
-					System.exit(0);
-				}
-	
-				if (entryType instanceof PidType) {
-					markerStruct += "   uchar " + varName + ";\n";
-					eqMethod = appendEq(varName, eqMethod);
-					ltMarkersMethod = appendLt(varName, ltMarkersMethod);
-	
-					markerStruct += "   uchar " + varName + "_selfloop;\n";
-					eqMethod = appendEq(varName + "_selfloop", eqMethod);
-					ltMarkersMethod = appendLt(varName + "_selfloop", ltMarkersMethod);
-	
-					markMethod += "   marker->" + varName + " = 0;\n";
-					markMethod += "   for(j=1; j<" + typeInfo.getNoProcesses()
-							+ "; j++) {\n";
-					markMethod += "      if(((P" + typeInfo.proctypeId(proctypeName)
-							+ " *)SEG(s,j))->" + varName + "==i) marker->"
-							+ varName + "++;\n";
-					markMethod += "   }\n";
-					markMethod += "   if(((P" + typeInfo.proctypeId(proctypeName)
-							+ " *)SEG(s,i))->" + varName + "==i) marker->"
-							+ varName + "_selfloop = 1; else marker->"
-							+ varName + "_selfloop = 0;\n";
-				} else {
-					markerStruct += "   uchar " + varName + ";\n";
-					eqMethod = appendEq(varName, eqMethod);
-					ltMarkersMethod = appendLt(varName, ltMarkersMethod);
-					markMethod += "   marker->" + varName + " = ((P"
-							+ typeInfo.proctypeId(proctypeName) + " *)SEG(s,i))->"
-							+ varName + ";\n";
-				}
-			}
-	
-		}
-	
-		List<String> staticChannelNames = typeInfo.getStaticChannelNames();
-		int chanId = 0;
-		for (String chanName : staticChannelNames) {
-			ProductType msgType = (ProductType) ((ChanType) ((ChannelEntry) typeInfo
-					.getEnvEntry(chanName)).getType()).getMessageType();
-			int chanLength = ((ChannelEntry) typeInfo.getEnvEntry(chanName))
-					.getLength();
-			for (int i = 0; i < msgType.getArity(); i++) {
-				Assert.assertTrue(msgType.getTypeOfPosition(i) instanceof VisibleType);
-				VisibleType fieldType = (VisibleType) msgType.getTypeOfPosition(i);
-	
-				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
-				// doesn't
-				// allow
-				// this
-	
-				if (fieldType instanceof RecordType) {
-					System.out
-							.println("Record fields on channels not yet supported with markers");
-					System.exit(0);
-				}
-	
-				if (fieldType instanceof PidType) {
-					markerStruct += "   bitvector " + chanName + "_fld" + i
-							+ ";\n";
-					eqMethod = appendEq(chanName + "_fld" + i, eqMethod);
-					ltMarkersMethod = appendLt(chanName + "_fld" + i, ltMarkersMethod);
-				}
-				markMethod += "   marker->" + chanName + "_fld" + i + "=0;\n";
-				for (int j = 0; j < chanLength; j++) {
-					markMethod += "   if( ((Q" + (chanId + 1) + "*)QSEG(s,"
-							+ chanId + "))->contents[" + j + "].fld" + i
-							+ "==i) SET_1(marker->" + chanName + "_fld" + i
-							+ "," + j + ");\n";
-				}
-	
-			}
-			chanId++;
-	
-		}
-	
-		markerStruct += "} Marker;\n\n";
-		markMethod += "}\n\n";
-		ltMarkersMethod += "   return 0;\n}\n\n";
-		/* Get rid of trailing && from eqMethod */
-		eqMethod = eqMethod.substring(0, eqMethod.length() - 2) + ";\n}\n\n";
-	
-		ltMethod += "    return 0;\n\n}\n\n";
-		
-		fw.write(markerStruct);
-		fw.write(markMethod);
-		fw.write(ltMarkersMethod);
-		fw.write(eqMethod);
-		fw.write(ltMethod);
-	}
-
 	private static void writeln(FileWriter fw, String s) throws IOException {
 		fw.write(s + "\n");
 	}
@@ -2227,7 +1556,7 @@ public class SymmetryApplier {
 		return alpha.replace(',', ' ');
 	}
 
-	private static String compare(String x, String y) {
+	public static String compare(String x, String y) {
 		if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
 			return "lt(" + x + "," + y + ")";
 		}

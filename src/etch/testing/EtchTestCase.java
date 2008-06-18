@@ -29,7 +29,7 @@ public class EtchTestCase extends TestCase {
 		try {
 			br = Check.getBufferForInputSpecification(filename);
 			Node theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
-			Checker checker = new Checker(false);
+			Checker checker = new Checker();
 			theAST.apply(checker);
 			checker.unify();
 			if(checker.getErrorTable().hasErrors()) {
