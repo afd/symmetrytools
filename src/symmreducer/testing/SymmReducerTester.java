@@ -52,6 +52,43 @@ public class SymmReducerTester {
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/threetiered/fast_swaps/", "2s4cs.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 1152, false), 5021, 35419)));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/threetiered/fast_noswaps/", "3s3cs.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 1296, false), 631, 3883), 30));
 
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/enumerate/", "email4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 36255, 141453), 100000));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/enumerate/", "email5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 5666, 21032), 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/enumerate/", "email6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 5361, 23794), 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/enumerate/", "email7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 296, 5745), 40));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_enumerate/", "email4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 36255, 141453), 100000));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_enumerate/", "email5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 5666, 21032), 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_enumerate/", "email6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 5361, 23794), 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_enumerate/", "email7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 296, 5745), 40));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 36255, 141453), "-DNUM_THREADS=4", 100000));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 5666, 21032), "-DNUM_THREADS=6", 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 5361, 23794), "-DNUM_THREADS=3", 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 296, 5745), "-DNUM_THREADS=2", 40));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_parallel_enumerate/", "email4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 36255, 141453), "-DNUM_THREADS=4", 100000));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_parallel_enumerate/", "email5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 5666, 21032), "-DNUM_THREADS=6", 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_parallel_enumerate/", "email6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 5361, 23794), "-DNUM_THREADS=3", 100));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_parallel_enumerate/", "email7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 296, 5745), "-DNUM_THREADS=2", 40));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_nostab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_nostab_vec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_stab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_stab_vec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_nostab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_nostab_vec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_vec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_nostab_novec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=2"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_nostab_vec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=3"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_stab_novec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=4"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/notrans_stab_vec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=5"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_nostab_novec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=2"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_nostab_vec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=3"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=4"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_vec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=9"));
+						
 		return testCases;
 	}
 	

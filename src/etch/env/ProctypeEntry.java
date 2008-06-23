@@ -3,9 +3,11 @@ package src.etch.env;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import junit.framework.Assert;
 import src.etch.types.VisibleType;
@@ -79,4 +81,42 @@ public class ProctypeEntry extends EnvEntry {
 		}
 		return super.getLineOfDeclaration();
 	}
+
+	public Iterator<Entry<String, VisibleType>> variableTypePairIterator() {
+		Set<Entry<String,VisibleType>> variableNameTypePairs = new HashSet<Entry<String,VisibleType>>();
+		for(Iterator<Entry<String,EnvEntry>> iter = localScope.entrySet().iterator(); iter.hasNext(); ) {
+			Entry<String,EnvEntry> entry = iter.next();
+			if(entry.getValue() instanceof VarEntry) {
+				variableNameTypePairs.add(new BasicEntry<String,VisibleType>(entry.getKey(), ((VarEntry)entry.getValue()).getType()));
+			}
+			
+		}
+		return variableNameTypePairs.iterator();
+	}
+
+    private class BasicEntry<S, T> implements Entry<S,T> {
+
+    	S s;
+    	T t;
+    	
+    	public BasicEntry(S s, T t) {
+    		this.s = s;
+    		this.t = t;
+    	}
+    	
+		public S getKey() {
+			return s;
+		}
+
+		public T getValue() {
+			return t;
+		}
+
+		public T setValue(T value) {
+			Assert.assertTrue(false);
+			return null;
+		}
+		
+    }
+
 }

@@ -18,20 +18,31 @@ import src.testing.SystemErrorTestOutcome;
 import src.utilities.AbsentConfigurationFileException;
 import src.utilities.BadConfigurationFileException;
 import src.utilities.Config;
+import src.utilities.ErrorStreamHandler;
 
 public class SymmReducerTestCase extends SymmExtractorTestCase {
 
 	private int searchDepth;
+	private String compilerDirectives;
 
-	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerTestOutcome expectedOutcome, int searchDepth) {
+	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerTestOutcome expectedOutcome, String compilerDirectives, int searchDepth) {
 		super(foldername, modelFilename, expectedOutcome);
+		this.compilerDirectives = compilerDirectives;
 		this.searchDepth = searchDepth;
+	}
+	
+	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerTestOutcome expectedOutcome, int searchDepth) {
+		this(foldername, modelFilename, expectedOutcome, "", searchDepth);
 	}
 
 	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerTestOutcome expectedOutcome) {
 		this(foldername, modelFilename, expectedOutcome, 10000);
 	}
 	
+	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerTestOutcome expectedOutcome, String compilerDirectives) {
+		this(foldername, modelFilename, expectedOutcome, compilerDirectives, 10000);
+	}
+
 	@Override
 	public void run() {
 
@@ -64,6 +75,7 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 					try {
 						if(compileSympanFiles() != 0) {
 							actualOutcome = SymmReducerFailTestOutcome.GCCCompilationFailure;
+							return;
 						}
 
 						ModelCheckingResult result;
@@ -158,8 +170,15 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 
 	private int compileSympanFiles() throws IOException, InterruptedException {
 		
-		Process gcc = Runtime.getRuntime().exec("gcc -O2 -o " + EXECUTABLE + " sympan.c group.c -DSAFETY -DNOREDUCE");
+		Process gcc = Runtime.getRuntime().exec("gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
+				(Config.PARALLELISE ? "parallel_symmetry_pthreads.c " : "")
+				+ "-DSAFETY -DNOREDUCE " + compilerDirectives);
+
+		ErrorStreamHandler errorHandler = new ErrorStreamHandler(gcc, false);
+		errorHandler.start();
+		
 		gcc.waitFor();
+		
 		return gcc.exitValue();
 
 	}

@@ -217,7 +217,6 @@ public class SwapVectorizer {
 		replaceIdentifierVariablesFunction += "}\n\n";
 
 		
-		out.write("#define TOPSPIN_VECTORS\n\n");
 		out.write("\ntypedef struct AugmentedState_s {\n");
 		out.write("   State state;\n");
 

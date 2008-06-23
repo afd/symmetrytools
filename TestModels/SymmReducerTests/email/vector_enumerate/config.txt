@@ -1,0 +1,3 @@
+strategy=enumerate
+vectorise=true
+target=PC

@@ -361,7 +361,7 @@ public class SymmExtractor extends Check {
 		
 		Process saucy = CommunicatingProcess.create(saucyString);
 
-		ErrorStreamHandler errorHandler = new ErrorStreamHandler(saucy, "\nsaucy produced errors:\n======================",  "End of saucy errors");
+		ErrorStreamHandler errorHandler = new ErrorStreamHandler(saucy, "\nsaucy produced errors:\n======================",  "End of saucy errors", true);
 		errorHandler.start();
 		
 		BufferedReader br = CommunicatingProcess.getReader(saucy);
@@ -423,7 +423,7 @@ public class SymmExtractor extends Check {
 		gapReader = CommunicatingProcess.getReader(gap);
 		gapWriter = CommunicatingProcess.getWriter(gap);
 
-		ErrorStreamHandler esh = new ErrorStreamHandler(gap, "\nGAP produced errors:\n====================",  "End of GAP errors");
+		ErrorStreamHandler esh = new ErrorStreamHandler(gap, "\nGAP produced errors:\n====================",  "End of GAP errors", true);
 		esh.start();
 		
 		gapWriter.write("0;\n");

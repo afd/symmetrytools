@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import junit.framework.Assert;
 import src.etch.env.ChannelEntry;
@@ -22,9 +23,12 @@ import src.etch.types.PidType;
 import src.etch.types.SimpleType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
-import src.symmreducer.paralleltargets.StabiliserChainEnumeration;
+import src.symmreducer.strategies.BasicEnumeration;
 import src.symmreducer.strategies.Flatten;
+import src.symmreducer.strategies.LocalSearch;
 import src.symmreducer.strategies.Markers;
+import src.symmreducer.strategies.MinimisingSet;
+import src.symmreducer.strategies.StabiliserChainEnumeration;
 import src.utilities.Config;
 import src.utilities.FileManager;
 import src.utilities.ProgressPrinter;
@@ -58,9 +62,10 @@ public class SymmetryApplier {
 		this.groupGenerators = groupGenerators;
 
 		stateType = Config.VECTORIZE_ID_SWAPPING ? "AugmentedState" : "State";
+
 		memoryCopy = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcpy" : "memcpy";
 		memoryCompare = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcmp" : "memcmp";
-
+		
 	}
 
 	public void applySymmetry() {
@@ -92,7 +97,7 @@ public class SymmetryApplier {
 
 	private void dealWithSympanBody() throws IOException {
 		List<String> groupInfo = null;
-	
+
 		if(!usingMarkers()) {
 			groupInfo = readFile("groupinfo");
 		}
@@ -316,7 +321,7 @@ public class SymmetryApplier {
 	private void writeGlobalVariablesForSymmetryGroups(List<String> groupInfo,
 			FileWriter out) throws IOException {
 
-		out.write("#include \"symmetry_group.h\"");
+		out.write("#include \"symmetry_group.h\"\n\n");
 		
 		int setcounter = 1; // NOW LOOK IN THE GROUP INFO FILE
 		// AND PUT THE APPROPRIATE
@@ -383,14 +388,14 @@ public class SymmetryApplier {
 				if (!Config.USE_STABILISER_CHAIN
 						&& groupInfo.get(groupInfoCounter).contains(
 								"<enumerate>")) {
-					writeRepEnumerateBasic(groupInfo, out, groupInfoCounter,
+					BasicEnumeration.writeRepFunction(groupInfo, out, groupInfoCounter,
 							setCounter);
 					setCounter++;
 				}
 				
 				// MINIMISING SET STRATEGY
 				if (groupInfo.get(groupInfoCounter).contains("<minimise>")) {
-					writeRepMinimisingSet(groupInfo, out, groupInfoCounter,
+					MinimisingSet.writeRep(groupInfo, out, groupInfoCounter,
 							setCounter);
 					setCounter++;
 				}
@@ -398,7 +403,7 @@ public class SymmetryApplier {
 				// LOCAL SEARCH STRATEGY
 
 				if (groupInfo.get(groupInfoCounter).contains("<localsearch>")) {
-					writeRepLocalSearch(groupInfo, out, groupInfoCounter,
+					LocalSearch.writeRep(groupInfo, out, groupInfoCounter,
 							setCounter);
 					setCounter++;
 				}
@@ -420,74 +425,6 @@ public class SymmetryApplier {
 		}
 		out.write("}\n\n");
 	}
-
-	private void writeRepLocalSearch(List<String> groupInfo, FileWriter out,
-			int groupInfoCounter, int setCounter) throws IOException {
-		int setSize = Integer.parseInt(StringHelper.trimWhitespace(groupInfo
-				.get(groupInfoCounter + 1)));
-		out.write("   {\n");
-		out.write("      int j;\n");
-		out.write("      State current_min, tmp_now;\n");
-		out.write("      do {\n");
-		out.write("         memcpy(&current_min,&min_now,vsize);\n\n");
-		out.write("         for(j=0; j<" + setSize + "; j++) {\n");
-		out.write("            memcpy(&tmp_now,&current_min,vsize);\n");
-		out.write("            applyPermToState(&tmp_now,&(elementset_"
-				+ setCounter + "[j]));\n");
-		// this could probably be made more efficient
-		out.write("            if(" + compare("&tmp_now", "&min_now") + ") {\n");
-		out.write("               memcpy(&min_now,&tmp_now,vsize);\n");
-		out.write("            }\n");
-		out.write("         }\n");
-		out.write("      } while(" + memoryCompare + "(&min_now,&current_min,vsize)!=0);\n\n");
-		out.write("   }\n");
-	}
-
-	private void writeRepMinimisingSet(List<String> groupInfo, FileWriter out,
-			int groupInfoCounter, int setCounter) throws IOException {
-		int setSize = Integer.parseInt(StringHelper.trimWhitespace(groupInfo
-				.get(groupInfoCounter + 1)));
-		out.write("   {\n");
-		out.write("      int j;\n");
-		out.write("      " + stateType + " current_min, tmp_now;\n");
-		out.write("      do {\n");
-		out.write("         " + memoryCopy + "(&current_min,&min_now,vsize);\n\n");
-		out.write("         for(j=0; j<" + setSize + "; j++) {\n");
-		out.write("            " + memoryCopy + "(&tmp_now,&min_now,vsize);\n");
-		out.write("            applyPermToState(&tmp_now,&(elementset_"
-				+ setCounter + "[j]));\n");
-		// this could probably be made more efficient
-		out.write("            if(" + compare("&tmp_now", "&min_now") + ") {\n");
-		out.write("               " + memoryCopy + "(&min_now,&tmp_now,vsize);\n");
-		out.write("            }\n");
-		out.write("         }\n");
-		out.write("      } while(" + memoryCompare + "(&min_now,&current_min,vsize)!=0);\n\n");
-		out.write("   }\n");
-	}
-
-	private void writeRepEnumerateBasic(List<String> groupInfo, FileWriter out,
-			int groupInfoCounter, int setCounter) throws IOException {
-		int setSize = Integer.parseInt(StringHelper.trimWhitespace(groupInfo
-				.get(groupInfoCounter + 1)));
-		out.write("   {\n");
-		out.write("      int j;\n");
-		out.write("      State tmp_now, current_min;\n");
-
-		out.write("      memcpy(&tmp_now, &min_now, vsize);\n");
-		out.write("      memcpy(&current_min, &min_now, vsize);\n");
-		out.write("      for(j=0; j<" + setSize + "; j++) {\n");
-		out.write("         applyPermToState(&tmp_now,&(elementset_"
-				+ setCounter + "[j]));\n");
-		out.write("         if(" + compare("&tmp_now", "&current_min")
-				+ ") {\n");
-		out.write("            memcpy(&current_min,&tmp_now,vsize);\n");
-		out.write("         }\n");
-		out.write("         memcpy(&tmp_now,&min_now,vsize);\n");
-		out.write("      }\n");
-		out.write("      memcpy(&min_now,&current_min,vsize);\n\n");
-		out.write("   }\n");
-	}
-
 
 	private int writeRepEnumerateStabiliserChain(List<String> groupInfo,
 			FileWriter out, int groupInfoCounter, int setCounter)
@@ -586,32 +523,23 @@ public class SymmetryApplier {
 	private void permuteProctypeLocalVariables(FileWriter fw)
 			throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-					.get(j)).getProctypeName();
-			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
+
+			String referencePrefix = "((P" + typeInfo.proctypeId(( typeInfo.getProcessEntries().get(j)).getProctypeName())
 					+ " *)SEG(s," + j + "))->";
 
-			ProctypeEntry proctype = (ProctypeEntry) typeInfo
-					.getEnvEntry(proctypeName);
 			List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
 			List<SensitiveVariableReference> sensitivelyIndexedArrays = new ArrayList<SensitiveVariableReference>();
 
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter
-					.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-							varName, ((VarEntry) localScope.get(varName))
-									.getType(), referencePrefix, typeInfo));
-					sensitivelyIndexedArrays
-							.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
-									varName, ((VarEntry) localScope
-											.get(varName)).getType(),
-									referencePrefix, typeInfo));
-				}
-			}
+			for (Iterator<Entry<String,VisibleType>> iter = typeInfo.getProctypeEntryForProcess(j).variableTypePairIterator(); iter.hasNext(); ) {
+				Entry<String,VisibleType> entry = iter.next();
 
+				referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
+						entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
+				sensitivelyIndexedArrays
+						.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
+								entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
+			}
+			
 			for (ListIterator iter = referencesToPermute.listIterator(); iter
 					.hasNext();) {
 				SensitiveVariableReference reference = (SensitiveVariableReference) iter
@@ -841,25 +769,18 @@ public class SymmetryApplier {
 			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
 					+ " *)SEG(s," + j + "))->";
 
-			ProctypeEntry proctype = (ProctypeEntry) typeInfo
-					.getEnvEntry(proctypeName);
 			List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
 			List<SensitiveVariableReference> sensitivelyIndexedArrays = new ArrayList<SensitiveVariableReference>();
 
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter
-					.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-							varName, ((VarEntry) localScope.get(varName))
-									.getType(), referencePrefix, typeInfo));
-					sensitivelyIndexedArrays
-							.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
-									varName, ((VarEntry) localScope
-											.get(varName)).getType(),
-									referencePrefix, typeInfo));
-				}
+			for(Iterator<Entry<String,VisibleType>> iter = typeInfo.getProctypeEntryForProcess(j).variableTypePairIterator(); iter.hasNext();) {
+				Entry<String,VisibleType> entry = iter.next();
+
+				referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
+						entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
+				sensitivelyIndexedArrays
+						.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
+								entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
+				
 			}
 
 			for (ListIterator iter = referencesToPermute.listIterator(); iter
@@ -978,26 +899,19 @@ public class SymmetryApplier {
 
 	private void swapProctypeLocalChannelVariables(FileWriter fw) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-					.get(j)).getProctypeName();
+			String proctypeName = typeInfo.getProcessEntries()
+					.get(j).getProctypeName();
 			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
 					+ " *)SEG(s," + j + "))->";
 
-			ProctypeEntry proctype = (ProctypeEntry) typeInfo
-					.getEnvEntry(proctypeName);
 			List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
 
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter
-					.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-							varName, ((VarEntry) localScope.get(varName))
-									.getType(), referencePrefix, typeInfo));
-				}
+			for(Iterator<Entry<String,VisibleType>> iter = typeInfo.getProctypeEntryForProcess(j).variableTypePairIterator(); iter.hasNext();) {
+				Entry<String,VisibleType> entry = iter.next();
+				referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
+						entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
 			}
-
+			
 			for (ListIterator iter = referencesToPermute.listIterator(); iter
 					.hasNext();) {
 				SensitiveVariableReference reference = (SensitiveVariableReference) iter

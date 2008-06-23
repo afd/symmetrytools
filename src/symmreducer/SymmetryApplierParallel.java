@@ -68,7 +68,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 	private void writeRepEnumerate(List<String> groupInfo, FileWriter out) throws IOException {
 		Assert.assertTrue(Config.REDUCTION_STRATEGY==Strategy.ENUMERATE);
 
-		out.write("State* original;\n\n");
+		out.write(stateType + "* original;\n\n");
 
 		out.write("void * thread_body(void* arg) {\n");
 		out.write("   int id, start, end, i;\n");
@@ -82,13 +82,35 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 		out.write("   return 0;\n\n");
 		out.write("}\n\n\n");
 
-
+		if(Config.VECTORIZE_ID_SWAPPING) {
+			out.write("AugmentedState orig_now_augmented;\n\n");
+		}
+		
+		
 		out.write("State *rep(State *orig_now) {\n");
-		out.write("   memcpy(&min_now,orig_now, vsize);\n");
-		out.write("   original = orig_now;\n");
+
+		if(Config.VECTORIZE_ID_SWAPPING) {
+			
+			out.write("   memcpy(&orig_now_augmented.state, orig_now, vsize);\n");
+			out.write("   extractIdentifierVariables(&orig_now_augmented);\n");
+		    out.write("   augmented_memcpy(&min_now,&orig_now_augmented, vsize);\n");
+		    out.write("   original = &orig_now_augmented;\n");
+						
+		} else {
+			out.write("   memcpy(&min_now,orig_now, vsize);\n");
+			out.write("   original = orig_now;\n");
+		}
+		
 		out.write("   wake_threads();\n");
 		out.write("   wait_for_threads();\n");
-		out.write("   return &min_now;\n");
+
+		if(Config.VECTORIZE_ID_SWAPPING) {
+			out.write("   replaceIdentifierVariables(&min_now);\n");
+			out.write("   return &min_now.state;\n");
+		} else {
+			out.write("   return &min_now;\n");
+		}
+
 		out.write("}\n\n");
 				
 	}

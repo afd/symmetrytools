@@ -351,6 +351,9 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	public List<ProcessEntry> getProcessEntries() {
 		return Collections.unmodifiableList(processEntries);
 	}
-	
+
+	public ProctypeEntry getProctypeEntryForProcess(int j) {
+		return (ProctypeEntry)getEnvEntry(processEntries.get(j).getProctypeName());
+	}
 	
 }

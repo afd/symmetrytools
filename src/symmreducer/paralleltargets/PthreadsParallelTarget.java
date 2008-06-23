@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import src.symmreducer.SymmetryApplier;
+import src.symmreducer.strategies.StabiliserChainEnumeration;
 import src.utilities.Config;
 import src.utilities.FileManager;
 
@@ -19,21 +21,21 @@ public class PthreadsParallelTarget implements ParallelTarget {
 		out.write("   get_data_section(&start, &end, id, " + numberOfNonTrivialGroupElements + ");\n\n");
 
 		out.write("   while(working(id)) {\n");
-		out.write("      State partial_min;\n");
-		out.write("      State temp;\n");
-		out.write("      memcpy(&partial_min, original, vsize);\n\n");
+		out.write("      " + SymmetryApplier.stateType + " partial_min;\n");
+		out.write("      " + SymmetryApplier.stateType + " temp;\n");
+		out.write("      " + SymmetryApplier.memoryCopy + "(&partial_min, original, vsize);\n\n");
 
 		out.write("      for(i=start; i<end; i++) {\n");
-		out.write("         memcpy(&temp, original, vsize);\n");
+		out.write("         " + SymmetryApplier.memoryCopy + "(&temp, original, vsize);\n");
 		out.write("         applyPermToState(&temp, &(elementset_1[i]));\n");
-		out.write("         if(memcmp(&temp,&partial_min,vsize)<0) {\n");
-		out.write("            memcpy(&partial_min,&temp,vsize);\n");
+		out.write("         if(" + SymmetryApplier.memoryCompare + "(&temp,&partial_min,vsize)<0) {\n");
+		out.write("            " + SymmetryApplier.memoryCopy + "(&partial_min,&temp,vsize);\n");
 		out.write("         }\n");
 		out.write("      }\n\n");
 
 		out.write("      pthread_mutex_lock(&min_mutex);\n");
-		out.write("      if(memcmp(&partial_min, &min_now, vsize)<0) {\n");
-		out.write("         memcpy(&min_now, &partial_min, vsize);\n");
+		out.write("      if(" + SymmetryApplier.memoryCompare + "(&partial_min, &min_now, vsize)<0) {\n");
+		out.write("         " + SymmetryApplier.memoryCopy + "(&min_now, &partial_min, vsize);\n");
 		out.write("      }\n");
 		out.write("      pthread_mutex_unlock(&min_mutex);\n");
 		out.write("      sleep(id);\n");
@@ -59,8 +61,8 @@ public class PthreadsParallelTarget implements ParallelTarget {
 		out.write("   get_data_section(&start, &end, id, " + numberOfGroupElements + ");\n\n");
 		
 		out.write("   while(working(id)) {\n");
-		out.write("      State partial_min;\n");
-		out.write("      memcpy(&partial_min, original, vsize);\n\n");
+		out.write("      " + SymmetryApplier.stateType + " partial_min;\n");
+		out.write("      " + SymmetryApplier.memoryCopy + "(&partial_min, original, vsize);\n\n");
 
 		int divisor = 1;
 		for(int i=0; i<stabiliserChainSize; i++) {
@@ -80,8 +82,8 @@ public class PthreadsParallelTarget implements ParallelTarget {
 		StabiliserChainEnumeration.outputSimsEnumeration(out, 1, stabiliserChainSize, start, end, "partial_min", "original");
 
 		out.write("      pthread_mutex_lock(&min_mutex);\n");
-		out.write("      if(memcmp(&partial_min, &min_now, vsize)<0) {\n");
-		out.write("         memcpy(&min_now, &partial_min, vsize);\n");
+		out.write("      if(" + SymmetryApplier.memoryCompare + "(&partial_min, &min_now, vsize)<0) {\n");
+		out.write("         " + SymmetryApplier.memoryCopy + "(&min_now, &partial_min, vsize);\n");
 		out.write("      }\n");
 		out.write("      pthread_mutex_unlock(&min_mutex);\n");
 		out.write("      sleep(id);\n");
@@ -98,7 +100,7 @@ public class PthreadsParallelTarget implements ParallelTarget {
 	}
 
 	public void writeParallelIncludeLines(FileWriter out) throws IOException {
-		out.write("\n#include \"symmetry_threads.h\"\n\n");
+		out.write("\n#include \"parallel_symmetry_pthreads.h\"\n\n");
 		out.write("pthread_mutex_t min_mutex = PTHREAD_MUTEX_INITIALIZER;\n\n");
 	}
 

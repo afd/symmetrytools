@@ -1,4 +1,4 @@
-package src.symmreducer.paralleltargets;
+package src.symmreducer.strategies;
 
 import java.io.FileWriter;
 import java.io.IOException;

@@ -93,6 +93,11 @@ public class Config {
 				System.out.println("No common directory specified.");
 			}
 
+			if(VECTORIZE_ID_SWAPPING && !USE_TRANSPOSITIONS) {
+				ProgressPrinter.println("Vectorisation can only be applied when transpositions are used.  Vectorisation has been turned off.");
+				VECTORIZE_ID_SWAPPING = false;
+			}
+			
 			if(GAP==null || SAUCY==null ||COMMON==null) {
 				if(TESTING_IN_PROGRESS) {
 					throw new BadConfigurationFileException();

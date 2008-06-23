@@ -1,0 +1,3 @@
+strategy=enumerate
+parallelise=true
+target=PC

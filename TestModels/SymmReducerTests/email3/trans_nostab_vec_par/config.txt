@@ -1,0 +1,6 @@
+strategy=enumerate
+target=pc
+transpositions=true
+stabiliserchain=false
+parallelise=true
+vectorise=true

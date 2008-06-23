@@ -1,0 +1,4 @@
+strategy=enumerate
+parallelise=true
+vectorise=true
+target=PC
