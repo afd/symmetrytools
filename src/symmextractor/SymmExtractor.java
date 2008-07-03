@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import src.etch.checker.Check;
@@ -123,8 +122,7 @@ public class SymmExtractor extends Check {
 		ProgressPrinter.println("Computing valid generators:");
 		Set<Permutation> safeGenerators = new HashSet<Permutation>();
 				
-		for(Iterator<Permutation> i = autSCD.iterator(); i.hasNext();) {
-			Permutation alpha = i.next();
+		for(Permutation alpha : autSCD.getGenerators()) {
 			if (alpha.isSafeFor(theAST, extractor)) {
 				ProgressPrinter.println("    " + alpha + " : valid");
 				safeGenerators.add(alpha);
@@ -359,7 +357,14 @@ public class SymmExtractor extends Check {
 
 		ProgressPrinter.println("\nLaunching saucy via the following command: " + saucyString + "\n");
 		
-		Process saucy = CommunicatingProcess.create(saucyString);
+		Process saucy = null;
+		try {
+			saucy = CommunicatingProcess.create(saucyString);
+		} catch (IOException e) {
+			System.out.println("Error launching saucy with command: " + saucyString);
+			e.printStackTrace();
+			System.exit(1);
+		}
 
 		ErrorStreamHandler errorHandler = new ErrorStreamHandler(saucy, "\nsaucy produced errors:\n======================",  "End of saucy errors", true);
 		errorHandler.start();

@@ -15,7 +15,7 @@ public class ShortType extends NumericType {
 	}
 
 	public boolean isSubtype(Type t) {
-		return t instanceof ShortType || t instanceof IntType;
+		return super.isSubtype(t) || t instanceof ShortType || t instanceof IntType;
 	}
 
 }

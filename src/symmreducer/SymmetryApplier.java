@@ -1,13 +1,9 @@
 package src.symmreducer;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -19,16 +15,18 @@ import src.etch.env.ProctypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
-import src.etch.types.PidType;
 import src.etch.types.SimpleType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.types.PidSensitiveProductType;
+import src.symmextractor.types.PidType;
 import src.symmreducer.strategies.BasicEnumeration;
 import src.symmreducer.strategies.Flatten;
 import src.symmreducer.strategies.LocalSearch;
 import src.symmreducer.strategies.Markers;
 import src.symmreducer.strategies.MinimisingSet;
 import src.symmreducer.strategies.StabiliserChainEnumeration;
+import src.utilities.CommunicatingProcess;
 import src.utilities.Config;
 import src.utilities.FileManager;
 import src.utilities.ProgressPrinter;
@@ -99,10 +97,10 @@ public class SymmetryApplier {
 		List<String> groupInfo = null;
 
 		if(!usingMarkers()) {
-			groupInfo = readFile("groupinfo");
+			groupInfo = FileManager.readFile("groupinfo");
 		}
 
-		List<String> lines = readFile("sympan.c");
+		List<String> lines = FileManager.readFile("sympan.c");
 		FileWriter out = new FileWriter("sympan.c");
 
 
@@ -483,9 +481,7 @@ public class SymmetryApplier {
 	private void permuteGlobalVariables(FileWriter fw) throws IOException {
 		Map<String, EnvEntry> globalVariables = typeInfo.getGlobalVariables();
 
-		for (Iterator<String> iter = globalVariables.keySet().iterator(); iter
-				.hasNext();) {
-			String name = iter.next();
+		for (String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
@@ -524,26 +520,8 @@ public class SymmetryApplier {
 			throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
-			String referencePrefix = "((P" + typeInfo.proctypeId(( typeInfo.getProcessEntries().get(j)).getProctypeName())
-					+ " *)SEG(s," + j + "))->";
+			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
 
-			List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
-			List<SensitiveVariableReference> sensitivelyIndexedArrays = new ArrayList<SensitiveVariableReference>();
-
-			for (Iterator<Entry<String,VisibleType>> iter = typeInfo.getProctypeEntryForProcess(j).variableTypePairIterator(); iter.hasNext(); ) {
-				Entry<String,VisibleType> entry = iter.next();
-
-				referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-						entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
-				sensitivelyIndexedArrays
-						.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
-								entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
-			}
-			
-			for (ListIterator iter = referencesToPermute.listIterator(); iter
-					.hasNext();) {
-				SensitiveVariableReference reference = (SensitiveVariableReference) iter
-						.next();
 				fw.write("   " + reference + " = ");
 
 				Assert.assertTrue(PidType.isPid(reference.getType())
@@ -562,10 +540,8 @@ public class SymmetryApplier {
 
 			}
 
-			for (ListIterator iter = sensitivelyIndexedArrays.listIterator(); iter
-					.hasNext();) {
-				PidIndexedArrayReference reference = (PidIndexedArrayReference) iter
-						.next();
+			for (PidIndexedArrayReference reference : typeInfo.sensitivelyIndexedArraysForProcess(j)) {
+
 				Assert.assertTrue(((ArrayType) reference.getType())
 						.getIndexType() instanceof VisibleType);
 				Assert.assertTrue(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
@@ -764,45 +740,18 @@ public class SymmetryApplier {
 
 	private void swapLocalPidVariables(FileWriter fw, String one, String two) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-					.get(j)).getProctypeName();
-			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
-					+ " *)SEG(s," + j + "))->";
 
-			List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
-			List<SensitiveVariableReference> sensitivelyIndexedArrays = new ArrayList<SensitiveVariableReference>();
+			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
 
-			for(Iterator<Entry<String,VisibleType>> iter = typeInfo.getProctypeEntryForProcess(j).variableTypePairIterator(); iter.hasNext();) {
-				Entry<String,VisibleType> entry = iter.next();
-
-				referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-						entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
-				sensitivelyIndexedArrays
-						.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
-								entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
-				
-			}
-
-			for (ListIterator iter = referencesToPermute.listIterator(); iter
-					.hasNext();) {
-				SensitiveVariableReference reference = (SensitiveVariableReference) iter
-						.next();
 				Assert.assertTrue(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
 				if (PidType.isPid(reference.getType())) {
-					fw.write("   if(" + reference + "==" + one + ") {\n");
-					fw.write("   " + reference + " = " + two + ";\n");
-					fw.write("   } else if(" + reference
-							+ "==" + two + ") {\n");
-					fw.write("   " + reference + " = " + one + ";\n");
-					fw.write("   }\n");
+					writeln(fw, applySwapToSensitiveReference(reference.toString(), one, two));
 				}
 			}
 
-			for (ListIterator iter = sensitivelyIndexedArrays.listIterator(); iter
-					.hasNext();) {
-				PidIndexedArrayReference reference = (PidIndexedArrayReference) iter
-						.next();
+			for (PidIndexedArrayReference reference : typeInfo.sensitivelyIndexedArraysForProcess(j)) {
+
 				Assert.assertTrue(((ArrayType) reference.getType())
 						.getIndexType() instanceof VisibleType);
 				Assert.assertTrue(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
@@ -826,6 +775,14 @@ public class SymmetryApplier {
 
 	}
 
+	private String applySwapToSensitiveReference(String reference, String one, String two) throws IOException {
+		return "   if(" + reference + "==" + one + ") {\n" + 
+		       "   " + reference + " = " + two + ";\n" + 
+		       "   } else if(" + reference + "==" + two + ") {\n" +
+		       "   " + reference + " = " + one + ";\n" +
+		       "   }\n";
+	}
+
 	private void swapChannelReferencesInChannels(FileWriter fw) throws IOException {
 		for (int i = 0; i < typeInfo.getNoStaticChannels(); i++) {
 
@@ -842,16 +799,11 @@ public class SymmetryApplier {
 
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
 					if (ChanType.isChan(flattenedFieldTypes.get(j))) {
-						fw.write("      if(((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "==a+1) {\n");
-						fw.write("         ((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "=b+1;\n");
-						fw.write("      } else if(((Q" + (i + 1) + " *)QSEG(s,"
-								+ i + "))->contents[slot].fld" + j
-								+ "==b+1) {\n");
-						fw.write("         ((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "=a+1;\n");
-						fw.write("      }\n");
+						String variableReference = "((Q" + (i + 1) + " *)QSEG(s," + i
+								+ "))->contents[slot].fld" + j;
+
+						writeln(fw, applySwapToSensitiveReference(variableReference, "a+1", "b+1"));
+						
 					}
 				}
 				fw.write("   }\n");
@@ -877,18 +829,9 @@ public class SymmetryApplier {
 
 				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
 					if (PidType.isPid(flattenedFieldTypes.get(j))) {
-						fw.write("      if(((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "==" + one + ") {\n");
-						fw.write("         ((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "=" + two + ";\n");
-						fw
-								.write("      } else if(((Q" + (i + 1)
-										+ " *)QSEG(s," + i
-										+ "))->contents[slot].fld" + j
-										+ "==" + two + ") {\n");
-						fw.write("         ((Q" + (i + 1) + " *)QSEG(s," + i
-								+ "))->contents[slot].fld" + j + "=" + one + ";\n");
-						fw.write("      }\n");
+
+						writeln(fw, applySwapToSensitiveReference("((Q" + (i + 1) + " *)QSEG(s," + i + "))->contents[slot].fld" + j, one, two));
+						
 					}
 				}
 				fw.write("   }\n");
@@ -899,34 +842,15 @@ public class SymmetryApplier {
 
 	private void swapProctypeLocalChannelVariables(FileWriter fw) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = typeInfo.getProcessEntries()
-					.get(j).getProctypeName();
-			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
-					+ " *)SEG(s," + j + "))->";
 
-			List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
+			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
 
-			for(Iterator<Entry<String,VisibleType>> iter = typeInfo.getProctypeEntryForProcess(j).variableTypePairIterator(); iter.hasNext();) {
-				Entry<String,VisibleType> entry = iter.next();
-				referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-						entry.getKey(), entry.getValue(), referencePrefix, typeInfo));
-			}
-			
-			for (ListIterator iter = referencesToPermute.listIterator(); iter
-					.hasNext();) {
-				SensitiveVariableReference reference = (SensitiveVariableReference) iter
-						.next();
 				Assert.assertTrue(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
 				if (ChanType.isChan(reference.getType())) {
-					fw
-							.write("   if(" + reference
-									+ "==a+1) {\n");
-					fw.write("      " + reference + " = b+1;\n");
-					fw.write("   } else if(" + reference
-							+ "==b+1) {\n");
-					fw.write("      " + reference + " = a+1;\n");
-					fw.write("   }\n");
+
+					writeln(fw, applySwapToSensitiveReference(reference.toString(), "a+1", "b+1"));
+					
 				}
 			}
 
@@ -941,13 +865,10 @@ public class SymmetryApplier {
 			out.write("#include \"group.h\"\n\n");
 		}
 		
-		out
-				.write("#define SEG(state,pid) (((uchar *)state)+proc_offset[pid])\n");
-		out.write("#define QSEG(state,cid) (((uchar *)state)+q_offset[cid])\n");
-		out
-				.write("#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var\n");
-		out
-				.write("#define QVAR(state,cid,var,type) ((type *)QSEG(state,cid))->var\n\n");
+		writeln(out, "#define SEG(state,pid) (((uchar *)state)+proc_offset[pid])");
+		writeln(out, "#define QSEG(state,cid) (((uchar *)state)+q_offset[cid])");
+		writeln(out, "#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var");
+		writeln(out, "#define QVAR(state,cid,var,type) ((type *)QSEG(state,cid))->var\n");
 
 
 	}
@@ -964,7 +885,7 @@ public class SymmetryApplier {
 	}
 
 	private void dealWithSympanHeader() throws IOException {
-		List<String> lines = readFile("sympan.h");
+		List<String> lines = FileManager.readFile("sympan.h");
 		FileWriter out = new FileWriter("sympan.h");
 
 		// Look through lines of "sympan.h".
@@ -1005,7 +926,7 @@ public class SymmetryApplier {
 
 		if (!usingMarkers()) {
 
-			List<String> lines = readFile("group.h");
+			List<String> lines = FileManager.readFile("group.h");
 
 			FileWriter out = new FileWriter("group.h");
 			for (int counter = 0; counter < lines.size(); counter++) {
@@ -1028,7 +949,7 @@ public class SymmetryApplier {
 	private void generatePanFiles() throws IOException, InterruptedException {
 		ProgressPrinter.printSeparator();
 		ProgressPrinter.println("Using SPIN to generate pan files");
-		execute("spin", "-a", specification); // Generate pan files.
+		CommunicatingProcess.execute("spin", "-a", specification); // Generate pan files.
 
 		ProgressPrinter.printSeparator();
 		ProgressPrinter.println("Generating sympan files from pan files:");
@@ -1069,9 +990,8 @@ public class SymmetryApplier {
 		}
 
 		int i = 0;
-		for (Iterator iter = typeInfo.getDistinctChannelSignatures().iterator(); iter
-				.hasNext(); i++) {
-			ChannelEntry channelSignature = (ChannelEntry) iter.next();
+		for (ChannelEntry channelSignature : typeInfo.getDistinctChannelSignatures()) {
+
 			List<Integer> channelsOfThisSignature = new ArrayList<Integer>();
 			for (int j = 0; j < typeInfo.getNoStaticChannels(); j++) {
 				ChannelEntry channel = (ChannelEntry) typeInfo
@@ -1195,7 +1115,7 @@ public class SymmetryApplier {
 			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
-			if (containsInsensitiveType(flattenedFieldTypes)) {
+			if (((PidSensitiveProductType)type.getMessageType()).hasInsensitiveField()) {
 
 				fw.write("        for(slot=0; slot<((Q" + i
 						+ "*)q1)->Qlen; slot++) {\n\n");
@@ -1228,7 +1148,7 @@ public class SymmetryApplier {
 			EnvEntry entry = globalVariables.get(name);
 			if (entry instanceof VarEntry) {
 				VisibleType entryType = ((VarEntry)entry).getType();
-				if(entryType instanceof ArrayType && PidType.isPid((VisibleType) ((ArrayType)entryType).getIndexType()) &&
+				if(isPidIndexedArray(entryType) &&
 						(((ArrayType)entryType).getElementType() instanceof SimpleType)) {
 					if(PidType.isPid(((ArrayType)entryType).getElementType())) {
 						fw.write("   if((s->" + name + "[i]==0 && s->" + name + "[j]!=0)||(s->" + name + "[i]!=0 && s->" + name + "[j]==0)) return 0;\n");
@@ -1244,30 +1164,18 @@ public class SymmetryApplier {
 			fw.write("      case " + i + ": return ((P" + i + "*)p1)->_p==((P"
 					+ i + "*)p2)->_p");
 
-			List<String> referencesToCompare = new ArrayList<String>();
-
 			ProctypeEntry proctype = (ProctypeEntry) typeInfo
 					.getEnvEntry((String) typeInfo.getProctypeNames().get(i));
+			
+			for(Entry<String,VisibleType> entry : proctype.variableNameTypePairs()) {
 
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter
-					.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToCompare
-							.addAll(SensitiveVariableReference.getInsensitiveVariableReferences(varName,
-									((VarEntry) localScope.get(varName))
-											.getType(), "", typeInfo));
+				for(String reference : SensitiveVariableReference.getInsensitiveVariableReferences(entry.getKey(), entry.getValue(), typeInfo)) {
+					fw.write(" && ((P" + i + "*)p1)->" + reference + "==((P" + i
+							+ "*)p2)->" + reference);
 				}
+				
 			}
-
-			for (ListIterator iter = referencesToCompare.listIterator(); iter
-					.hasNext();) {
-				String reference = (String) iter.next();
-				fw.write(" && ((P" + i + "*)p1)->" + reference + "==((P" + i
-						+ "*)p2)->" + reference);
-			}
-
+			
 			fw.write(";\n");
 
 		}
@@ -1295,7 +1203,7 @@ public class SymmetryApplier {
 			EnvEntry entry = globalVariables.get(name);
 			if (entry instanceof VarEntry) {
 				VisibleType entryType = ((VarEntry)entry).getType();
-				if(entryType instanceof ArrayType && PidType.isPid((VisibleType) ((ArrayType)entryType).getIndexType()) &&
+				if(isPidIndexedArray(entryType) &&
 						(((ArrayType)entryType).getElementType() instanceof SimpleType)) {
 					for(int i=1; i<typeInfo.getNoProcesses(); i++) {
 					
@@ -1303,8 +1211,7 @@ public class SymmetryApplier {
 							fw.write("   if(s->" + name + "[" + i + "]==0 && t->" + name + "[" + i + "]!=0) return 1;\n");
 							fw.write("   if(s->" + name + "[" + i + "]!=0 && t->" + name + "[" + i + "]==0) return 0;\n");
 						} else {
-							fw.write("   if(s->" + name + "[" + i + "]<t->" + name + "[" + i + "]) return 1;\n");
-							fw.write("   if(s->" + name + "[" + i + "]>t->" + name + "[" + i + "]) return 0;\n");
+							writeln(fw, returnIfVariablesNotEqual("s->", "t->", name + "[" + i + "]"));
 						}
 					}
 				}
@@ -1316,35 +1223,18 @@ public class SymmetryApplier {
 		for (ProcessEntry entry : typeInfo.getProcessEntries()) {
 			String proctypeName = entry.getProctypeName();
 			if(!proctypeName.equals(ProctypeEntry.initProctypeName)) {
-				String sPrefix = "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG(s," + j
-						+ "))->";
-				String tPrefix = "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG(t," + j
-						+ "))->";
-				ProctypeEntry proctype = (ProctypeEntry) typeInfo
-						.getEnvEntry(proctypeName);
-		
-				fw.write("  if(" + sPrefix + "_p < " + tPrefix + "_p) return 1;\n");
-				fw.write("  if(" + sPrefix + "_p > " + tPrefix
-						+ "_p) return 0;\n\n");
-		
-				List<String> referencesToCompare = new ArrayList<String>();
-		
-				Map<String, EnvEntry> localScope = proctype.getLocalScope();
-				for (String varName : localScope.keySet()) {
-					if (localScope.get(varName) instanceof VarEntry) {
-						referencesToCompare
-								.addAll(SensitiveVariableReference.getInsensitiveVariableReferences(varName,
-										((VarEntry) localScope.get(varName))
-												.getType(), "", typeInfo));
+
+				String sPrefix = prefixForProcessInState(proctypeName, j, "s");
+				String tPrefix = prefixForProcessInState(proctypeName, j, "t");
+				
+				writeln(fw, returnIfVariablesNotEqual(sPrefix, tPrefix, "_p"));
+				
+				for(Entry<String,VisibleType> e : typeInfo.getProctypeEntryFromProctypeName(proctypeName).variableNameTypePairs()) {
+					for(String reference : SensitiveVariableReference.getInsensitiveVariableReferences(e.getKey(), e.getValue(), typeInfo)) {
+						writeln(fw, returnIfVariablesNotEqual(sPrefix, tPrefix, reference));
 					}
 				}
 		
-				for (String reference : referencesToCompare) {
-					fw.write("  if(" + sPrefix + reference + " < " + tPrefix
-							+ reference + ") return 1;\n");
-					fw.write("  if(" + sPrefix + reference + " > " + tPrefix
-							+ reference + ") return 0;\n\n");
-				}
 			}
 			j++;
 		}
@@ -1357,15 +1247,12 @@ public class SymmetryApplier {
 			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
 					.getMessageType(), typeInfo);
 
-			String sPrefix = "((Q" + (j + 1) + " *)QSEG(s," + j + "))->";
-			String tPrefix = "((Q" + (j + 1) + " *)QSEG(t," + j + "))->";
+			String sPrefix = prefixForChannelInState(j, "s");
+			String tPrefix = prefixForChannelInState(j, "t");
 
-			fw.write("  if(" + sPrefix + "Qlen < " + tPrefix
-					+ "Qlen) return 1;\n");
-			fw.write("  if(" + sPrefix + "Qlen > " + tPrefix
-					+ "Qlen) return 0;\n\n");
+			writeln(fw, returnIfVariablesNotEqual(sPrefix, tPrefix, "Qlen"));
 
-			if (containsInsensitiveType(flattenedFieldTypes)) {
+			if (((PidSensitiveProductType)type.getMessageType()).hasInsensitiveField()) {
 
 				fw.write("  for(slot=0; slot<((Q" + (j + 1) + " *)QSEG(s," + j
 						+ "))->Qlen; slot++) {\n\n");
@@ -1373,12 +1260,8 @@ public class SymmetryApplier {
 				for (int k = 0; k < flattenedFieldTypes.size(); k++) {
 					if (!(ChanType.isChan(flattenedFieldTypes.get(k)) || PidType.isPid(flattenedFieldTypes
 							.get(k)))) {
-						fw.write("    if(" + sPrefix + "contents[slot].fld" + k
-								+ " < " + tPrefix + "contents[slot].fld" + k
-								+ ") return 1;\n");
-						fw.write("    if(" + sPrefix + "contents[slot].fld" + k
-								+ " > " + tPrefix + "contents[slot].fld" + k
-								+ ") return 0;\n\n");
+
+						writeln(fw, returnIfVariablesNotEqual(sPrefix, tPrefix, "contents[slot].fld" + k));
 					}
 				}
 
@@ -1389,14 +1272,22 @@ public class SymmetryApplier {
 		fw.write("}\n\n");
 	}
 
-	private boolean containsInsensitiveType(List<VisibleType> flattenedFieldTypes) {
-		for (int i = 0; i < flattenedFieldTypes.size(); i++) {
-			if (!(PidType.isPid(flattenedFieldTypes.get(i)) || ChanType.isChan(flattenedFieldTypes
-					.get(i)))) {
-				return true;
-			}
-		}
-		return false;
+	private boolean isPidIndexedArray(VisibleType entryType) {
+		return entryType instanceof ArrayType && PidType.isPid((VisibleType) ((ArrayType)entryType).getIndexType());
+	}
+
+	private String prefixForChannelInState(int channelId, String string) {
+		return "((Q" + (channelId + 1) + " *)QSEG(" + string + "," + channelId + "))->";
+	}
+
+	private String returnIfVariablesNotEqual(String sPrefix, String tPrefix, String variable) {
+		return "  if(" + sPrefix + variable + " < " + tPrefix + variable + ") return 1;\n" +
+  	       	   "  if(" + sPrefix + variable + " > " + tPrefix + variable + ") return 0;\n";
+	
+	}
+
+	private String prefixForProcessInState(String proctypeName, int processId, String stateVariable) {
+		return "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG(" + stateVariable + "," + processId + "))->";
 	}
 
 	private void swapProcesses(FileWriter fw) throws IOException {
@@ -1455,9 +1346,9 @@ public class SymmetryApplier {
 				swapVectorizer.swapTwoChannels(fw, j, "a", "b");
 			}
 			
-			fw.write("      return;\n");
-			fw.write("   };\n");
-			fw.write("\n");
+			writeln(fw, "      return;");
+			writeln(fw, "   };");
+			writeln(fw, "");
 		}
 	}
 
@@ -1481,40 +1372,5 @@ public class SymmetryApplier {
 		return Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS
 				|| Config.REDUCTION_STRATEGY == Strategy.EXACTMARKERS;
 	}
-
-	private static List<String> readFile(String fname) throws IOException {
-		List<String> result = new ArrayList<String>();
-		try {
-			BufferedReader in = new BufferedReader(new FileReader(fname));
-			String line;
-			while ((line = in.readLine()) != null) {
-				result.add(line);
-			}
-		} catch (IOException e) {
-			System.out.println("Error reading from file \"" + fname + "\".");
-			throw e;
-		}
-		return result;
-	}
-
-	private static void execute(String command, String option, String argument)
-			throws IOException, InterruptedException {
-
-		try {
-			Process p = Runtime.getRuntime().exec(
-					command + " " + option + " " + argument);
-			p.waitFor();
-		} catch (IOException e) {
-			System.out.println("Error executing command \"" + command + " "
-					+ option + " " + argument + "\".");
-			e.printStackTrace();
-			throw e;
-		} catch (InterruptedException e) {
-			System.out.println("Error executing command \"" + command + " "
-					+ option + " " + argument + "\".");
-			throw e;
-		}
-	}
-
 
 }

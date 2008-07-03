@@ -1,17 +1,16 @@
 package src.symmreducer;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import junit.framework.Assert;
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
-import src.etch.types.PidType;
 import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.types.PidType;
 
 public class SensitiveVariableReference {
 
@@ -45,9 +44,7 @@ public class SensitiveVariableReference {
 		} else if (RecordType.isRecord(varType)) {
 			TypeEntry typeEntry = (TypeEntry) typeInfo
 					.getEnvEntry(((RecordType) varType).name());
-			for (Iterator iter = typeEntry.getFieldNames().iterator(); iter
-					.hasNext();) {
-				String fieldName = (String) iter.next();
+			for (String fieldName : typeEntry.getFieldNames()) {
 				result.addAll(getSensitiveVariableReferences(fieldName,
 						typeEntry.getFieldType(fieldName), prefix + varName
 								+ ".", typeInfo));
@@ -58,7 +55,13 @@ public class SensitiveVariableReference {
 	}
 
 	public static List<String> getInsensitiveVariableReferences(String varName,
-			VisibleType varType, String prefix, StaticChannelDiagramExtractor typeInfo) {
+			VisibleType varType, StaticChannelDiagramExtractor typeInfo) {
+		return getInsensitiveVariableReferences(varName, varType, typeInfo, "");
+	}
+	
+	
+	private static List<String> getInsensitiveVariableReferences(String varName,
+			VisibleType varType, StaticChannelDiagramExtractor typeInfo, String prefix) {
 		List<String> result = new ArrayList<String>();
 
 		if (PidType.isPid(varType) || ChanType.isChan(varType)) {
@@ -74,7 +77,7 @@ public class SensitiveVariableReference {
 			for (int i = 0; i < ((ArrayType) varType).getLength(); i++) {
 				result.addAll(getInsensitiveVariableReferences(varName + "["
 						+ i + "]", ((ArrayType) varType).getElementType(),
-						prefix, typeInfo));
+						typeInfo, prefix));
 				return result;
 			}
 		}
@@ -82,12 +85,10 @@ public class SensitiveVariableReference {
 		if (RecordType.isRecord(varType)) {
 			TypeEntry typeEntry = (TypeEntry) typeInfo
 					.getEnvEntry(((RecordType) varType).name());
-			for (Iterator iter = typeEntry.getFieldNames().iterator(); iter
-					.hasNext();) {
-				String fieldName = (String) iter.next();
+			for (String fieldName : typeEntry.getFieldNames()) {
 				result.addAll(getInsensitiveVariableReferences(fieldName,
-						typeEntry.getFieldType(fieldName), prefix + varName
-								+ ".", typeInfo));
+						typeEntry.getFieldType(fieldName), typeInfo, prefix + varName
+						+ "."));
 			}
 			return result;
 		}

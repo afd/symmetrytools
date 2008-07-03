@@ -116,7 +116,9 @@ public class EtchTester {
 		
 		testCases.add(new EtchTestCase("TestModels/SymmExtractorTests/BadlyTyped/failincrementpid.p", EtchTestOutcome.WellTyped));
 		testCases.add(new EtchTestCase("TestModels/SymmExtractorTests/BadlyTyped/faildecrementpid.p", EtchTestOutcome.WellTyped));
-		
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_mod.p", EtchTestOutcome.WellTyped));
+				
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelbeforeunless.p", EtchTestOutcome.BadlyTyped));

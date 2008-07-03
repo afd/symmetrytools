@@ -3,6 +3,9 @@ package src.etch.types;
 import java.util.ArrayList;
 import java.util.List;
 
+import src.etch.checker.Checker;
+
+
 import junit.framework.TestCase;
 
 public class TypeTest extends TestCase {
@@ -24,7 +27,7 @@ public class TypeTest extends TestCase {
 		tuple1.add(new ChanType(tuple2));
 		tuple1.add(new IntType());
 		
-		root.setMessageType(new ProductType(tuple1));
+		root.setMessageType(Checker.theFactory.generateProductType(tuple1));
 
 		System.out.println(root.name());
 		
@@ -34,13 +37,13 @@ public class TypeTest extends TestCase {
 		List<Type> tuple4 = new ArrayList<Type>();
 		tuple4.add(null); tuple4.add(null);
 		
-		ProductType pt2 = new ProductType(tuple4);
+		ProductType pt2 = Checker.theFactory.generateProductType(tuple4);
 		
 		List<Type> tuple5 = new ArrayList<Type>();
 		tuple5.add(new ChanType(pt2));
 		tuple5.add(new IntType());
 		
-		pt2.setTypeOfPosition(0,new ChanType(new ProductType(tuple5)));
+		pt2.setTypeOfPosition(0,new ChanType(Checker.theFactory.generateProductType(tuple5)));
 		pt2.setTypeOfPosition(1,new IntType());
 		ChanType root2 = new ChanType(pt2);
 		
@@ -53,7 +56,7 @@ public class TypeTest extends TestCase {
 		List<Type> newTuple = new ArrayList<Type>();
 		newTuple.add(null); newTuple.add(null); newTuple.add(null);
 		
-		ProductType pt3 = new ProductType(newTuple);
+		ProductType pt3 = Checker.theFactory.generateProductType(newTuple);
 		ChanType ct = new ChanType(pt3);
 		
 		pt3.setTypeOfPosition(0,ct);
@@ -68,9 +71,9 @@ public class TypeTest extends TestCase {
 		
 		System.out.println(Minimiser.minimise(ct).name());
 
-		System.out.println(new ByteType().name());
+		System.out.println(Checker.theFactory.generateByteType().name());
 
-		System.out.println(Minimiser.minimise(new ByteType()).name());
+		System.out.println(Minimiser.minimise(Checker.theFactory.generateByteType()).name());
 
 	}
 	

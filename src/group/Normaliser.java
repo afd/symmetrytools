@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import junit.framework.Assert;
-import src.etch.checker.SymmetrySettings;
 import src.promela.analysis.DepthFirstAdapter;
 import src.promela.node.ACompoundAndExpr;
 import src.promela.node.ACompoundOrExpr;
@@ -24,6 +23,7 @@ import src.promela.node.POptions;
 import src.promela.node.POrExpr;
 import src.promela.node.PSequence;
 import src.promela.node.PStep;
+import src.symmextractor.SymmetryChecker;
 
 /**
  * Normaliser is an extention of DepthFirstAdapter which converts an AST for a
@@ -93,7 +93,7 @@ public class Normaliser extends DepthFirstAdapter {
 	 */
 	public void outAInit(AInit node) {
 
-		PSequence atomicBlock = SymmetrySettings.getStatementsWithinAtomic(node);
+		PSequence atomicBlock = SymmetryChecker.getStatementsWithinAtomic(node);
 
 		PSequence statementsAfterRunStatements = findStatementsAfterRunStatement(atomicBlock);
 

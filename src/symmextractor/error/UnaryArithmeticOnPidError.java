@@ -1,8 +1,8 @@
 package src.symmextractor.error;
 
 import src.etch.error.Error;
-import src.etch.types.PidType;
 import src.promela.node.Token;
+import src.symmextractor.types.PidType;
 
 public class UnaryArithmeticOnPidError extends Error {
 

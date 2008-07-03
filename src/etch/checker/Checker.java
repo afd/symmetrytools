@@ -3,7 +3,6 @@ package src.etch.checker;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 
 import junit.framework.Assert;
@@ -37,6 +36,7 @@ import src.etch.typeinference.ConstraintSet;
 import src.etch.typeinference.EqualityConstraint;
 import src.etch.typeinference.Substituter;
 import src.etch.typeinference.SubtypingConstraint;
+import src.etch.typeinference.Unifier;
 import src.etch.types.AnyType;
 import src.etch.types.ArrayType;
 import src.etch.types.BitType;
@@ -44,21 +44,20 @@ import src.etch.types.BoolType;
 import src.etch.types.BottomType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
+import src.etch.types.EtchTypeFactory;
 import src.etch.types.IntType;
 import src.etch.types.Minimiser;
 import src.etch.types.MtypeType;
 import src.etch.types.NumericType;
-import src.etch.types.PidType;
 import src.etch.types.RecordType;
 import src.etch.types.ShortType;
 import src.etch.types.Type;
+import src.etch.types.TypeFactory;
 import src.etch.types.TypeVariableFactory;
 import src.etch.types.TypeVariableType;
 import src.etch.types.VisibleType;
 import src.promela.NodeHelper;
 import src.promela.node.*;
-import src.symmextractor.error.NoInitError;
-import src.symmextractor.error.PidIndexedArrayWithWrongLengthError;
 
 public class Checker extends InlineProcessor {
 	
@@ -66,7 +65,7 @@ public class Checker extends InlineProcessor {
 
 	private Environment env = new Environment();
 
-	private ConstraintSet constraintSet = new ConstraintSet();
+	protected ConstraintSet constraintSet;
 
 	private TypeVariableFactory factory = new TypeVariableFactory('X',false);
 
@@ -86,51 +85,15 @@ public class Checker extends InlineProcessor {
 	private List<VisibleType> typedefFieldTypes = new ArrayList<VisibleType>();
 
 	private Map<String,List<Integer>> gotoDestinations;
-	
-	public void caseANormalSpec(ANormalSpec node) {
 
-		PModules modules = node.getModules();
-		
-		if(SymmetrySettings.CHECKING_SYMMETRY) {
+	public static TypeFactory theFactory = null;
 
-			boolean found = false;
-
-			PModules temp = modules;
-			
-			for( ; temp instanceof AManyModules; temp = ((AManyModules)temp).getModules() ) {
-				PModule module = ((AManyModules)temp).getModule();
-				if(module instanceof AInitModule) {
-					SymmetrySettings.findNumberOfRunningProcesses((AInitModule)module,this);
-					found = true;
-					break;
-				}
-			}
-
-			if(!found) {
-				PModule module = ((AOneModules)temp).getModule();
-				if(module instanceof AInitModule) {
-					SymmetrySettings.findNumberOfRunningProcesses((AInitModule)module,this);
-					found = true;
-				}
-			}
-			
-			if(!found) {
-				errorTable.add(-1,new NoInitError());
-			}
-		}
-
-		modules.apply(this);
-
-	}
-	
-	protected Checker(boolean checkingSymmetry) {
-		SymmetrySettings.CHECKING_SYMMETRY = checkingSymmetry;
-	}
 
 	public Checker() {
-		this(false);
+		Checker.theFactory = new EtchTypeFactory();
+		constraintSet = new ConstraintSet(new Unifier());
 	}
-		
+	
 	public ErrorTable getErrorTable() {
 		return errorTable;
 	}
@@ -203,7 +166,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outABitTypename(ABitTypename node) {
-		setOut(node, new BitType());
+		setOut(node, bitType());
 	}
 
 	public void outAByteTypename(AByteTypename node) {
@@ -223,7 +186,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAPidTypename(APidTypename node) {
-		setOut(node, new PidType());
+		setOut(node, Checker.theFactory.generateByteType());
 	}
 
 	public void outAMtypeTypename(AMtypeTypename node) {
@@ -334,20 +297,10 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	private void dealWithArrayIndex(PVarref node, VisibleType t) {
+	protected void dealWithArrayIndex(PVarref node, VisibleType t) {
 		if (getArrayIndexType(node) != null) {
 			postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
 					.getIndexType(), NodeHelper.getNameFromVaribableReference(node));
-			if(SymmetrySettings.CHECKING_SYMMETRY && getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(SymmetrySettings.noProcesses()+1) && ((ArrayType)t).getLength()!=0) {
-				// The length of a pid-indexed array should be n+1, where n is the number of running processes.
-				// This is so that it can be indexed by the process identifiers 1, 2, ... , n.  Unfortunately, index
-				// 0 is usually wasted (unless the init process uses it).
-				// We don't add an error if the length is zero.  An error has either already
-				// been reported about this, or the length has been set to zero by default as
-				// there was an error with the initialiser.
-				addError(NodeHelper.getNameFromVaribableReference(node), new PidIndexedArrayWithWrongLengthError(NodeHelper.getNameFromVaribableReference(node).getText(),((ArrayType)t).getLength(),SymmetrySettings.noProcesses()));
-				((ArrayType)t).zeroLength(); // Do this so that the error will not be reported again
-			}
 		}
 	}
 	
@@ -377,7 +330,7 @@ public class Checker extends InlineProcessor {
 		gotoDestinations.put(name,destinations);
 	}
 	
-	private Type getArrayIndexType(PVarref node) {
+	protected Type getArrayIndexType(PVarref node) {
 		if(node instanceof ASingleVarref) {
 			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getExpr());
 		}
@@ -386,13 +339,13 @@ public class Checker extends InlineProcessor {
 
 	public void outAArrayref(AArrayref node) {
 		Type exprType = getOutType(node.getExpr());
-		if ((exprType != null) && !isByteOrPidSubtype(exprType)) {
+		if ((exprType != null) && !suitableTypeForArrayIndex(exprType)) {
 			addError(node.getLBracket(), new SubtypingError(exprType.name(),byteType().name()));
 		}
 	}
 
-	private boolean isByteOrPidSubtype(Type exprType) {
-		return exprType.isSubtype(new ByteType()) || exprType.isSubtype(new PidType());
+	protected boolean suitableTypeForArrayIndex(Type exprType) {
+		return exprType.isSubtype(byteType());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -557,14 +510,7 @@ public class Checker extends InlineProcessor {
 		if (checkBothSidesNumeric(getOutVisibleType(node.getAddExpr()),
 				getOutVisibleType(node.getShiftExpr()), node.getShiftop())) {
 			VisibleType outType = getOutVisibleType(node.getAddExpr());
-			setNotPidLiteral(outType);
 			setOut(node, outType);
-		}
-	}
-
-	private void setNotPidLiteral(Type t) {
-		if(t instanceof NumericType) {
-			((NumericType)t).setNotPidLiteral();
 		}
 	}
 
@@ -587,7 +533,6 @@ public class Checker extends InlineProcessor {
 		VisibleType t = getOutVisibleType(node.getFactor());
 		if (t != null) {
 			if (t.isSubtype(boolType())) {
-				setNotPidLiteral(t);
 				setOut(node, t);
 			} else {
 				addError(node.getBang(), new NotBoolError(t.name(), node
@@ -665,7 +610,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAPidConst(APidConst node) {
-		setOut(node, new PidType());
+		setOut(node, Checker.theFactory.generateByteType());
 	}
 
 	public void outAUnderscoreConst(AUnderscoreConst node) {
@@ -723,9 +668,9 @@ public class Checker extends InlineProcessor {
 		if (valueOutOfLegalRange(val)) {
 			addError(node.getNumber(), new LiteralValueTooLargeError(val));
 		} else if (node.getMinus() == null) {
-			setOut(node, NumericType.typeOfNumericLiteral(val));
+			setOut(node, Checker.theFactory.generateTypeForNumericLiteral(val));
 		} else {
-			setOut(node, NumericType.typeOfNumericLiteral(val * (-1)));
+			setOut(node, Checker.theFactory.generateTypeForNumericLiteral(val * (-1)));
 		}
 	}
 
@@ -945,8 +890,8 @@ public class Checker extends InlineProcessor {
 		for(String labelName : gotoDestinations.keySet()) {
 			EnvEntry entry = env.get(labelName);
 			if(!(entry instanceof LabelEntry)) {
-				for(ListIterator<Integer> i = gotoDestinations.get(labelName).listIterator(); i.hasNext(); ) {
-					errorTable.add(i.next(),new JumpToUndefinedLabelError(labelName,entry));
+				for(Integer i : gotoDestinations.get(labelName)) {
+					errorTable.add(i,new JumpToUndefinedLabelError(labelName,entry));
 				}
 			}
 		}
@@ -1006,13 +951,12 @@ public class Checker extends InlineProcessor {
 				&& checkForNotNumericError(right, operator, Error.RIGHT);
 	}
 
-	private void checkNumericOperationOnNumericTypes(Node node,
+	protected void checkNumericOperationOnNumericTypes(Node node,
 			Token operation, VisibleType leftType, VisibleType rightType) {
 		if (checkBothSidesNumeric(leftType, rightType, operation)) {
 			if (isNumeric(leftType) && isNumeric(rightType)) {
 				try {
 					Type max = AnyType.max(leftType, rightType);
-					setNotPidLiteral(max);
 					setOut(node, max);
 				} catch(IncomparableTypesException e) {
 					Assert.assertTrue(false);
@@ -1098,7 +1042,7 @@ public class Checker extends InlineProcessor {
 				return;
 			}
 
-			individualType = new ArrayType(groupType,factory.freshTypeVariable(),length);
+			individualType = Checker.theFactory.generateArrayType(groupType,factory.freshTypeVariable(),length);
 
 			checkVar(((AArrayIvar) var).getIvarassignment(), ((AArrayIvar) var)
 					.getName(), individualType, isHidden);
@@ -1235,17 +1179,21 @@ public class Checker extends InlineProcessor {
 	private BoolType boolType() {
 		return new BoolType();
 	}
-
+	
 	private ByteType byteType() {
-		return new ByteType();
+		return Checker.theFactory.generateByteType();
 	}
 
+	private BitType bitType() {
+		return Checker.theFactory.generateBitType();
+	}
+	
 	private boolean isChan(VisibleType t) {
 		return t instanceof ChanType;
 	}
 
 	private boolean isNumeric(VisibleType t) {
-		return t instanceof NumericType || (!SymmetrySettings.CHECKING_SYMMETRY && (t instanceof PidType));
+		return t instanceof NumericType;
 	}
 
 	private boolean isArray(VisibleType t) {

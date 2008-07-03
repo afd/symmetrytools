@@ -138,6 +138,7 @@ public class Check {
 			if(!ProgressPrinter.QUIET_MODE) {
 				System.out.println(chk.getErrorTable().output("while processing " + sourceName));
 			}
+
 			return false;
 		}
 

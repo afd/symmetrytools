@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import src.etch.checker.Checker;
+
 import junit.framework.Assert;
 
 public class ChanType extends ConstructedType implements VisibleType {
@@ -16,7 +18,7 @@ public class ChanType extends ConstructedType implements VisibleType {
 	}
 
 	public ChanType(List<Type> messageFieldTypes) {
-		this.messageType = new ProductType(messageFieldTypes);
+		this.messageType = Checker.theFactory.generateProductType(messageFieldTypes);
 	}
 
 	protected ChanType() {
@@ -92,5 +94,15 @@ public class ChanType extends ConstructedType implements VisibleType {
 		}
 		return result;
 	}
-	
+
+	public void nameComponentsDFS(TypeStack stack, List<String> result) {
+		
+		result.add("chan ");
+		
+		if(stack.push(messageType,result)) {
+			messageType.nameComponentsDFS(stack,result);
+			stack.pop();
+		}
+	}
+
 }

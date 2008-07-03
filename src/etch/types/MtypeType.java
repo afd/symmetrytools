@@ -6,8 +6,4 @@ public class MtypeType extends SimpleType implements VisibleType {
 		return "mtype";
 	}
 
-	public boolean isSubtype(Type t) {
-		return equal(t);
-	}
-
 }

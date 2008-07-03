@@ -11,5 +11,5 @@ public interface Type {
 	public boolean isSubtype(Type t);
 
 	public void nameComponentsDFS(TypeStack stack, List<String> result);
-
+	
 }

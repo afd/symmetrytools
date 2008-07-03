@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FileManager {
 
@@ -26,5 +28,21 @@ public class FileManager {
 			System.exit(1);
 		}
 	}
+	
+	public  static List<String> readFile(String fname) throws IOException {
+		List<String> result = new ArrayList<String>();
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(fname));
+			String line;
+			while ((line = in.readLine()) != null) {
+				result.add(line);
+			}
+		} catch (IOException e) {
+			System.out.println("Error reading from file \"" + fname + "\".");
+			throw e;
+		}
+		return result;
+	}
+	
 
 }

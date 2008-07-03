@@ -1,17 +1,16 @@
 package src.symmreducer;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import junit.framework.Assert;
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ByteType;
-import src.etch.types.PidType;
 import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.types.PidType;
 
 public class PidIndexedArrayReference extends SensitiveVariableReference {
 
@@ -28,7 +27,7 @@ public class PidIndexedArrayReference extends SensitiveVariableReference {
 		return type.getLength();
 	}
 	
-	protected static List<PidIndexedArrayReference> getSensitivelyIndexedArrayReferences(
+	public static List<PidIndexedArrayReference> getSensitivelyIndexedArrayReferences(
 			String name, VisibleType type, String referencePrefix, StaticChannelDiagramExtractor typeInfo) {
 
 		List<PidIndexedArrayReference> result = new ArrayList<PidIndexedArrayReference>();
@@ -46,9 +45,7 @@ public class PidIndexedArrayReference extends SensitiveVariableReference {
 		} else if (RecordType.isRecord(type)) {
 			TypeEntry recordEntry = (TypeEntry) typeInfo
 					.getEnvEntry(((RecordType) type).name());
-			for (Iterator iter = recordEntry.getFieldNames().iterator(); iter
-					.hasNext();) {
-				String fieldName = (String) iter.next();
+			for (String fieldName : recordEntry.getFieldNames()) {
 				result.addAll(getSensitivelyIndexedArrayReferences(fieldName,
 						recordEntry.getFieldType(fieldName), referencePrefix
 								+ name + ".", typeInfo));

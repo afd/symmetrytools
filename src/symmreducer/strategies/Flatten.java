@@ -2,7 +2,6 @@ package src.symmreducer.strategies;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -11,13 +10,11 @@ import java.util.Map;
 import junit.framework.Assert;
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
-import src.etch.env.ProcessEntry;
-import src.etch.env.ProctypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ChanType;
-import src.etch.types.PidType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.types.PidType;
 import src.symmreducer.SensitiveVariableReference;
 import src.symmreducer.TypeFlattener;
 
@@ -61,27 +58,8 @@ public class Flatten {
 
 	private static void writeFlattenSensitiveLocals(FileWriter fw, StaticChannelDiagramExtractor typeInfo) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-					.get(j)).getProctypeName();
-			String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName)
-					+ " *)SEG(s," + j + "))->";
 
-			ProctypeEntry proctype = (ProctypeEntry) typeInfo
-					.getEnvEntry(proctypeName);
-			List<SensitiveVariableReference> referencesToFlatten = new ArrayList<SensitiveVariableReference>();
-
-			Map<String, EnvEntry> localScope = proctype.getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter
-					.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
-					referencesToFlatten.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-							varName, ((VarEntry) localScope.get(varName))
-									.getType(), referencePrefix, typeInfo));
-				}
-			}
-
-			for (ListIterator iter = referencesToFlatten.listIterator(); iter
+			for (ListIterator iter = typeInfo.sensitiveVariableReferencesForProcess(j).listIterator(); iter
 					.hasNext();) {
 				SensitiveVariableReference reference = (SensitiveVariableReference) iter
 						.next();

@@ -1,9 +1,9 @@
 package src.etch.env;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import junit.framework.Assert;
 import src.etch.typeinference.Substituter;
@@ -68,8 +68,7 @@ public class Environment {
 	public Map<String,ProctypeEntry> getProctypeEntries() {
 		Map<String,ProctypeEntry> result = new HashMap<String,ProctypeEntry>();
 
-		for(Iterator<String> i = stack.elementAt(0).keySet().iterator(); i.hasNext(); ) {
-			String s = i.next();
+		for(String s : stack.elementAt(0).keySet()) {
 			EnvEntry e = stack.elementAt(0).get(s);
 			if (e instanceof ProctypeEntry)
 				result.put(s, (ProctypeEntry)e);
@@ -77,11 +76,10 @@ public class Environment {
 		return result;
 	}
 
-	public Map getChannelEntries() {
+	public Map<String,ChannelEntry> getChannelEntries() {
 		Map<String,ChannelEntry> result = new HashMap<String,ChannelEntry>();
 
-		for(Iterator<String> i = stack.elementAt(0).keySet().iterator(); i.hasNext(); ) {
-			String s = i.next();
+		for(String s : stack.elementAt(0).keySet()) {
 			EnvEntry e = stack.elementAt(0).get(s);
 			if (e instanceof ChannelEntry)
 				result.put(s, (ChannelEntry)e);
@@ -93,8 +91,8 @@ public class Environment {
 
 		Assert.assertTrue(stack.size()==1);
 
-		for(Iterator<EnvEntry> i = stack.elementAt(0).values().iterator(); i.hasNext();) {
-			EnvEntry e = i.next();
+		for(EnvEntry e : stack.elementAt(0).values()) {
+
 			if(e instanceof VarEntry) {
 				Type typeAfterSubstitutions = substituter.applySubstitutions(((VarEntry)e).getType());
 				Assert.assertTrue(typeAfterSubstitutions instanceof VisibleType);
@@ -103,15 +101,10 @@ public class Environment {
 			
 			if(e instanceof ProctypeEntry) {
 				Map<String,EnvEntry> localScope = ((ProctypeEntry)e).getLocalScope();
-
-				for(Iterator<String> iter = localScope.keySet().iterator(); iter.hasNext();) {
-					String name = iter.next();
-					if(localScope.get(name) instanceof VarEntry) {
-						Type typeAfterSubstitutions = substituter.applySubstitutions(
-								((VarEntry)localScope.get(name)).getType());
-						Assert.assertTrue(typeAfterSubstitutions instanceof VisibleType);
-						((VarEntry)localScope.get(name)).setType((VisibleType) typeAfterSubstitutions);
-					}
+				for(Entry<String,VisibleType> entry : ((ProctypeEntry)e).variableNameTypePairs()) {
+					Type typeAfterSubstitutions = substituter.applySubstitutions(entry.getValue());
+					Assert.assertTrue(typeAfterSubstitutions instanceof VisibleType);
+					((VarEntry)localScope.get(entry.getKey())).setType((VisibleType) typeAfterSubstitutions);
 				}
 			}			
 		}

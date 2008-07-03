@@ -39,7 +39,6 @@ public class SymmReducerTester {
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex20.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2432902008176640000L, false), 42, 632)));
 
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/threetiered/fast_swaps/", "3s3cs.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 1296, false), 50396, 407839), 100000));
-
 		
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/threetiered/enumerate_basic/", "2s3cs.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 72, false), 2656, 14879)));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/threetiered/enumerate_basic_swaps/", "2s3cs.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 72, false), 2656, 14879)));
@@ -88,6 +87,20 @@ public class SymmReducerTester {
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_nostab_vec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=3"));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=4"));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_vec_par/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DNUM_THREADS=9"));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/flatten/", "peterson3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 251, 752)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/flatten/", "peterson4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 1177, 4706)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/flatten/", "peterson5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 5148, 25737)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/flatten/", "peterson6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 21752, 130508)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/flatten/", "peterson7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 17717, 124014), 100));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/vector_flatten/", "peterson4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 1177, 4706)));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 494, 1481)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 3106, 12422)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 17321, 86602)));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 89850, 539096), 25000));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 142669, 998678), 100));
 						
 		return testCases;
 	}

@@ -92,4 +92,23 @@ public class ProductType extends ConstructedType implements InternalType {
 		return tuple.listIterator();
 	}
 
+	public void nameComponentsDFS(TypeStack stack, List<String> result) {
+		
+		result.add("{ ");
+		
+		for(int i=0; i<getArity(); i++) {
+			Type typeOfPosition = getTypeOfPosition(i);
+			if(stack.push(typeOfPosition,result)) {
+				typeOfPosition.nameComponentsDFS(stack,result);
+				stack.pop();
+			}
+			if(i<getArity()-1) {
+				result.add(", ");
+			}
+		}
+		result.add(" }");
+		
+		
+	}
+
 }

@@ -12,10 +12,6 @@ public class RecordType extends SimpleType implements VisibleType {
 		return name;
 	}
 
-	public boolean isSubtype(Type t) {
-		return equal(t);
-	}
-
 	public static boolean isRecord(VisibleType t) {
 		return t instanceof RecordType;
 	}

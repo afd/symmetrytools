@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import src.etch.checker.Checker;
+
+
 import junit.framework.Assert;
 
 public class Minimiser {
@@ -32,7 +35,7 @@ public class Minimiser {
 			int length = ((ArrayType)representativeType).getLength();
 			SimpleType indexType = ((ArrayType)representativeType).getIndexType();
 			
-			ArrayType result = new ArrayType(null,indexType,length);
+			ArrayType result = Checker.theFactory.generateArrayType(null,indexType,length);
 			
 			previousAssignments.put(classNo,result);
 		
@@ -58,7 +61,7 @@ public class Minimiser {
 				tuple.add(null);
 			}
 			
-			ProductType result = new ProductType(tuple);
+			ProductType result = Checker.theFactory.generateProductType(tuple);
 
 			previousAssignments.put(classNo,result);
 		

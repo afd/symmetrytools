@@ -1,7 +1,6 @@
 package src.etch.typeinference;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +20,6 @@ import src.etch.types.IntType;
 import src.etch.types.Minimiser;
 import src.etch.types.MtypeType;
 import src.etch.types.NumericType;
-import src.etch.types.PidType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
 import src.etch.types.ShortType;
@@ -31,9 +29,9 @@ import src.etch.types.TypeVariableType;
 
 public class Unifier {
 
-	private Map<Type,Type> rep;
+	protected Map<Type,Type> rep;
 	
-	protected Unifier() {
+	public Unifier() {
 		rep = new HashMap<Type,Type>();
 	}
 			
@@ -78,58 +76,41 @@ public class Unifier {
 		}
 	}
 
-	private Error unifySubtype(NumericType s, TypeVariableType x) {
+	protected Error unifySubtype(NumericType s, TypeVariableType x) {
 
 		/* We have s<:x, where s is a numeric type */
 		
-		if (x.getLower() == null) {
+		if (s.isSubtype(x.getLower())) {
+			return null;
+		}
+		
+		Assert.assertTrue(x.getLower().isSubtype(s));
+
+		if (s.isSubtype(x.getUpper())) {
 			x.setLower(s);
 			return null;
-		} else if (s.isSubtype(x.getLower())) {
-			if(!s.isPidLiteral()) {
-				x.getLower().setNotPidLiteral();
-			}
-			return null;
-		} else if (x.getLower().isSubtype(s)) {
-			if ((x.getUpper() == null)
-					|| (s.isSubtype(x.getUpper()))) {
-				if(!x.getLower().isPidLiteral()) {
-					s.setNotPidLiteral();
-				}
-				x.setLower(s);
-				return null;
-			}
-			return new SubtypingError(s.name(),x.getUpper().name());
-		} else {
-			Assert.assertTrue(false);
-			return null;
 		}
+
+		return new SubtypingError(s.name(),x.getUpper().name());
+
 	}
 
-	private Error unifySubtype(TypeVariableType x, NumericType s) {
-		if (x.getUpper() == null) {
-			x.setUpper(s);
-			return null;
-		} else if (x.getUpper().isSubtype(s)) {
-			if(!s.isPidLiteral()) {
-				x.getUpper().setNotPidLiteral();
-			}
-			return null;
-		} else if (s.isSubtype(x.getUpper())) {
-			if ((x.getLower() == null)
-					|| (x.getLower().isSubtype(s))) {
-				if(!x.getUpper().isPidLiteral()) {
-					s.setNotPidLiteral();
-				}
-				x.setUpper(s);
-				return null;
-			}
-			return new SubtypingError(applySubstitutionsAndMinimise(x.getLower()).name(),
-					s.name());
-		} else {
-			Assert.assertTrue(false);
+	protected Error unifySubtype(TypeVariableType x, NumericType s) {
+
+		if (x.getUpper().isSubtype(s)) {
 			return null;
 		}
+		
+		Assert.assertTrue(s.isSubtype(x.getUpper()));
+		
+		if (x.getLower().isSubtype(s)) {
+			x.setUpper(s);
+			return null;
+		}
+
+		return new SubtypingError(applySubstitutionsAndMinimise(x.getLower()).name(),
+				s.name());
+
 	}
 	
 	protected Error unifyConstraint(Type left, Type right) {
@@ -145,52 +126,10 @@ public class Unifier {
 			return union(s, t);
 		}
 
-		if(s instanceof MtypeType && t instanceof MtypeType) {
-			return null;
-		}
-
-		if(s.isSubtype(new BoolType()) && t.isSubtype(new BoolType())) {
-			if((s instanceof NumericType && !((NumericType)s).isPidLiteral())||(t instanceof NumericType && !((NumericType)t).isPidLiteral())) {
-				setNotPidLiteral(s);
-				setNotPidLiteral(t);
-			}
-			return null;
+		if(s instanceof SimpleType && t instanceof SimpleType) {
+			return unifyConstraintOnSimpleTypes((SimpleType)s, (SimpleType)t);
 		}
 		
-		if(s instanceof RecordType && t instanceof RecordType && s.equal(t)) {
-			return null;
-		}
-
-		if(s instanceof ByteType && t instanceof ByteType) {
-			if(!(((ByteType)s).isPidLiteral()&&((ByteType)t).isPidLiteral())) {
-				setNotPidLiteral(s);
-				setNotPidLiteral(t);
-			}
-			return null;
-		}
-		
-		if(s instanceof ShortType && t instanceof ShortType) {
-			return null;
-		}
-		
-		if(s instanceof IntType && t instanceof IntType) {
-			return null;
-		}
-
-		if(s instanceof PidType && t instanceof PidType) {
-			return null;
-		}
-		
-		if(s instanceof PidType && (t instanceof NumericType && ((NumericType)t).isPidLiteral())) {
-			rep.put(t,s);
-			return null;
-		}
-
-		if(t instanceof PidType && (s instanceof NumericType && ((NumericType)s).isPidLiteral())) {
-			rep.put(s,t);
-			return null;
-		}
-
 		if (s instanceof ChanType && t instanceof ChanType) {
 			union(s,t);
 			return (unifyConstraint(((ChanType)s).getMessageType(), ((ChanType)t).getMessageType()));
@@ -225,6 +164,45 @@ public class Unifier {
 		return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(), applySubstitutionsAndMinimise(t).name());
 	}
 
+	protected Error unifyConstraintOnSimpleTypes(SimpleType s, SimpleType t) {
+		if(s instanceof MtypeType && t instanceof MtypeType) {
+			return null;
+		}
+
+		if(s.isSubtype(new BoolType()) && t.isSubtype(new BoolType())) {
+			unifyBooleanSubtypes(s, t);
+			return null;
+		}
+		
+		if(s instanceof RecordType && t instanceof RecordType && s.equal(t)) {
+			return null;
+		}
+
+		if(s instanceof ByteType && t instanceof ByteType) {
+			unifyByteTypes((ByteType)s, (ByteType)t);
+			return null;
+		}
+		
+		if(s instanceof ShortType && t instanceof ShortType) {
+			return null;
+		}
+		
+		if(s instanceof IntType && t instanceof IntType) {
+			return null;
+		}
+
+		return new IncompatibleTypesError(s.name(), t.name());
+	
+	}
+
+	protected void unifyByteTypes(ByteType s, ByteType t) {
+
+	}
+
+	protected void unifyBooleanSubtypes(Type s, Type t) {
+
+	}
+
 	protected Type find(Type t) {
 		if(!rep.containsKey(t)) {
 			rep.put(t,t);
@@ -237,12 +215,6 @@ public class Unifier {
 			current = rep.get(previous);
 		}
 		return current;
-	}
-
-	private void setNotPidLiteral(Type t) {
-		if(t instanceof NumericType) {
-			((NumericType)t).setNotPidLiteral();
-		}
 	}
 
 	private Error union(Type s, Type t) {
@@ -281,11 +253,10 @@ public class Unifier {
 		// change bounds of s to be these new bounds
 		// t.setRep(s);
 		try {
-			NumericType newUpper = leastUpperBound(s,t);
-			NumericType newLower = greatestLowerBound(s,t);
+			Type newUpper = leastUpperBound(s,t);
+			Type newLower = greatestLowerBound(s,t);
 
-			if ((newLower != null) && (newUpper != null)
-					&& !(newLower.isSubtype(newUpper))) {
+			if (!newLower.isSubtype(newUpper)) {
 				return new SubtypingError(applySubstitutionsAndMinimise(newLower)
 						.name(), applySubstitutionsAndMinimise(newUpper).name());
 			}
@@ -299,73 +270,35 @@ public class Unifier {
 		}
 	}
 
-	private Error checkBounds(TypeVariableType s, Type t) {
-		if(s.getLower()==null && s.getUpper()==null) {
-			return null;
+	protected Error checkBounds(TypeVariableType s, Type t) {
+		
+		if (!s.getLower().isSubtype(t)) {
+			return new SubtypingError(s.getLower().name(), applySubstitutionsAndMinimise(t).name());
+		} 
+		
+		if (!t.isSubtype(s.getUpper())) {
+			return new SubtypingError(applySubstitutionsAndMinimise(t).name(), s.getUpper().name());
 		}
 		
-		if ((s.getLower() != null) && !(s.getLower().isSubtype(t) || (s.getLower().isPidLiteral() && t instanceof PidType))) {
-			return new SubtypingError(s.getLower().name(), applySubstitutionsAndMinimise(t).name());
-		} else if ((s.getUpper() != null) && !(t.isSubtype(s.getUpper()) || (s.getUpper().isPidLiteral() && t instanceof PidType))) {
-			return new SubtypingError(applySubstitutionsAndMinimise(t).name(), s.getUpper().name());
-		} else {
-			if(!((s.getUpper()==null || s.getUpper().isPidLiteral()) && (s.getLower()==null || s.getLower().isPidLiteral()))) {
-				setNotPidLiteral(t);
-			}
-			return null;
-		}
+		return null;
+
 	}
 
 	private Type applySubstitutionsAndMinimise(Type t) {
 		return Minimiser.minimise(new Substituter(this).applySubstitutions(t));
 	}
 
-	private NumericType greatestLowerBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
-		if ((s.getLower() != null) && (t.getLower() != null)) {
-			NumericType result = (NumericType)AnyType.max(s.getLower(), t.getLower());
-			if(!(s.getLower().isPidLiteral() && t.getLower().isPidLiteral())) {
-				result.setNotPidLiteral();
-			}
-			return result;
-		} else if (s.getLower() != null) {
-			return s.getLower();
-		} else if (t.getLower() != null) {
-			return t.getLower();
-		}
-		return null;
+	protected Type greatestLowerBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
+		return AnyType.max(s.getLower(), t.getLower());
 	}
 
-	private NumericType leastUpperBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
-		if ((s.getUpper() != null) && (t.getUpper() != null)) {
-			NumericType result = (NumericType)AnyType.min(s.getUpper(), t.getUpper());
-			if(!(s.getUpper().isPidLiteral() && t.getUpper().isPidLiteral())) {
-				result.setNotPidLiteral();
-			}
-			return result;
-		} else if (s.getUpper() != null) {
-			return s.getUpper();
-		} else if (t.getUpper() != null) {
-			return t.getUpper();
-		}
-		return null;
+	protected Type leastUpperBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
+		return AnyType.min(s.getUpper(), t.getUpper());
 	}
 	
 	public String toString() {
 		String result = "";
-		Iterator<Type> i = rep.keySet().iterator();
-		for(Type tv = i.next(); i.hasNext(); ) {
-			if(tv instanceof TypeVariableType) {
-				result = result + tv.name() + " |-> " + applySubstitutionsAndMinimise(tv) + ";\n";
-			}
-		}
-		return result;
-	}
-
-	public String showRep() {
-		String result = "";
-		Iterator<Type> i = rep.keySet().iterator();
-		while (i.hasNext()) {
-			Type tv = i.next();
+		for (Type tv : rep.keySet()) {
 			result = result + tv.name() + " |-> " + rep.get(tv).name() + ";\n";
 		}
 		return result;		

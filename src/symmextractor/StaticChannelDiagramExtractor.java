@@ -5,15 +5,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import junit.framework.Assert;
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
+import src.etch.types.VisibleType;
 import src.promela.node.AChannelIvarassignment;
 import src.promela.node.AFifoReceive;
 import src.promela.node.AFifoRecvPoll;
@@ -32,6 +33,8 @@ import src.promela.node.ASortedSend;
 import src.promela.node.PArgLst;
 import src.promela.node.PIvar;
 import src.promela.node.TSeparator;
+import src.symmreducer.PidIndexedArrayReference;
+import src.symmreducer.SensitiveVariableReference;
 import src.utilities.StringHelper;
 
 public class StaticChannelDiagramExtractor extends SymmetryChecker {
@@ -101,8 +104,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 		assignChannelColours();
 
 		// EDGES
-		for(ListIterator<ProcessEntry> li = processEntries.listIterator(); li.hasNext();) {
-			ProcessEntry processEntry = li.next();
+		for(ProcessEntry processEntry : processEntries) {
 
 			addEdges(edges, processEntry,
 					proctypeForProcess(processEntry),true);
@@ -115,9 +117,8 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	}
 
 	private void computeDistinctChannelSignatures() {
-		Map channelEntries = getEnv().getChannelEntries();
-		for (Iterator iter = channelEntries.values().iterator(); iter.hasNext();) {
-			addChannelEntry((ChannelEntry) iter.next());
+		for (ChannelEntry entry : getEnv().getChannelEntries().values()) {
+			addChannelEntry(entry);
 		}
 	}
 	
@@ -154,11 +155,8 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	}
 
 	private void addEdges(List<Integer> edges, ProcessEntry processEntry, ProctypeEntry proctypeEntry, boolean outgoing) {
-		
-		Iterator<String> iter = (outgoing ? proctypeEntry.getOutChannels().iterator() : proctypeEntry.getInChannels().iterator());
 
-		while(iter.hasNext()) {
-			String chanName = iter.next();
+		for(String chanName : (outgoing ? proctypeEntry.getOutChannels() : proctypeEntry.getInChannels())) {
 
 			if (staticChannelNames.contains(chanName)) {
 				if(outgoing) {
@@ -196,9 +194,9 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 
 		for(Iterator<ChannelEntry> iter = distinctChannelSignatures.iterator(); iter.hasNext();) {
 			ChannelEntry channelEntry = iter.next();
-			ListIterator<String> j = staticChannelNames.listIterator();
-			while (j.hasNext()) {
-				String currentName = j.next();
+			
+			for (String currentName : staticChannelNames) {
+
 				ChannelEntry currentEntry = (ChannelEntry)getEnvEntry(currentName);
 
 				if (currentEntry.equal(channelEntry)) {
@@ -218,8 +216,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 
 		for(Iterator<String> i = proctypeNames.iterator(); i.hasNext();) {
 			String proctypeName = i.next();
-			for(ListIterator j = processEntries.listIterator(); j.hasNext();) {
-				ProcessEntry currentProcessEntry = (ProcessEntry) j.next();
+			for(ProcessEntry currentProcessEntry : processEntries) {
 				if (currentProcessEntry.getProctypeName().equals(proctypeName)) {
 					colourPermutation.set(processEntries
 							.indexOf(currentProcessEntry),marker);
@@ -269,8 +266,8 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	}
 
 	private void addChannelEntry(ChannelEntry channelEntry) {
-		for (Iterator iter = distinctChannelSignatures.iterator(); iter.hasNext();) {
-			if (channelEntry.equal((ChannelEntry) iter.next())) {
+		for (ChannelEntry entry : distinctChannelSignatures) {
+			if (channelEntry.equal(entry)) {
 				return;
 			}
 		}
@@ -354,6 +351,39 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 
 	public ProctypeEntry getProctypeEntryForProcess(int j) {
 		return (ProctypeEntry)getEnvEntry(processEntries.get(j).getProctypeName());
+	}
+
+	public ProctypeEntry getProctypeEntryFromProctypeName(String proctypeName) {
+		return (ProctypeEntry)getEnvEntry(proctypeName);
+	}
+	
+	
+	public List<SensitiveVariableReference> sensitiveVariableReferencesForProcess(int j) {
+
+		List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
+
+		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(s," + j + "))->";
+		
+		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
+			referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
+					entry.getKey(), entry.getValue(), referencePrefix, this));
+		}
+		return referencesToPermute;
+	}
+
+	public List<PidIndexedArrayReference> sensitivelyIndexedArraysForProcess(int j) {
+		List<PidIndexedArrayReference> sensitivelyIndexedArrays = new ArrayList<PidIndexedArrayReference>();
+
+		String referencePrefix = "((P" + proctypeId((getProcessEntries().get(j)).getProctypeName())
+		+ " *)SEG(s," + j + "))->";
+		
+		for (Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
+
+			sensitivelyIndexedArrays
+					.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
+							entry.getKey(), entry.getValue(), referencePrefix, this));
+		}
+		return sensitivelyIndexedArrays;
 	}
 	
 }

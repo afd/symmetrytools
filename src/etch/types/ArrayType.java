@@ -1,19 +1,18 @@
 package src.etch.types;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import junit.framework.Assert;
-import src.etch.checker.SymmetrySettings;
 
 public class ArrayType extends ConstructedType implements VisibleType {
 
-	private VisibleType elementType;
-	private SimpleType indexType;
-	private int length;
+	protected VisibleType elementType;
+	protected SimpleType indexType;
+	protected int length;
 	
 	public ArrayType(VisibleType elementType, SimpleType indexType, int length) {
-		Assert.assertTrue(indexType==null || indexType instanceof ByteType || indexType instanceof PidType || indexType instanceof TypeVariableType);
 		this.elementType = elementType;
 		this.indexType = indexType;
 		this.length = length;
@@ -48,13 +47,8 @@ public class ArrayType extends ConstructedType implements VisibleType {
 	}
 
 	protected String namePlugin(TypeVariableFactory factory) {
-		String result = "array (size " + length;
 
-		if(SymmetrySettings.CHECKING_SYMMETRY && !(this.indexType instanceof TypeVariableType)) {
-			result += ", indexed by " + this.indexType.name();
-		}
-
-		result += ") of ";
+		String result = "array (" + indexToString() + ") of ";
 		
 		if(elementType instanceof SimpleType) {
 			result += elementType.name();
@@ -64,7 +58,7 @@ public class ArrayType extends ConstructedType implements VisibleType {
 
 		return result;
 	}
-
+	
 	protected void replaceChildWithTypeVariable(ConstructedType type, TypeVariableType tVar) {
 		Assert.assertTrue(false);
 	}
@@ -92,6 +86,23 @@ public class ArrayType extends ConstructedType implements VisibleType {
 
 	public static boolean isArray(VisibleType t) {
 		return t instanceof ArrayType;
+	}
+	
+	public void nameComponentsDFS(TypeStack stack, List<String> result) {
+
+		String component = "array(" + indexToString() + ") of ";
+
+		result.add(component);
+
+		if(stack.push(elementType,result)) {
+			elementType.nameComponentsDFS(stack,result);
+			stack.pop();
+		}
+
+	}
+
+	protected String indexToString() {
+		return "size " + length;
 	}
 	
 }

@@ -32,7 +32,7 @@ public class SymmExtractorTestCase extends TestCase {
 
 
 			EtchTestCase etchTest = new EtchTestCase(filename, EtchTestOutcome.WellTyped);
-			
+
 			etchTest.run();
 
 			

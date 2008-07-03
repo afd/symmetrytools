@@ -15,7 +15,7 @@ public class IntType extends NumericType {
 	}
 
 	public boolean isSubtype(Type t) {
-		return equal(t);
+		return equal(t) || super.isSubtype(t);
 	}
 
 }

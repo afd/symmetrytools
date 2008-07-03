@@ -10,7 +10,6 @@ import src.etch.checker.Checker;
 import src.etch.env.ChannelEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ArrayType;
-import src.etch.types.ByteType;
 import src.etch.types.ChanType;
 import src.etch.types.InternalType;
 import src.etch.types.ProductType;
@@ -54,13 +53,13 @@ public class Substituter extends DepthFirstAdapter {
 		}
 
 		if (tRep instanceof ArrayType) {
-			ArrayType result = new ArrayType(null,null,((ArrayType)tRep).getLength());
+			ArrayType result = Checker.theFactory.generateArrayType(null,null,((ArrayType)tRep).getLength());
 			history.put(t,result);
 			result.setElementType((VisibleType) applySubstitutionsRecursive(((ArrayType)tRep).getElementType(),history));
 			Type newIndexType = applySubstitutionsRecursive(((ArrayType)tRep).getIndexType(),history);
 			if(newIndexType instanceof TypeVariableType) {
 				// Substitute the type variable with byte by default
-				result.setIndexType(new ByteType());
+				result.setIndexType(Checker.theFactory.generateByteType());
 			} else if(newIndexType instanceof SimpleType) {
 				result.setIndexType((SimpleType)newIndexType);
 			} else {
@@ -82,7 +81,7 @@ public class Substituter extends DepthFirstAdapter {
 			for(int i=0; i<((ProductType)tRep).getArity(); i++) {
 				tuple.add(null);
 			}
-			ProductType result = new ProductType(tuple);
+			ProductType result = Checker.theFactory.generateProductType(tuple);
 
 			history.put(t,result);
 			for(int i=0; i<((ProductType)tRep).getArity(); i++) {

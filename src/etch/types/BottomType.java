@@ -10,6 +10,7 @@ public final class BottomType extends SimpleType implements VisibleType {
 
 	private BottomType() {
 		Assert.assertEquals(numberConstructed,0);
+		numberConstructed++;
 	}
 	
 	public String name() {

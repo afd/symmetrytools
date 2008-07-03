@@ -2,9 +2,9 @@ package src.symmreducer;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
@@ -12,9 +12,9 @@ import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ChanType;
-import src.etch.types.PidType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.types.PidType;
 import src.utilities.Config;
 
 public class SwapVectorizer {
@@ -77,24 +77,23 @@ public class SwapVectorizer {
 			numberOfPidVariablesForProcess[i] = 0;
 
 			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries().get(i)).getProctypeName();
-			Map<String, EnvEntry> localScope = ((ProctypeEntry) typeInfo.getEnvEntry(proctypeName)).getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
+			
+			for(Entry<String,VisibleType> entry : typeInfo.getProctypeEntryForProcess(i).variableNameTypePairs()) {
 
-					String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG((&(s->state))," + i + "))->";
+				String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG((&(s->state))," + i + "))->";
 
-					for(SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(varName, ((VarEntry) localScope.get(varName)).getType(), referencePrefix, typeInfo)) {
-						if(PidType.isPid(reference.getType())) {
-							extractIdentifierVariablesFunctionBody += "   s->process_ids[" + numberOfPidReferencesToSwap + "] = " + reference + ";\n";
-							extractIdentifierVariablesFunctionBody += "   " + reference + " = 0;\n\n";
-							replaceIdentifierVariablesFunction += "   " + reference + " = s->process_ids[" + numberOfPidReferencesToSwap + "];\n\n";
-							numberOfPidReferencesToSwap++;
-							numberOfPidVariablesForProcess[i]++;
-						}
+				for(SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(entry.getKey(), entry.getValue(), referencePrefix, typeInfo)) {
+					if(PidType.isPid(reference.getType())) {
+						extractIdentifierVariablesFunctionBody += "   s->process_ids[" + numberOfPidReferencesToSwap + "] = " + reference + ";\n";
+						extractIdentifierVariablesFunctionBody += "   " + reference + " = 0;\n\n";
+						replaceIdentifierVariablesFunction += "   " + reference + " = s->process_ids[" + numberOfPidReferencesToSwap + "];\n\n";
+						numberOfPidReferencesToSwap++;
+						numberOfPidVariablesForProcess[i]++;
 					}
 				}
+								
 			}
+
 		}
 
 		for (int i = 0; i < typeInfo.getNoStaticChannels(); i++) {
@@ -148,24 +147,23 @@ public class SwapVectorizer {
 			numberOfChannelVariablesForProcess[i] = 0;
 
 			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries().get(i)).getProctypeName();
-			Map<String, EnvEntry> localScope = ((ProctypeEntry) typeInfo.getEnvEntry(proctypeName)).getLocalScope();
-			for (Iterator<String> iter = localScope.keySet().iterator(); iter.hasNext();) {
-				String varName = iter.next();
-				if (localScope.get(varName) instanceof VarEntry) {
+			ProctypeEntry proctypeEntry = typeInfo.getProctypeEntryFromProctypeName(proctypeName);
 
-					String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG((&(s->state))," + i + "))->";
+			for(Entry<String,VisibleType> entry : proctypeEntry.variableNameTypePairs()) {
+				String referencePrefix = "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG((&(s->state))," + i + "))->";
 
-					for(SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(varName, ((VarEntry) localScope.get(varName)).getType(), referencePrefix, typeInfo)) {
-						if(ChanType.isChan(reference.getType())) {
-							extractIdentifierVariablesFunctionBody += "   s->channel_ids[" + numberOfChannelReferencesToSwap + "] = " + reference + ";\n";
-							extractIdentifierVariablesFunctionBody += "   " + reference + " = 0;\n\n";
-							replaceIdentifierVariablesFunction += "   " + reference + " = s->channel_ids[" + numberOfChannelReferencesToSwap + "];\n\n";
-							numberOfChannelReferencesToSwap++;
-							numberOfChannelVariablesForProcess[i]++;
-						}
+				for(SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(entry.getKey(), entry.getValue(), referencePrefix, typeInfo)) {
+					if(ChanType.isChan(reference.getType())) {
+						extractIdentifierVariablesFunctionBody += "   s->channel_ids[" + numberOfChannelReferencesToSwap + "] = " + reference + ";\n";
+						extractIdentifierVariablesFunctionBody += "   " + reference + " = 0;\n\n";
+						replaceIdentifierVariablesFunction += "   " + reference + " = s->channel_ids[" + numberOfChannelReferencesToSwap + "];\n\n";
+						numberOfChannelReferencesToSwap++;
+						numberOfChannelVariablesForProcess[i]++;
 					}
 				}
+				
 			}
+			
 		}
 		
 		for (int i = 0; i < typeInfo.getNoStaticChannels(); i++) {
@@ -245,16 +243,49 @@ public class SwapVectorizer {
 		out.write(extractIdentifierVariablesFunctionHeader);
 		out.write(extractIdentifierVariablesFunctionBody);
 		out.write(replaceIdentifierVariablesFunction);
-
-		writeFirstProcessIdentifierForProcessArray(out);
-		writeFirstChannelIdentifierForProcessArray(out);
 		
-		writeFirstProcessIdentifierForChannelArray(out);
-		writeFirstChannelIdentifierForChannelArray(out);
+		writeFirstIdentifierArrays(out);
 
 		out.write("\n");
 	}
 
+	private void writeFirstIdentifierArrays(FileWriter out) throws IOException {
+
+		int[] firstProcessIdForProcessArray = new int[typeInfo.getNoProcesses()];
+		int[] firstProcessIdForChannelArray = new int[typeInfo.getNoStaticChannels()];
+		int[] firstChannelIdForProcessArray = new int[typeInfo.getNoProcesses()];
+		int[] firstChannelIdForChannelArray = new int[typeInfo.getNoStaticChannels()];
+
+		for(int i=0; i<typeInfo.getNoProcesses(); i++) {
+			firstProcessIdForProcessArray[i] = firstProcessIdForProcess(i);
+			firstChannelIdForProcessArray[i] = firstChannelIdForProcess(i);
+		}
+
+		for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
+			firstProcessIdForChannelArray[i] = firstProcessIdForChannel(i);
+			firstChannelIdForChannelArray[i] = firstChannelIdForChannel(i);
+		}
+				
+		writeFirstIdentifierArray(out, "process", "process", firstProcessIdForProcessArray, numberOfPidReferencesToSwap, typeInfo.getNoProcesses());
+		writeFirstIdentifierArray(out, "channel", "process", firstChannelIdForProcessArray, numberOfChannelReferencesToSwap, typeInfo.getNoProcesses());
+		
+		writeFirstIdentifierArray(out, "process", "channel", firstProcessIdForChannelArray, numberOfPidReferencesToSwap, typeInfo.getNoStaticChannels());
+		writeFirstIdentifierArray(out, "channel", "channel", firstChannelIdForChannelArray, numberOfChannelReferencesToSwap, typeInfo.getNoStaticChannels());
+	}
+
+	private void writeFirstIdentifierArray(FileWriter out, String typeOfId, String typeOfIdHolder, int[] firstIdArray, int numberOfReferencesToSwap, int numberOfHolders) throws IOException {
+		if(numberOfReferencesToSwap > 0) {
+			out.write("const int first_" + typeOfId + "_id_for_" + typeOfIdHolder + "[" + numberOfHolders + "] = { ");
+			for(int i=0; i<numberOfHolders; i++) {
+				out.write(String.valueOf(firstIdArray[i]));
+				if(i<numberOfHolders-1) {
+					out.write(", ");
+				}
+			}
+			out.write("};\n");
+		}
+	}
+	
 	private String alignmentSpecifier() {
 		if(Config.vectorTarget.alignmentValue() > 1) {
 			return " __attribute__((aligned(" + Config.vectorTarget.alignmentValue() + ")))";
@@ -268,59 +299,6 @@ public class SwapVectorizer {
 		}
 		return x;
 	}
-
-	private void writeFirstProcessIdentifierForProcessArray(FileWriter out) throws IOException {
-		if(numberOfPidReferencesToSwap > 0) {
-			out.write("const int first_process_id_for_process[" + typeInfo.getNoProcesses() + "] = { ");
-			for(int i=0; i<typeInfo.getNoProcesses(); i++) {
-				out.write(String.valueOf(firstProcessIdForProcess(i)));
-				if(i<typeInfo.getNoProcesses()-1) {
-					out.write(", ");
-				}
-			}
-			out.write("};\n");
-		}
-	}
-
-	private void writeFirstProcessIdentifierForChannelArray(FileWriter out) throws IOException {
-		if(numberOfPidReferencesToSwap > 0) {
-			out.write("const int first_process_id_for_channel[" + typeInfo.getNoStaticChannels() + "] = { ");
-			for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
-				out.write(String.valueOf(firstProcessIdForChannel(i)));
-				if(i<typeInfo.getNoStaticChannels()-1) {
-					out.write(", ");
-				}
-			}
-			out.write("};\n");
-		}
-	}
-
-	private void writeFirstChannelIdentifierForProcessArray(FileWriter out) throws IOException {
-		if(numberOfChannelReferencesToSwap > 0) {
-			out.write("const int first_channel_id_for_process[" + typeInfo.getNoProcesses() + "] = { ");
-			for(int i=0; i<typeInfo.getNoProcesses(); i++) {
-				out.write(String.valueOf(firstChannelIdForProcess(i)));
-				if(i<typeInfo.getNoProcesses()-1) {
-					out.write(", ");
-				}
-			}
-			out.write("};\n");
-		}
-	}
-
-	private void writeFirstChannelIdentifierForChannelArray(FileWriter out) throws IOException {
-		if(numberOfChannelReferencesToSwap > 0) {
-			out.write("const int first_channel_id_for_channel[" + typeInfo.getNoStaticChannels() + "] = { ");
-			for(int i=0; i<typeInfo.getNoStaticChannels(); i++) {
-				out.write(String.valueOf(firstChannelIdForChannel(i)));
-				if(i<typeInfo.getNoStaticChannels()-1) {
-					out.write(", ");
-				}
-			}
-			out.write("};\n");
-		}
-	}
-	
 	
 	private void writeAugmentedMemcmp(FileWriter out) throws IOException {
 		out.write("int augmented_memcmp(AugmentedState* s1, AugmentedState* s2, int vsize) {\n");

@@ -3,11 +3,8 @@ package src.etch.types;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class ConstructedType extends AnyType {
 
-	public final boolean isSubtype(Type t) {
-		return equal(t);
-	}
+public abstract class ConstructedType extends AnyType {
 
 	protected abstract String namePlugin(TypeVariableFactory factory);
 

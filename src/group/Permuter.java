@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.Assert;
-import src.etch.checker.SymmetrySettings;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
-import src.etch.types.PidType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
@@ -71,6 +69,8 @@ import src.promela.node.PVarref;
 import src.promela.node.TName;
 import src.promela.node.Token;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.SymmetryChecker;
+import src.symmextractor.types.PidType;
 
 public class Permuter extends DepthFirstAdapter {
 
@@ -331,7 +331,7 @@ public class Permuter extends DepthFirstAdapter {
 
 		PSequence atomicBlock;
 		
-		atomicBlock = SymmetrySettings.getStatementsWithinAtomic(node);
+		atomicBlock = SymmetryChecker.getStatementsWithinAtomic(node);
 		
 		List<PStep> runStatements = getRunStatements(atomicBlock);
 

@@ -10,10 +10,12 @@ public class ConstraintSet {
 
 	private List<EqualityConstraint> equalityConstraints;
 	private List<SubtypingConstraint> subtypingConstraints;
-
-	public ConstraintSet() {
+	private Unifier unifier;
+	
+	public ConstraintSet(Unifier unifier) {
 		equalityConstraints = new ArrayList<EqualityConstraint>();
 		subtypingConstraints = new ArrayList<SubtypingConstraint>();
+		this.unifier = unifier;
 	}
 
 	public void add(Constraint c) {
@@ -26,11 +28,9 @@ public class ConstraintSet {
 	
 	public Substituter unify(ErrorTable et) {
 
-		Unifier graph = new Unifier();
-		
 		for (SubtypingConstraint c : subtypingConstraints) {
 
-			Error e = graph.unifySubtypingConstraint(c, equalityConstraints);
+			Error e = unifier.unifySubtypingConstraint(c, equalityConstraints);
 			if (e != null) {
 				et.add(c.getLine(), e);
 			}
@@ -38,13 +38,13 @@ public class ConstraintSet {
 
 		for (EqualityConstraint c : equalityConstraints) {
 			
-			Error e = graph.unifyConstraint(c.getLhs(),c.getRhs());
+			Error e = unifier.unifyConstraint(c.getLhs(),c.getRhs());
 			if (e != null) {
 				et.add(c.getLine(), e);
 			}
 		}
 
-		return new Substituter(graph);
+		return new Substituter(unifier);
 
 	}
 	

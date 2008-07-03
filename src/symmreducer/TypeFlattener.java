@@ -1,11 +1,9 @@
 package src.symmreducer;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import junit.framework.Assert;
-
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ProductType;
@@ -22,8 +20,8 @@ public class TypeFlattener {
 		
 		if(t instanceof RecordType) {
 			TypeEntry typeEntry = (TypeEntry) typeInfo.getEnvEntry(t.name());
-			for(Iterator<String> itr = typeEntry.getFieldNames().iterator(); itr.hasNext();) {
-				result.addAll(flatten(typeEntry.getFieldType(itr.next()),typeInfo));
+			for(String fieldName : typeEntry.getFieldNames()) {
+				result.addAll(flatten(typeEntry.getFieldType(fieldName),typeInfo));
 			}
 		}
 		

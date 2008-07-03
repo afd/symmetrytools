@@ -3,7 +3,6 @@ package src.etch.env;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,18 +81,16 @@ public class ProctypeEntry extends EnvEntry {
 		return super.getLineOfDeclaration();
 	}
 
-	public Iterator<Entry<String, VisibleType>> variableTypePairIterator() {
-		Set<Entry<String,VisibleType>> variableNameTypePairs = new HashSet<Entry<String,VisibleType>>();
-		for(Iterator<Entry<String,EnvEntry>> iter = localScope.entrySet().iterator(); iter.hasNext(); ) {
-			Entry<String,EnvEntry> entry = iter.next();
+	public List<Entry<String, VisibleType>> variableNameTypePairs() {
+		List<Entry<String,VisibleType>> variableNameTypePairs = new ArrayList<Entry<String,VisibleType>>();
+		for(Entry<String,EnvEntry> entry : localScope.entrySet()) {
 			if(entry.getValue() instanceof VarEntry) {
 				variableNameTypePairs.add(new BasicEntry<String,VisibleType>(entry.getKey(), ((VarEntry)entry.getValue()).getType()));
 			}
-			
 		}
-		return variableNameTypePairs.iterator();
+		return variableNameTypePairs;
 	}
-
+	
     private class BasicEntry<S, T> implements Entry<S,T> {
 
     	S s;
@@ -115,6 +112,10 @@ public class ProctypeEntry extends EnvEntry {
 		public T setValue(T value) {
 			Assert.assertTrue(false);
 			return null;
+		}
+		
+		public String toString() {
+			return "(" + s + ", " + t + ")";
 		}
 		
     }

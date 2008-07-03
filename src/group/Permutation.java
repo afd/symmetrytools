@@ -199,14 +199,16 @@ public class Permutation {
 		Node originalAST = (Node) theAST.clone();
 
 		originalAST.apply(new Normaliser(typeInfo.getNoProcesses()));
-
+		
 		theAST.apply(new Permuter(this, typeInfo));
 
 		Node permutedAST = (Node) theAST.clone();
 
 		permutedAST.apply(new Normaliser(typeInfo.getNoProcesses()));
-
+		
 		theAST.apply(new Permuter(this.inverse(), typeInfo));
+
+		
 		
 		return new NodeComparator().compare(originalAST, permutedAST) == 0;
 	}

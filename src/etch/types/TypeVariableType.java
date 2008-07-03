@@ -8,16 +8,16 @@ public class TypeVariableType extends SimpleType implements InternalType {
 	
 	private char letter;
 	private int guid;
-	private NumericType lower;
-	private NumericType upper;
+	private Type lower;
+	private Type upper;
 	private boolean prettyPrint;
 	
 	protected TypeVariableType(char letter, int guid, boolean prettyPrint) {
 		this.letter = letter;
 		this.guid = guid;
 		this.prettyPrint = prettyPrint;
-		lower = null;
-		upper = null;
+		lower = BottomType.uniqueInstance;
+		upper = TopType.uniqueInstance;
 	}
 
 	public String name() {
@@ -27,19 +27,19 @@ public class TypeVariableType extends SimpleType implements InternalType {
 		return String.valueOf(letter) + guid;
 	}
 
-	public void setLower(NumericType lower) {
+	public void setLower(Type lower) {
 		this.lower = lower;
 	}
 
-	public void setUpper(NumericType upper) {
+	public void setUpper(Type upper) {
 		this.upper = upper;
 	}
 
-	public NumericType getLower() {
+	public Type getLower() {
 		return lower;
 	}
 
-	public NumericType getUpper() {
+	public Type getUpper() {
 		return upper;
 	}
 

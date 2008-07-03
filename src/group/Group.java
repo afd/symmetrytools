@@ -29,8 +29,8 @@ public class Group {
 		this.generators = generators;
 	}
 	
-	public Iterator<Permutation> iterator() {
-		return generators.iterator();
+	public Set<Permutation> getGenerators() {
+		return Collections.unmodifiableSet(generators);
 	}
 
 	public String toString() {
@@ -38,7 +38,7 @@ public class Group {
 			return "{id}";
 		}
 		String result = "<";
-		Iterator i = generators.iterator();
+		Iterator<Permutation> i = generators.iterator();
 		while (i.hasNext()) {
 			result = result + i.next().toString();
 			if (i.hasNext()) {

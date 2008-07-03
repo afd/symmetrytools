@@ -73,7 +73,7 @@ public class SymmReducer extends SymmExtractor {
     			System.out.println("Symmetric markers only work with a full symmetry group, i.e. the group Sym({1,..," + (extractor.getNoProcesses()-1) + ")");
     			System.exit(0);
     		} else {
-    			System.out.println("Full symmetry group detected - symmetry markers can be applied");
+    			ProgressPrinter.println("Full symmetry group detected - symmetry markers can be applied");
     			if(!Config.USE_TRANSPOSITIONS) {
     				System.out.println("Transpositions must be used with this strategy - switch made automatically");
     				Config.USE_TRANSPOSITIONS = true;

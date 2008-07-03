@@ -32,7 +32,7 @@ public class EtchTestCase extends TestCase {
 			Checker checker = new Checker();
 			theAST.apply(checker);
 			checker.unify();
-			if(checker.getErrorTable().hasErrors()) {
+			if(checker.getErrorTable().hasErrors()) {				
 				actualOutcome = EtchTestOutcome.BadlyTyped;
 			} else {
 				actualOutcome = EtchTestOutcome.WellTyped;

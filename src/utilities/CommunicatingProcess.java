@@ -8,14 +8,8 @@ import java.io.OutputStreamWriter;
 
 public class CommunicatingProcess {
 
-	public static Process create(String command) {
-		try {
-			return Runtime.getRuntime().exec(command);
-		} catch (IOException e) {
-			System.out.println("An error occurred when executing the following command: " + command);
-			System.exit(1);
-			return null;
-		}
+	public static Process create(String command) throws IOException {
+		return Runtime.getRuntime().exec(command);
 	}
 	
 	public static BufferedWriter getWriter(Process gap) {
@@ -31,5 +25,20 @@ public class CommunicatingProcess {
 	public static BufferedReader getError(Process p) {
 		return new BufferedReader(new InputStreamReader(p.getErrorStream()));
 	}
+	
+	public static void execute(String command, String option, String argument)
+	throws IOException, InterruptedException {
+
+		Process p = create(command + " " + option + " " + argument);
+
+		try {
+			p.waitFor();
+		} catch (InterruptedException e) {
+			System.out.println("Error executing command \"" + command + " "
+					+ option + " " + argument + "\".");
+			throw e;
+		}
+	}
+	
 	
 }

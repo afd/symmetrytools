@@ -14,11 +14,11 @@ import src.etch.env.VarEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
-import src.etch.types.PidType;
 import src.etch.types.ProductType;
 import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.types.PidType;
 import src.symmreducer.SensitiveVariableReference;
 import src.utilities.Config;
 import src.utilities.Strategy;
@@ -279,7 +279,7 @@ public class Markers {
 				}
 			}
 		}
-
+		
 		String proctypeName = typeInfo.getProctypeNames().get(0);
 		ProctypeEntry proctype = (ProctypeEntry) typeInfo
 				.getEnvEntry(proctypeName);

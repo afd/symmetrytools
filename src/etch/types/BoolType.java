@@ -6,8 +6,4 @@ public class BoolType extends SimpleType implements VisibleType {
 		return "bool";
 	}
 
-	public boolean isSubtype(Type t) {
-		return equal(t);
-	}
-
 }

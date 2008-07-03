@@ -97,6 +97,11 @@ public class Config {
 				ProgressPrinter.println("Vectorisation can only be applied when transpositions are used.  Vectorisation has been turned off.");
 				VECTORIZE_ID_SWAPPING = false;
 			}
+
+			if(VECTORIZE_ID_SWAPPING && REDUCTION_STRATEGY==Strategy.FLATTEN) {
+				ProgressPrinter.println("Vectorisation is not compatible with the FLATTEN strategy.  Vectorisation has been turned off.");
+				VECTORIZE_ID_SWAPPING = false;
+			}			
 			
 			if(GAP==null || SAUCY==null ||COMMON==null) {
 				if(TESTING_IN_PROGRESS) {
