@@ -7,7 +7,7 @@ void wake_threads();
 void stop_threads();
 
 int working(const int id);
-void sleep(const int id);
+void topspin_thread_sleep(const int id);
 
 void get_data_section(int* start, int* end, const int id, const int data_size);
 

@@ -83,7 +83,7 @@ int working(const int id) {
 	return(!(contexts[id].state == STOPPED));
 }
 
-void sleep(const int id) {
+void topspin_thread_sleep(const int id) {
 	pthread_mutex_lock(&(contexts[id].mutex));
 	contexts[id].state = SLEEP;
 	pthread_mutex_unlock(&(contexts[id].mutex));

@@ -72,13 +72,14 @@ public class CellParallelTarget implements ParallelTarget {
 	private void writeSPUProgramBasic() throws IOException {
 		FileWriter out = new FileWriter("spu_minimise_state.h");
 		out.write("void minimiseState() {\n");
+		out.write("   int i;\n");
 		out.write("   State temp;\n");
 		out.write("   memcpy(&minimisedState, &originalState, vsize);\n\n");
 		out.write("   for(i=myContext.start; i<myContext.end; i++) {\n");
 		out.write("      memcpy(&temp, &originalState, vsize);\n");
 		out.write("      applyPermToState(&temp, &(elementset_1[i]));\n");
 		out.write("      if(memcmp(&temp,&minimisedState,vsize)<0) {\n");
-		out.write("         memcpy(&minimsedState,&temp,vsize);\n");
+		out.write("         memcpy(&minimisedState,&temp,vsize);\n");
 		out.write("      }\n");
 		out.write("   }\n\n");
 		out.write("}\n\n");

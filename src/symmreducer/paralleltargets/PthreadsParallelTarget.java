@@ -38,7 +38,7 @@ public class PthreadsParallelTarget implements ParallelTarget {
 		out.write("         " + SymmetryApplier.memoryCopy + "(&min_now, &partial_min, vsize);\n");
 		out.write("      }\n");
 		out.write("      pthread_mutex_unlock(&min_mutex);\n");
-		out.write("      sleep(id);\n");
+		out.write("      topspin_thread_sleep(id);\n");
 		out.write("   }\n\n");
 
 	}
@@ -86,7 +86,7 @@ public class PthreadsParallelTarget implements ParallelTarget {
 		out.write("         " + SymmetryApplier.memoryCopy + "(&min_now, &partial_min, vsize);\n");
 		out.write("      }\n");
 		out.write("      pthread_mutex_unlock(&min_mutex);\n");
-		out.write("      sleep(id);\n");
+		out.write("      topspin_thread_sleep(id);\n");
 		out.write("   }\n\n");
 	}
 

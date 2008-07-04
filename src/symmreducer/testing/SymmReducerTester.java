@@ -63,7 +63,9 @@ public class SymmReducerTester {
 
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 36255, 141453), "-DNUM_THREADS=4", 100000));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 5666, 21032), "-DNUM_THREADS=6", 100));
+
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 5361, 23794), "-DNUM_THREADS=3", 100));
+
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/parallel_enumerate/", "email7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 296, 5745), "-DNUM_THREADS=2", 40));
 
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email/vector_parallel_enumerate/", "email4.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 24, false), 36255, 141453), "-DNUM_THREADS=4", 100000));

@@ -1,4 +1,22 @@
+#include <stdlib.h>
+
 #include "state.h"
+
+#include "group.h"
+		
+#define SEG(state,pid) (((uchar *)state)+proc_offset[pid])
+#define QSEG(state,cid) (((uchar *)state)+q_offset[cid])
+#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var
+#define QVAR(state,cid,var,type) ((type *)QSEG(state,cid))->var
+
+#define MAX_PROCS 256
+#define MAX_QUEUES 256
+
+int proc_offset[MAX_PROCS] __attribute__((aligned(16)));
+int q_offset[MAX_QUEUES] __attribute__((aligned(16)));
+int vsize;
+
+typedef unsigned char uchar;
 
 typedef struct SPU_context_s {
 	State* source;
@@ -15,7 +33,10 @@ State minimisedState __attribute__((aligned(16)));
 
 #include "apply_permutation.h"
 
-#include "spu_minimise_state.h"
+#include "symmetry_group.h"
+
+#define STOP 0
+#define READY 1
 
 int main(unsigned long long speid,  unsigned long long argp, unsigned long long envp )
 {
