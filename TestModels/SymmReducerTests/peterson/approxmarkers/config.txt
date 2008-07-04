@@ -1,0 +1,4 @@
+gap=C:\GAP4R4\bin\gap.bat
+saucy=C:\saucy-digraphs\saucy.exe
+common=C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\Common\
+strategy=exactmarkers
