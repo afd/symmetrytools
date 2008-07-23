@@ -1,10 +1,6 @@
 package src.etch.types;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import junit.framework.Assert;
 
 public class ArrayType extends ConstructedType implements VisibleType {
 
@@ -45,45 +41,7 @@ public class ArrayType extends ConstructedType implements VisibleType {
 	public void zeroLength() {
 		length = 0;
 	}
-
-	protected String namePlugin(TypeVariableFactory factory) {
-
-		String result = "array (" + indexToString() + ") of ";
-		
-		if(elementType instanceof SimpleType) {
-			result += elementType.name();
-		} else {
-			result += ((ConstructedType)elementType).nameRecursive(factory);
-		}
-
-		return result;
-	}
 	
-	protected void replaceChildWithTypeVariable(ConstructedType type, TypeVariableType tVar) {
-		Assert.assertTrue(false);
-	}
-
-	protected Set<ConstructedType> computeDescendentsOfTypeWhichAreAlsoDirectPredecessors(ConstructedType type, Set<ConstructedType> alreadyVisited) {
-		Set<ConstructedType> result = new HashSet<ConstructedType>();
-		if(alreadyVisited.contains(this)) {
-			// We've already checked this node
-			return result;
-		}
-		
-		// Mark this node as checked
-		alreadyVisited.add(this);
-
-		if(elementType instanceof ConstructedType) {
-			if(elementType == type) {
-				result.add(this);
-			} else {
-				result.addAll(((ConstructedType)elementType).computeDescendentsOfTypeWhichAreAlsoDirectPredecessors((ConstructedType) type,alreadyVisited));
-			}
-		}
-		
-		return result;
-	}
-
 	public static boolean isArray(VisibleType t) {
 		return t instanceof ArrayType;
 	}

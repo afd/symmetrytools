@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import src.etch.types.TypeTest;
 import src.testing.TestCase;
 import src.testing.Tester;
 
@@ -25,6 +26,8 @@ public class EtchTester {
 		Set<TestCase> testCases = new HashSet<TestCase>();
 		Set<TestCase> missingFeatureTestCases = new HashSet<TestCase>();
 
+		runUnitTests();
+		
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/ParseFailTests/parsefailunlesswithsemi.p", EtchTestOutcome.ParserError));
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/ParseFailTests/parsefaillabelthendecl.p", EtchTestOutcome.ParserError));
 		
@@ -118,7 +121,85 @@ public class EtchTester {
 		testCases.add(new EtchTestCase("TestModels/SymmExtractorTests/BadlyTyped/faildecrementpid.p", EtchTestOutcome.WellTyped));
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_mod.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_eval_1.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_eval_2.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_eval_3.p", EtchTestOutcome.WellTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_eval_1.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_eval_2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_eval_3.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_type_does_not_exist.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_1.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_3.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_4.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_mtype_name_already_exists.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_mtype_name_already_exists2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_mtype_name_already_exists3.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_proctype_does_not_exist.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_too_few_args_for_proctype.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_too_many_args_for_proctype.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testbitwiseoperations.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failnegationofnonboolean.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failbitwisenegationofnonnumeric.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failchanoponnonchannel1.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failchanoponnonchannel2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failchanoponnonchannel3.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failchanoponnonchannel4.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/faillengthofnonchannel.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failsendonnonchannel.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failreceiveonnonchannel.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_goto_refers_to_typename.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_label_name_already_exists.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_variable_name_already_exists.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_literal_value_too_large.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_literal_value_too_large_2.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_simple_statement_not_boolean.p", EtchTestOutcome.BadlyTyped));
+						
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_logical_and_applied_to_non_boolean.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_proctype_name_already_used.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_shift_operations.p", EtchTestOutcome.WellTyped));
 				
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failarraywithlengthzero.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testtypeinferencefornumericchannels.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testtypeinferenceforrecords.p", EtchTestOutcome.WellTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failtypeinferencefornumericchannels.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failtypeinferenceforrecoreds.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testtypinferencemisc2.p", EtchTestOutcome.WellTyped));
+				
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failtypeinferencemisc.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failtypeinferencesubtypingerror.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failtypeinferenceincompatibleerror.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failtypeinferencearrays.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testtypeinferencearrays.p", EtchTestOutcome.WellTyped));
+		
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelbeforeunless.p", EtchTestOutcome.BadlyTyped));
@@ -132,8 +213,22 @@ public class EtchTester {
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failbadinlines3.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failemailmissingchanneltwo.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/fail_bad_use_of_local_keyword.p", EtchTestOutcome.BadlyTyped));
+		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failnamealreadyusedasinline.p", EtchTestOutcome.BadlyTyped));
 		
 		return testCases;
+	}
+
+	private static void runUnitTests() {
+		TypeTest t = new TypeTest();
+
+		try {
+			t.testNameOfRecursiveType();
+			t.testNameOfArrayType();
+		} catch(Exception e) {
+			System.out.println("Etch unit test failed: ");
+			e.printStackTrace();
+			System.exit(1);
+		}
 	}
 
 }

@@ -6,10 +6,15 @@ import java.util.List;
 import src.etch.checker.Checker;
 
 
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
 public class TypeTest extends TestCase {
 
+	public TypeTest() {
+		Checker.theFactory = new EtchTypeFactory();
+	}
+	
 	public void testNameOfRecursiveType() throws Exception {
 
 		ProductType pt = null;
@@ -29,10 +34,9 @@ public class TypeTest extends TestCase {
 		
 		root.setMessageType(Checker.theFactory.generateProductType(tuple1));
 
-		System.out.println(root.name());
+		Assert.assertEquals("rec X . chan { chan { chan { X, int }, int }, int }", root.name());
 		
-		System.out.println(Minimiser.minimise(root).name());
-
+		Assert.assertEquals("rec X . chan { X, int }", Minimiser.minimise(root).name());
 		
 		List<Type> tuple4 = new ArrayList<Type>();
 		tuple4.add(null); tuple4.add(null);
@@ -47,11 +51,9 @@ public class TypeTest extends TestCase {
 		pt2.setTypeOfPosition(1,new IntType());
 		ChanType root2 = new ChanType(pt2);
 		
-		System.out.println(root2.name());
+		Assert.assertEquals("chan rec X . { chan { chan X, int }, int }", root2.name());
 		
-		System.out.println(Minimiser.minimise(root2).name());
-		
-		
+		Assert.assertEquals("rec X . chan { X, int }", Minimiser.minimise(root2).name());
 		
 		List<Type> newTuple = new ArrayList<Type>();
 		newTuple.add(null); newTuple.add(null); newTuple.add(null);
@@ -63,19 +65,26 @@ public class TypeTest extends TestCase {
 		pt3.setTypeOfPosition(1,ct);
 		pt3.setTypeOfPosition(2,ct);
 		
-		System.out.println(ct.name());
+		Assert.assertEquals("rec X . chan { X, X, X }", ct.name());
 		
 		pt3.setTypeOfPosition(2,root2);
-		
-		System.out.println(ct.name());
-		
-		System.out.println(Minimiser.minimise(ct).name());
 
-		System.out.println(Checker.theFactory.generateByteType().name());
+		Assert.assertEquals("rec X . chan { X, X, chan rec Y . { chan { chan Y, int }, int } }", ct.name());
 
-		System.out.println(Minimiser.minimise(Checker.theFactory.generateByteType()).name());
+		Assert.assertEquals("rec X . chan { X, X, rec Y . chan { Y, int } }", Minimiser.minimise(ct).name());
+
+		Assert.assertEquals("byte", Checker.theFactory.generateByteType().name());
+
+		Assert.assertEquals("byte", Minimiser.minimise(Checker.theFactory.generateByteType()).name());
 
 	}
 	
-	
+	public void testNameOfArrayType() throws Exception {
+
+		ArrayType t = new ArrayType(new MtypeType(), Checker.theFactory.generateByteType(), 25);
+		
+		Assert.assertEquals("array(size 25) of mtype", t.name());
+				
+	}
+
 }

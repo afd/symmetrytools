@@ -33,7 +33,7 @@ public class PidIndexedArrayReference extends SensitiveVariableReference {
 		List<PidIndexedArrayReference> result = new ArrayList<PidIndexedArrayReference>();
 		if (ArrayType.isArray(type)) {
 			if (PidType.isPid((VisibleType) ((ArrayType) type).getIndexType())
-					&& !ByteType.isByte((VisibleType) ((ArrayType) type).getIndexType())) {
+					&& !(((ArrayType) type).getIndexType() instanceof ByteType)) {
 				result.add(new PidIndexedArrayReference(referencePrefix + name,
 						(ArrayType) type));
 			}

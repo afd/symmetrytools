@@ -1,6 +1,5 @@
 package src.etch.error;
 
-import java.io.PrintStream;
 
 
 class ErrorTableEntry {
@@ -15,14 +14,7 @@ class ErrorTableEntry {
 	}
 
 	public String output() {
-		if(line==-1) {
-			return "Error (line number unknown): " + error.message();
-		}
 		return "Error" + " at line " + line + ": " + error.message();
-	}
-
-	public void output(PrintStream out) {
-		out.print(output());
 	}
 
 }

@@ -19,16 +19,20 @@
 
 package src.etch.error;
 
+import src.promela.node.Token;
+
 public class VariableNotChannelError extends Error {
 
-    public String type;
-
-    public VariableNotChannelError(String t) {
-	type = t;
+    private String type;
+    private Token chanop;
+    
+    public VariableNotChannelError(String type, Token chanop) {
+    	this.type = type;
+    	this.chanop = chanop;
     }
 
     public String message() {
-	return "a channel operation can only be applied to a channel variable, but here one has been applied to a variable of type \"" + type + "\".";
+    	return "The \"" + chanop.getText() + "\" operator can only be applied a channel variable; here it has been applied to a variable of type \"" + type + "\"";
     } 
 
 }

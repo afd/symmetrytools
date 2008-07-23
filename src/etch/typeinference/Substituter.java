@@ -60,10 +60,9 @@ public class Substituter extends DepthFirstAdapter {
 			if(newIndexType instanceof TypeVariableType) {
 				// Substitute the type variable with byte by default
 				result.setIndexType(Checker.theFactory.generateByteType());
-			} else if(newIndexType instanceof SimpleType) {
-				result.setIndexType((SimpleType)newIndexType);
 			} else {
-				Assert.assertTrue(false);
+				Assert.assertTrue(newIndexType instanceof SimpleType);
+				result.setIndexType((SimpleType)newIndexType);
 			}
 			return result;
 		} 
@@ -74,9 +73,8 @@ public class Substituter extends DepthFirstAdapter {
 			history.put(t,result);
 			result.setMessageType((InternalType) applySubstitutionsRecursive(((ChanType)tRep).getMessageType(),history));
 			return result;
-		}
-
-		if (tRep instanceof ProductType) {
+		} else {
+			Assert.assertTrue(tRep instanceof ProductType);
 			List<Type> tuple = new ArrayList<Type>();
 			for(int i=0; i<((ProductType)tRep).getArity(); i++) {
 				tuple.add(null);
@@ -90,8 +88,6 @@ public class Substituter extends DepthFirstAdapter {
 			return result;
 		}
 		
-		Assert.assertTrue(false);
-		return null;
 	}
 	
 

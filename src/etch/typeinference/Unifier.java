@@ -6,7 +6,6 @@ import java.util.Map;
 
 import junit.framework.Assert;
 import src.etch.error.Error;
-import src.etch.error.IncomparableTypesException;
 import src.etch.error.IncompatibleTypesError;
 import src.etch.error.MismatchedArgumentsError;
 import src.etch.error.SubtypingError;
@@ -24,6 +23,7 @@ import src.etch.types.ProductType;
 import src.etch.types.RecordType;
 import src.etch.types.ShortType;
 import src.etch.types.SimpleType;
+import src.etch.types.TopType;
 import src.etch.types.Type;
 import src.etch.types.TypeVariableType;
 
@@ -67,50 +67,27 @@ public class Unifier {
 		Type t = find(sc.getRhs());
 		
 		if (s instanceof TypeVariableType && t instanceof NumericType) {
-			return unifySubtype((TypeVariableType) s, (NumericType) t);
+			unifySubtype((TypeVariableType) s, (NumericType) t);
 		} else if (t instanceof TypeVariableType && s instanceof NumericType) {
-			return unifySubtype((NumericType)s, (TypeVariableType) t);
+			unifySubtype((NumericType)s, (TypeVariableType) t);
 		} else {
 			equalityConstraints.add(new EqualityConstraint(s,t,sc.getLine()));
-			return null;
 		}
+		return null;
 	}
 
 	protected Error unifySubtype(NumericType s, TypeVariableType x) {
-
-		/* We have s<:x, where s is a numeric type */
-		
-		if (s.isSubtype(x.getLower())) {
-			return null;
-		}
-		
-		Assert.assertTrue(x.getLower().isSubtype(s));
-
-		if (s.isSubtype(x.getUpper())) {
-			x.setLower(s);
-			return null;
-		}
-
-		return new SubtypingError(s.name(),x.getUpper().name());
-
+		Assert.assertTrue(x.getLower().equal(BottomType.uniqueInstance));
+		Assert.assertTrue(x.getUpper().equal(TopType.uniqueInstance));
+		x.setLower(s);
+		return null;
 	}
 
 	protected Error unifySubtype(TypeVariableType x, NumericType s) {
-
-		if (x.getUpper().isSubtype(s)) {
-			return null;
-		}
-		
-		Assert.assertTrue(s.isSubtype(x.getUpper()));
-		
-		if (x.getLower().isSubtype(s)) {
-			x.setUpper(s);
-			return null;
-		}
-
-		return new SubtypingError(applySubstitutionsAndMinimise(x.getLower()).name(),
-				s.name());
-
+		Assert.assertTrue(x.getLower().equal(BottomType.uniqueInstance));
+		Assert.assertTrue(x.getUpper().equal(TopType.uniqueInstance));
+		x.setUpper(s);
+		return null;
 	}
 	
 	protected Error unifyConstraint(Type left, Type right) {
@@ -136,16 +113,7 @@ public class Unifier {
 		}
 
 		if (s instanceof ArrayType && t instanceof ArrayType) {
-			if(((ArrayType)s).getLength()!=((ArrayType)t).getLength()) {
-				return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(),applySubstitutionsAndMinimise(t).name());
-			}
-			Error result = unifyConstraint(((ArrayType)s).getElementType(),
-					((ArrayType)t).getElementType());
-			if (result == null) {
-				union(s,t);
-				result = unifyConstraint(((ArrayType)s).getIndexType(), ((ArrayType)t).getIndexType());
-			}
-			return result;
+			return unifyArrayTypes((ArrayType)s, (ArrayType)t);
 		}
 
 		if (s instanceof ProductType && t instanceof ProductType) {
@@ -162,6 +130,17 @@ public class Unifier {
 		}
 		
 		return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(), applySubstitutionsAndMinimise(t).name());
+	}
+
+	protected Error unifyArrayTypes(ArrayType s, ArrayType t) {
+		if(s.getLength()!=t.getLength()) {
+			return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(),applySubstitutionsAndMinimise(t).name());
+		}
+		Error result = unifyConstraint(s.getElementType(), t.getElementType());
+		if (result == null) {
+			union(s,t);
+		}
+		return result;
 	}
 
 	protected Error unifyConstraintOnSimpleTypes(SimpleType s, SimpleType t) {
@@ -246,30 +225,25 @@ public class Unifier {
 	}
 
 	private Error recomputeBounds(TypeVariableType s, TypeVariableType t) {
-		// If they are both type variables then we need to check that
-		// upper(s) and upper(t) are comparable,
-		// lower(s) and lower(t) are comparable,
-		// max(lower(s),lower(t)) <: min(upper(s),upper(t))
-		// change bounds of s to be these new bounds
-		// t.setRep(s);
-		try {
-			Type newUpper = leastUpperBound(s,t);
-			Type newLower = greatestLowerBound(s,t);
-
-			if (!newLower.isSubtype(newUpper)) {
-				return new SubtypingError(applySubstitutionsAndMinimise(newLower)
-						.name(), applySubstitutionsAndMinimise(newUpper).name());
-			}
-
-			s.setLower(newLower);
-			s.setUpper(newUpper);
-			return null;
-
-		} catch (IncomparableTypesException e) {
-			return new IncompatibleTypesError(applySubstitutionsAndMinimise(e.getLeftType()).name(), applySubstitutionsAndMinimise(e.getRightType()).name());
+		// By construction of type variables, we must have that
+		// upper(s) and upper(t) are comparable, and
+		// lower(s) and lower(t) are comparable.
+		// Need to check that max(lower(s),lower(t)) <: min(upper(s),upper(t))
+		// and change bounds of s to be these new bounds
+		Type newUpper = leastUpperBound(s,t);
+		Type newLower = greatestLowerBound(s,t);
+		
+		if (!newLower.isSubtype(newUpper)) {
+			return new SubtypingError(applySubstitutionsAndMinimise(newLower)
+					.name(), applySubstitutionsAndMinimise(newUpper).name());
 		}
-	}
 
+		s.setLower(newLower);
+		s.setUpper(newUpper);
+		return null;
+
+	}	
+	
 	protected Error checkBounds(TypeVariableType s, Type t) {
 		
 		if (!s.getLower().isSubtype(t)) {
@@ -288,12 +262,12 @@ public class Unifier {
 		return Minimiser.minimise(new Substituter(this).applySubstitutions(t));
 	}
 
-	protected Type greatestLowerBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
-		return AnyType.max(s.getLower(), t.getLower());
+	protected Type greatestLowerBound(TypeVariableType s, TypeVariableType t) {
+		return AnyType.uncheckedMax(s.getLower(), t.getLower());
 	}
 
-	protected Type leastUpperBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
-		return AnyType.min(s.getUpper(), t.getUpper());
+	protected Type leastUpperBound(TypeVariableType s, TypeVariableType t) {
+		return AnyType.uncheckedMin(s.getUpper(), t.getUpper());
 	}
 	
 	public String toString() {

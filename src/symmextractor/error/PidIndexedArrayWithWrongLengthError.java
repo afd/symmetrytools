@@ -16,7 +16,7 @@ public class PidIndexedArrayWithWrongLengthError extends Error {
 	}
 
 	public String message() {
-		return "error: pid-indexed array " + arrayName + " declared with length " + arrayLength + " instead of " + (noProcesses+1);
+		return "pid-indexed array " + arrayName + " declared with length " + arrayLength + " instead of " + (noProcesses+1);
 	}
 
 }

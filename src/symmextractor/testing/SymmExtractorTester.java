@@ -53,7 +53,12 @@ public class SymmExtractorTester {
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failincrementpid.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "faildecrementpid.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "faildecrementpid2.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
-		
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failarithonpid.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failarithonpid2.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failpidindexedarraywithwronglength.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failpidindexedarraywithwronglength2.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+
+				
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/loadbalancer/", "loadbalancer.p", new SymmExtractorRunTestOutcome(true, 432, false)));
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/", "failrunsdynamicprocess.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 		

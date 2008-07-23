@@ -19,8 +19,5 @@ public class ByteType extends NumericType {
 		return (t instanceof NumericType && !(t instanceof BitType)) || super.isSubtype(t);
 	}
 	
-	public static boolean isByte(VisibleType type) {
-		return type instanceof ByteType;
-	}
-	
+
 }

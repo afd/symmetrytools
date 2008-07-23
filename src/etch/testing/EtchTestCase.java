@@ -7,6 +7,7 @@ import java.io.PushbackReader;
 
 import src.etch.checker.Check;
 import src.etch.checker.Checker;
+import src.etch.typeinference.Substituter;
 import src.promela.lexer.Lexer;
 import src.promela.lexer.LexerException;
 import src.promela.node.Node;
@@ -31,10 +32,22 @@ public class EtchTestCase extends TestCase {
 			Node theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
 			Checker checker = new Checker();
 			theAST.apply(checker);
-			checker.unify();
+			Substituter substituter = checker.unify();
+			
 			if(checker.getErrorTable().hasErrors()) {				
+
+				System.err.println(checker.getErrorTable().output("while processing " + filename));
+				
 				actualOutcome = EtchTestOutcome.BadlyTyped;
 			} else {
+
+				substituter.setTypeInformation(checker);
+				theAST.apply(substituter);
+
+				System.err.println(checker.showCompleteTypeInformation(filename));
+				
+				System.err.println(substituter);
+				
 				actualOutcome = EtchTestOutcome.WellTyped;
 			}
 		} catch (LexerException e) {

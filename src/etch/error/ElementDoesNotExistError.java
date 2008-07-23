@@ -18,7 +18,7 @@ public class ElementDoesNotExistError extends Error {
 	}
 
 	public String message() {
-		String result = "No " + kindOfElement + " named \"" + name + "\" exits";
+		String result = "No " + kindOfElement + " named \"" + name + "\" exists";
 		if(recordTypeName!=null) {
 			result = result + " in user defined type \"" + recordTypeName + "\"";
 		}

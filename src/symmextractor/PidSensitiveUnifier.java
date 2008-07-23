@@ -2,8 +2,9 @@ package src.symmextractor;
 
 import junit.framework.Assert;
 import src.etch.error.Error;
-import src.etch.error.IncomparableTypesException;
+import src.etch.error.SubtypingError;
 import src.etch.typeinference.Unifier;
+import src.etch.types.ArrayType;
 import src.etch.types.BoolType;
 import src.etch.types.ByteType;
 import src.etch.types.NumericType;
@@ -17,7 +18,16 @@ public class PidSensitiveUnifier extends Unifier {
 
 	protected Error unifySubtype(NumericType s, TypeVariableType x) {
 
-		Error result = super.unifySubtype(s, x);
+		Error result;
+		
+		if (s.isSubtype(x.getLower())) {
+			result = null;
+		} else if(s.isSubtype(x.getUpper())) {
+			x.setLower(s);
+			result = null;
+		} else {
+			result = new SubtypingError(s.name(),x.getUpper().name());
+		}
 		
 		if (s.isSubtype(x.getLower()) && !isPidLiteral(s)) {
 			SymmetryChecker.setNotPidLiteral(x.getLower());
@@ -61,7 +71,7 @@ public class PidSensitiveUnifier extends Unifier {
 	
 	}
 
-	protected Type greatestLowerBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
+	protected Type greatestLowerBound(TypeVariableType s, TypeVariableType t) {
 		Type result = super.greatestLowerBound(s,t);
 
 		if(!(isPidLiteral(s.getLower()) && isPidLiteral(t.getLower()))) {
@@ -71,7 +81,7 @@ public class PidSensitiveUnifier extends Unifier {
 		return result;
 	}
 
-	protected Type leastUpperBound(TypeVariableType s, TypeVariableType t) throws IncomparableTypesException {
+	protected Type leastUpperBound(TypeVariableType s, TypeVariableType t) {
 		Type result = super.leastUpperBound(s,t);
 
 		if(!(isPidLiteral(s.getUpper()) && isPidLiteral(t.getUpper()))) {
@@ -132,5 +142,15 @@ public class PidSensitiveUnifier extends Unifier {
 		return result;
 	
 	}
+
+	protected Error unifyArrayTypes(ArrayType s, ArrayType t) {
+		Error result = super.unifyArrayTypes(s,t);
 		
+		if(null == result) {
+			return unifyConstraint(s.getIndexType(), t.getIndexType());
+		}
+		
+		return result;
+	}
+	
 }

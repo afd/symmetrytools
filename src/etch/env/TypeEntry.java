@@ -49,11 +49,4 @@ public class TypeEntry extends EnvEntry {
 		return "typedef";
 	}
 
-	public String getFirstFieldName() {
-		return fieldNames.get(0);
-	}
-
-	public int numberOfFields() {
-		return fieldNames.size();
-	}
 }

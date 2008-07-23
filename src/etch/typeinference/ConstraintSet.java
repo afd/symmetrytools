@@ -27,7 +27,7 @@ public class ConstraintSet {
 	}
 	
 	public Substituter unify(ErrorTable et) {
-
+		
 		for (SubtypingConstraint c : subtypingConstraints) {
 
 			Error e = unifier.unifySubtypingConstraint(c, equalityConstraints);

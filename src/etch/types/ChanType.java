@@ -1,12 +1,9 @@
 package src.etch.types;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import src.etch.checker.Checker;
 
 import junit.framework.Assert;
+import src.etch.checker.Checker;
 
 public class ChanType extends ConstructedType implements VisibleType {
 
@@ -21,10 +18,6 @@ public class ChanType extends ConstructedType implements VisibleType {
 		this.messageType = Checker.theFactory.generateProductType(messageFieldTypes);
 	}
 
-	protected ChanType() {
-		this.messageType = null;
-	}
-
 	public InternalType getMessageType() {
 		return messageType;
 	}
@@ -37,40 +30,6 @@ public class ChanType extends ConstructedType implements VisibleType {
 		messageType = t;
 	}
 	
-	protected String namePlugin(TypeVariableFactory factory) {
-		String result = "chan ";
-		if(messageType instanceof SimpleType) {
-			return result + messageType.name();
-		}
-		return result + ((ConstructedType)messageType).nameRecursive(factory);
-	}
-
-	protected void replaceChildWithTypeVariable(ConstructedType type, TypeVariableType tVar) {
-		Assert.assertTrue(messageType == type);
-		messageType = tVar;
-	}
-
-	protected Set<ConstructedType> computeDescendentsOfTypeWhichAreAlsoDirectPredecessors(ConstructedType type, Set<ConstructedType> alreadyVisited) {
-		Set<ConstructedType> result = new HashSet<ConstructedType>();
-		if(alreadyVisited.contains(this)) {
-			// We've already checked this node
-			return result;
-		}
-		
-		// Mark this node as checked
-		alreadyVisited.add(this);
-
-		if(messageType instanceof ConstructedType) {
-			if(messageType == type) {
-				result.add(this);
-			} else {
-				result.addAll(((ConstructedType)messageType).computeDescendentsOfTypeWhichAreAlsoDirectPredecessors((ConstructedType) type,alreadyVisited));
-			}
-		}
-		
-		return result;
-	}
-
 	public static boolean isChan(VisibleType t) {
 		return t instanceof ChanType;
 	}

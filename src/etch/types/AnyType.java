@@ -3,6 +3,8 @@ package src.etch.types;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.Assert;
+
 import src.etch.checker.Checker;
 import src.etch.error.IncomparableTypesException;
 
@@ -18,6 +20,15 @@ public abstract class AnyType implements Type {
 		throw new IncomparableTypesException(t1,t2);
 	}
 
+	public static Type uncheckedMax(Type t1, Type t2) {
+		Assert.assertTrue(t1.isSubtype(t2) || t2.isSubtype(t1));
+		if(t1.isSubtype(t2)) {
+			return t2;
+		}
+		return t1;
+	}
+	
+	
 	public static Type min(Type t1, Type t2) throws IncomparableTypesException {
 		if (t1.isSubtype(t2)) {
 			return t1;
@@ -26,6 +37,14 @@ public abstract class AnyType implements Type {
 		}
 		/* Throw an exception if the types are incomparable */
 		throw new IncomparableTypesException(t1,t2);
+	}
+
+	public static Type uncheckedMin(Type t1, Type t2) {
+		Assert.assertTrue(t1.isSubtype(t2) || t2.isSubtype(t1));
+		if(t1.isSubtype(t2)) {
+			return t1;
+		}
+		return t2;
 	}
 	
 	public String name() {

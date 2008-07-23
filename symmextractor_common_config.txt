@@ -1,4 +1,4 @@
 gap=C:\GAP4R4\bin\gap.bat
-saucy=C:\saucy\saucy.exe
+saucy=C:\saucy-digraphs\saucy.exe
 common=Common\
 quiet=true

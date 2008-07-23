@@ -870,6 +870,9 @@ public class SymmetryApplier {
 		writeln(out, "#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var");
 		writeln(out, "#define QVAR(state,cid,var,type) ((type *)QSEG(state,cid))->var\n");
 
+		if(Config.VECTORIZE_ID_SWAPPING) {
+			writeln(out, "#define TOPSPIN_VECTORS\n");
+		}
 
 	}
 
@@ -1013,6 +1016,8 @@ public class SymmetryApplier {
 				}
 			}
 			fw.write(" };\n\n");
+			
+			i++;
 		}
 
 	}

@@ -51,7 +51,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	private List<Integer> colourPartition;
 	
 	public StaticChannelDiagramExtractor() {
-		super();
+		super(0);
 	}
 	
 	public List<String> getStaticChannelNames() {

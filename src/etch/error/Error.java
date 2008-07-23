@@ -8,26 +8,22 @@ public abstract class Error {
 
 	public abstract String message();
 
-	// Change to true for debugging
-	private boolean crashOnError = false;
+	// UN-COMMENT CONSTRUCTOR TO ENABLE CRASH-ON-ERROR
+	// FOR DEBUGGING PURPOSES
 	
-	public Error() {
+/*	public Error() {
 
-		if(crashOnError) {
-
-			System.out.println("Crashing on error: " + getClass());
+		System.out.println("Crashing on error: " + getClass());
 			
-			try {
-				throw new Exception();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
-			System.exit(1);
-
+		try {
+			throw new Exception();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		
+		System.exit(1);
 
 	}
-	
+*/	
 
 }

@@ -50,7 +50,7 @@ public class Check {
 		try {
 			br = getBufferForInputSpecification(sourceName);
 		} catch (FileNotFoundException e) {
-			ProgressPrinter.println("Can not access source file " + sourceName);
+			ProgressPrinter.println("Cannot access source file " + sourceName);
 			if(Config.TESTING_IN_PROGRESS) {
 				throw e;
 			} else {
@@ -129,13 +129,18 @@ public class Check {
 	public boolean typecheck(boolean isPidSensitive) {
 		ProgressPrinter.println("\nTypechecking input specification...\n");
 
+		LineCounter lineCounter = new LineCounter();
+		theAST.apply(lineCounter);
 		
-		Checker chk = (isPidSensitive ? new SymmetryChecker() : new Checker());
+		Checker chk = (isPidSensitive ? new SymmetryChecker(lineCounter.numberOfLines()) : new Checker());
 		theAST.apply(chk);
 		Substituter substituter = chk.unify();
 	
 		if (chk.getErrorTable().hasErrors()) {
-			if(!ProgressPrinter.QUIET_MODE) {
+
+			if(Config.TESTING_IN_PROGRESS) {
+				System.err.println(chk.getErrorTable().output("while processing " + sourceName));
+			} else if(!ProgressPrinter.QUIET_MODE) {
 				System.out.println(chk.getErrorTable().output("while processing " + sourceName));
 			}
 
@@ -148,7 +153,7 @@ public class Check {
 		theAST.apply(substituter);
 
 		if(!ProgressPrinter.QUIET_MODE) {
-			chk.printCompleteTypeInformation(sourceName);
+			System.out.println(chk.showCompleteTypeInformation(sourceName));
 		}
 
 		return true;

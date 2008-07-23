@@ -14,7 +14,10 @@ import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.error.ArrayWithLengthZeroError;
+import src.etch.error.AssertAppliedToNonBooleanError;
 import src.etch.error.AssignmentMismatchError;
+import src.etch.error.BadArrayIndexError;
+import src.etch.error.CommunicationOnNonChannelError;
 import src.etch.error.ElementDoesNotExistError;
 import src.etch.error.EqMismatchError;
 import src.etch.error.Error;
@@ -234,14 +237,41 @@ public class Checker extends InlineProcessor {
 
 	public void outAIncrementAssignment(AIncrementAssignment node) {
 		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
-				.getPlusPlus(), Error.UNARY);
+				.getPlusPlus(), Error.UNARY, getNameFromVarref(node.getVarref()));
 	}
 
 	public void outADecrementAssignment(ADecrementAssignment node) {
 		checkForNotNumericError(getOutVisibleType(node.getVarref()), node
-				.getMinusMinus(), Error.UNARY);
+				.getMinusMinus(), Error.UNARY, getNameFromVarref(node.getVarref()));
 	}
 
+	private String getNameFromVarref(PVarref node) {
+		String result = "";
+		
+		PVarref temp = node;
+		
+		while(temp instanceof ARecordVarref) {
+			String encloser = ((ARecordVarref)temp).getName().getText();
+			if(((ARecordVarref)temp).getArrayref()!=null) {
+				encloser += "[]";
+			}
+			
+			result = (result.equals("") ? encloser : encloser + "." + result);
+
+			temp = ((ARecordVarref)temp).getVarref();
+		}
+
+		String encloser = ((ASingleVarref)temp).getName().getText();
+		if(((ASingleVarref)temp).getArrayref()!=null) {
+			encloser += "[]";
+		}
+
+		result = (result.equals("") ? encloser : encloser + "." + result);
+		
+		return result;
+	}
+	
+	
 	public void outASingleVarref(ASingleVarref node) {
 
 		EnvEntry entry = env.get(NodeHelper.getNameFromVaribableReference(node).getText());
@@ -298,10 +328,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	protected void dealWithArrayIndex(PVarref node, VisibleType t) {
-		if (getArrayIndexType(node) != null) {
-			postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
-					.getIndexType(), NodeHelper.getNameFromVaribableReference(node));
-		}
+
 	}
 	
 	public void inALabel(ALabel node) {
@@ -330,17 +357,10 @@ public class Checker extends InlineProcessor {
 		gotoDestinations.put(name,destinations);
 	}
 	
-	protected Type getArrayIndexType(PVarref node) {
-		if(node instanceof ASingleVarref) {
-			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getExpr());
-		}
-		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getExpr());
-	}
-
 	public void outAArrayref(AArrayref node) {
 		Type exprType = getOutType(node.getExpr());
 		if ((exprType != null) && !suitableTypeForArrayIndex(exprType)) {
-			addError(node.getLBracket(), new SubtypingError(exprType.name(),byteType().name()));
+			addError(node.getLBracket(), new BadArrayIndexError(exprType.name(),byteType().name()));
 		}
 	}
 
@@ -639,7 +659,7 @@ public class Checker extends InlineProcessor {
 
 			if (!isChan(varType)) {
 				addError(node.getLParenthese(), new VariableNotChannelError(
-						varType.name()));
+						varType.name(), node.getChanop()));
 			}
 
 			else {
@@ -653,7 +673,7 @@ public class Checker extends InlineProcessor {
 		if (varType != null) {
 			if (!isChan(varType)) {
 				addError(node.getLParenthese(), new VariableNotChannelError(
-						varType.name()));
+						varType.name(), node.getLen()));
 			}
 
 			else {
@@ -663,14 +683,16 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outANumberConst(ANumberConst node) {
-		long val = Long.parseLong(node.getNumber().getText());
 
-		if (valueOutOfLegalRange(val)) {
-			addError(node.getNumber(), new LiteralValueTooLargeError(val));
-		} else if (node.getMinus() == null) {
-			setOut(node, Checker.theFactory.generateTypeForNumericLiteral(val));
-		} else {
-			setOut(node, Checker.theFactory.generateTypeForNumericLiteral(val * (-1)));
+		try {
+			long val = Long.parseLong(node.getNumber().getText())*(node.getMinus() == null ? 1 : -1);
+			if (valueOutOfLegalRange(val)) {
+				addError(node.getNumber(), new LiteralValueTooLargeError(val));
+			} else {
+				setOut(node, Checker.theFactory.generateTypeForNumericLiteral(val));
+			}
+		} catch(NumberFormatException e) {
+			addError(node.getNumber(), new LiteralValueTooLargeError(node.getNumber().getText()));
 		}
 	}
 
@@ -681,7 +703,7 @@ public class Checker extends InlineProcessor {
 	public void outAAssertSimpleStmnt(AAssertSimpleStmnt node) {
 		VisibleType type = getOutVisibleType(node.getExpr());
 		if ((type != null) && !type.isSubtype(boolType())) {
-			addError(node.getAssert(), new SubtypingError(type.name(),boolType().name()));
+			addError(node.getAssert(), new AssertAppliedToNonBooleanError(type.name()));
 		}
 	}
 	
@@ -707,12 +729,20 @@ public class Checker extends InlineProcessor {
 	public void processCommunication(PVarref chan, List<VisibleType> argTypes, Token operator) {
 		Type type = getOutType(chan);
 		
-		if ((type != null) && (argTypes!=null)) {
-			List<Type> typeVariables = createTypeVariablesForCommunication(operator,
-					argTypes);
-			if(typeVariables!=null) {
-				postEqualityConstraint(
-					new ChanType(typeVariables), type, operator);
+		if (type != null) {
+			
+			if(!(type instanceof ChanType)) {
+				
+				addError(operator, new CommunicationOnNonChannelError(operator, type));
+				
+			} else if (argTypes!=null) {
+				
+				List<Type> typeVariables = createTypeVariablesForCommunication(operator,
+						argTypes);
+				if(typeVariables!=null) {
+					postEqualityConstraint(
+						new ChanType(typeVariables), type, operator);
+				}
 			}
 		}
 	}
@@ -770,7 +800,7 @@ public class Checker extends InlineProcessor {
 			if(actualArgTypes.get(i)==null) {
 				return null;
 			}
-			
+
 			addTypeVariableForArgType(typeVariables, actualArgTypes
 					.get(i), operator);
 		}
@@ -934,11 +964,11 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	private boolean checkForNotNumericError(VisibleType t, Token operator, int nature) {
+	private boolean checkForNotNumericError(VisibleType t, Token operator, int nature, String variableName) {
 		if (t != null) {
 			if (!isNumeric(t)) {
 				addError(operator, new NotNumericError(t.name(), operator
-						.getText(), nature));
+						.getText(), nature, variableName));
 				return false;
 			}
 			return true;
@@ -946,6 +976,10 @@ public class Checker extends InlineProcessor {
 		return false;
 	}
 
+	private boolean checkForNotNumericError(VisibleType t, Token operator, int nature) {
+		return checkForNotNumericError(t, operator, nature, null);
+	}
+	
 	private boolean checkBothSidesNumeric(VisibleType left, VisibleType right, Token operator) {
 		return checkForNotNumericError(left, operator, Error.LEFT)
 				&& checkForNotNumericError(right, operator, Error.RIGHT);
@@ -1035,7 +1069,7 @@ public class Checker extends InlineProcessor {
 				} else {
 					length = Integer.parseInt(((ANumberConst)((AArrayIvar)var).getConst()).getNumber().getText());
 					if(length==0) {
-						addError(((AArrayIvar) var).getName(),new ArrayWithLengthZeroError());
+						addError(((AArrayIvar) var).getName(),new ArrayWithLengthZeroError(((AArrayIvar) var).getName().getText()));
 					}
 				}
 			} else {
@@ -1152,7 +1186,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	protected void addError(Token t, Error e) {
-		
+				
 		if(callStack.isEmpty()) {
 			errorTable.add(t.getLine(), e);
 		} else {
@@ -1161,14 +1195,18 @@ public class Checker extends InlineProcessor {
 	}
 
 	private void postEqualityConstraint(Type left, Type right, Token tok) {
+
 		constraintSet.add(new EqualityConstraint(left,right,tok.getLine()));
+
 	}
 
-	private void postSubtypingConstraint(Type left, Type right, Token tok) {
+	protected void postSubtypingConstraint(Type left, Type right, Token tok) {
+
 		constraintSet.add(new SubtypingConstraint(left,right,tok.getLine()));
+
 	}
 
-	private Type getOutType(Node n) {
+	protected Type getOutType(Node n) {
 		return (Type) getOut(n);
 	}
 
@@ -1204,18 +1242,20 @@ public class Checker extends InlineProcessor {
 		Assert.assertTrue(env.get(node.getName().getText()) instanceof ProctypeEntry);
 		env.restoreScope(((ProctypeEntry)getEnvEntry(node.getName().getText())).getLocalScope());
 	}
-
 	
-	public void printCompleteTypeInformation(String sourceName) {
+	public String showCompleteTypeInformation(String sourceName) {
 
-		System.out.println("\nReconstructed types for " + sourceName + ":");
+		String result = "\nReconstructed types for " + sourceName + ":";
 		
 		for(String entryName : env.getTopEntries().keySet()) {
 			EnvEntry entry = env.get(entryName);
 			if(entry instanceof ProctypeEntry && !((ProctypeEntry)entry).getLocalScope().isEmpty()) {
-				System.out.print("\n  " + entryName + "\n  ");
-				for(int i=0; i<entryName.length(); i++) { System.out.print("-"); }
-				System.out.print("\n");
+				result += "\n  " + entryName + "\n  ";
+				for(int i=0; i<entryName.length(); i++) { 
+					result += "-"; 
+				}
+				
+				result += "\n";
 
 				
 				ProctypeEntry proctypeEntry = (ProctypeEntry)entry;
@@ -1223,21 +1263,22 @@ public class Checker extends InlineProcessor {
 				for(String scopeEntryName : scope.keySet()) {
 					EnvEntry scopeEntry = scope.get(scopeEntryName); 
 					if(scopeEntry instanceof VarEntry) {
-						System.out.println("    " + scopeEntryName + " : " + Minimiser.minimise(((VarEntry)scopeEntry).getType()).name());
+						result += "    " + scopeEntryName + " : " + Minimiser.minimise(((VarEntry)scopeEntry).getType()).name() + "\n";
 					}
 				}
 			}
 		}
 
-		System.out.println("\n  Globals\n  -------");
+		result += "\n  Globals\n  -------\n";
 
 		for(String entryName : env.getTopEntries().keySet()) {
 			EnvEntry entry = env.get(entryName);
 			if(entry instanceof VarEntry) {
-				System.out.println("    " + entryName + " : " + Minimiser.minimise(((VarEntry)entry).getType()).name());
+				result += "    " + entryName + " : " + Minimiser.minimise(((VarEntry)entry).getType()).name() + "\n";
 			}
 		}
 		
+		return result;
 		
 	}
 

@@ -3,20 +3,18 @@ package src.symmextractor;
 import junit.framework.Assert;
 import src.etch.checker.Checker;
 import src.etch.env.ProctypeEntry;
-import src.etch.error.BadlyFormedInitError;
 import src.etch.typeinference.ConstraintSet;
 import src.etch.types.ArrayType;
 import src.etch.types.Type;
 import src.etch.types.VisibleType;
 import src.promela.NodeHelper;
 import src.promela.node.AArrayIvar;
+import src.promela.node.AArrayref;
 import src.promela.node.AAtomicCompoundStmnt;
 import src.promela.node.AChannelIvarassignment;
 import src.promela.node.ACompoundShiftExpr;
 import src.promela.node.ACompoundStmnt;
 import src.promela.node.ACompoundUnseparatedStep;
-import src.promela.node.ADecrementAssignment;
-import src.promela.node.AIncrementAssignment;
 import src.promela.node.AInit;
 import src.promela.node.AInitModule;
 import src.promela.node.AManyActive;
@@ -47,12 +45,12 @@ import src.promela.node.PVarref;
 import src.promela.node.TActivetok;
 import src.promela.node.Token;
 import src.symmextractor.error.ActiveProctypeError;
+import src.symmextractor.error.BadlyFormedInitError;
 import src.symmextractor.error.DynamicChannelCreationError;
 import src.symmextractor.error.DynamicProcessCreationError;
 import src.symmextractor.error.GlobalArrayOfChannelsError;
 import src.symmextractor.error.NoInitError;
 import src.symmextractor.error.PidIndexedArrayWithWrongLengthError;
-import src.symmextractor.error.UnaryArithmeticOnPidError;
 import src.symmextractor.types.PidLiteralCandidate;
 import src.symmextractor.types.PidType;
 import src.symmextractor.types.SymmExtractorTypeFactory;
@@ -63,11 +61,14 @@ public class SymmetryChecker extends Checker {
 
 	private boolean inProctype = false;
 
+	private int numberOfLinesInSourceFile;
+
 	private static int noProcesses;
 
-	public SymmetryChecker() {
+	public SymmetryChecker(int numberOfLinesInSourceFile) {
 		Checker.theFactory = new SymmExtractorTypeFactory();
 		constraintSet = new ConstraintSet(new PidSensitiveUnifier());
+		this.numberOfLinesInSourceFile = numberOfLinesInSourceFile;
 	}
 	
 	public void caseAProctype(AProctype node) {
@@ -97,7 +98,7 @@ public class SymmetryChecker extends Checker {
 		PIvar channel = (PIvar) node.parent();
 
 		if (channel instanceof AArrayIvar) {
-			errorTable.add(node.getLBracket().getLine(), new GlobalArrayOfChannelsError( ((AArrayIvar)channel).getName().getText()));
+			addError(node.getLBracket(), new GlobalArrayOfChannelsError( ((AArrayIvar)channel).getName().getText()));
 		}
 	}
 
@@ -129,46 +130,6 @@ public class SymmetryChecker extends Checker {
 		}
 	}
 
-	public void outAIncrementAssignment(AIncrementAssignment node) {
-		if(getOut(node.getVarref()) instanceof PidType) {
-			addError(node.getPlusPlus(), new UnaryArithmeticOnPidError(getNameFromVarref(node.getVarref()), node.getPlusPlus()));
-		}
-		super.outAIncrementAssignment(node);
-	}
-
-	public void outADecrementAssignment(ADecrementAssignment node) {
-		if(getOut(node.getVarref()) instanceof PidType) {
-			addError(node.getMinusMinus(), new UnaryArithmeticOnPidError(getNameFromVarref(node.getVarref()), node.getMinusMinus()));
-		}
-		super.outADecrementAssignment(node);
-	}
-
-	private String getNameFromVarref(PVarref node) {
-		String result = "";
-		
-		PVarref temp = node;
-		
-		while(temp instanceof ARecordVarref) {
-			String field = ((ARecordVarref)temp).getName().getText();
-			if(((ARecordVarref)temp).getArrayref()!=null) {
-				field += "[]";
-			}
-			
-			result = (result.equals("") ? field : field + "." + result);
-
-			temp = ((ARecordVarref)temp).getVarref();
-		}
-		String field = ((ASingleVarref)temp).getName().getText();
-		if(((ASingleVarref)temp).getArrayref()!=null) {
-			field += "[]";
-		}
-		
-		result = field + "." + result;
-		
-		return result;
-	}
-	
-
 	public void caseANormalSpec(ANormalSpec node) {
 
 		PModules modules = node.getModules();
@@ -195,7 +156,7 @@ public class SymmetryChecker extends Checker {
 		}
 		
 		if(!found) {
-			errorTable.add(-1,new NoInitError());
+			errorTable.add(numberOfLinesInSourceFile, new NoInitError());
 		}
 
 		modules.apply(this);
@@ -292,6 +253,12 @@ public class SymmetryChecker extends Checker {
 		return statementsWithinAtomic;
 	}
 	
+	private Type getArrayIndexType(PVarref node) {
+		if(node instanceof ASingleVarref) {
+			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getExpr());
+		}
+		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getExpr());
+	}
 
 	protected void dealWithArrayIndex(PVarref node, VisibleType t) {
 		if (getArrayIndexType(node) != null) {
@@ -305,8 +272,9 @@ public class SymmetryChecker extends Checker {
 				addError(NodeHelper.getNameFromVaribableReference(node), new PidIndexedArrayWithWrongLengthError(NodeHelper.getNameFromVaribableReference(node).getText(),((ArrayType)t).getLength(),noProcesses));
 				((ArrayType)t).zeroLength(); // Do this so that the error will not be reported again
 			}
+			postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
+					.getIndexType(), NodeHelper.getNameFromVaribableReference(node));
 		}
-		super.dealWithArrayIndex(node, t);
 	}
 	
 	public void outAPidTypename(APidTypename node) {
