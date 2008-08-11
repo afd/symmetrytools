@@ -139,7 +139,7 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 	
 	private ModelCheckingResult runVerifier() throws IOException, InterruptedException, NumberFormatException {
 
-		Process sympan = Runtime.getRuntime().exec(EXECUTABLE + " -m" + searchDepth);
+		Process sympan = Runtime.getRuntime().exec( ((!Config.isOSWindows()) ? "./" : "") + EXECUTABLE + " -m" + searchDepth);
 		
 		// Had to put this line in to stop the program from hanging.  Not sure why.
 		BufferedReader br = new BufferedReader(new InputStreamReader(sympan.getInputStream()));

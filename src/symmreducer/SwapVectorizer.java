@@ -370,9 +370,9 @@ public class SwapVectorizer {
 			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
 			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write(Config.vectorTarget.getSplatsInstruction("vec_a", "a+1"));
+			out.write(Config.vectorTarget.getSplatsInstruction("vec_a", "(a+1)"));
 			
-		    out.write(Config.vectorTarget.getSplatsInstruction("vec_b", "b+1"));
+		    out.write(Config.vectorTarget.getSplatsInstruction("vec_b", "(b+1)"));
 	
 			for(int i=0; i<numberOfChannelReferencesToSwap; i+=16) {
 	
