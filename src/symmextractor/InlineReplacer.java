@@ -3,7 +3,7 @@ package src.symmextractor;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.checker.InlineProcessor;
 import src.etch.env.InlineEntry;
 import src.etch.error.Error;
@@ -33,9 +33,9 @@ public class InlineReplacer extends InlineProcessor {
 	
 	public void caseAInlineStmnt(AInlineSimpleStmnt node) {
 		InlineEntry inline = (InlineEntry) inlines.get(node.getName().getText());
-		Assert.assertNotNull(inline);
+		assert(null != inline);
 		List<String> actualParametersAsStrings = toList(node.getExprLst());
-		Assert.assertEquals(inline.getArity(),actualParametersAsStrings.size());
+		assert(inline.getArity() == actualParametersAsStrings.size());
 		inline.getSequenceWithSubstitutions(actualParametersAsStrings).apply(this);
 	}
 	

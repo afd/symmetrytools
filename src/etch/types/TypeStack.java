@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 
-import junit.framework.Assert;
+
 
 public class TypeStack {
 
@@ -36,7 +36,7 @@ public class TypeStack {
 
 	public boolean push(Type t, List<String> nameComponents) {
 		if(stack.contains(t)) {
-			Assert.assertFalse(t instanceof ArrayType);
+			assert(!(t instanceof ArrayType));
 
 			if(typeToTypeVariable.containsKey(t)) {
 				nameComponents.add(typeToTypeVariable.get(t).name());

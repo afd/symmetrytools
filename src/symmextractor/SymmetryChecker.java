@@ -1,6 +1,6 @@
 package src.symmextractor;
 
-import junit.framework.Assert;
+
 import src.etch.checker.Checker;
 import src.etch.env.ProctypeEntry;
 import src.etch.typeinference.ConstraintSet;
@@ -193,7 +193,7 @@ public class SymmetryChecker extends Checker {
 			}
 		}
 
-		Assert.assertTrue(statementsWithinAtomic instanceof AOneSequence);
+		assert(statementsWithinAtomic instanceof AOneSequence);
 
 		if(!isRunStatement(((AOneSequence)statementsWithinAtomic).getStep())) {
 			if(noProcesses==0) {
@@ -212,7 +212,7 @@ public class SymmetryChecker extends Checker {
 	
 
 	private static PSequence nextInSequence(PSequence seq) {
-		Assert.assertTrue(seq instanceof AManySequence);
+		assert(seq instanceof AManySequence);
 		return ((AManySequence)seq).getSequence();
 	}
 
@@ -236,19 +236,19 @@ public class SymmetryChecker extends Checker {
 			firstStepInInitSequence = ((AManySequence)initSequence).getStep();
 		}
 		
-		Assert.assertTrue(firstStepInInitSequence instanceof AStatementStep || firstStepInInitSequence instanceof ACompoundUnseparatedStep);
+		assert(firstStepInInitSequence instanceof AStatementStep || firstStepInInitSequence instanceof ACompoundUnseparatedStep);
 
 		PCompoundStmnt atomicCompoundStatement;
 		
 		if(firstStepInInitSequence instanceof AStatementStep) {
 			PStmnt atomicStatement = ((AStatementStep)firstStepInInitSequence).getStmnt();
-			Assert.assertTrue(atomicStatement instanceof ACompoundStmnt);
+			assert(atomicStatement instanceof ACompoundStmnt);
 			atomicCompoundStatement = ((ACompoundStmnt)atomicStatement).getCompoundStmnt();
 		} else {
 			atomicCompoundStatement = ((ACompoundUnseparatedStep)firstStepInInitSequence).getCompoundStmnt();
 		}
 
-		Assert.assertTrue(atomicCompoundStatement instanceof AAtomicCompoundStmnt);
+		assert(atomicCompoundStatement instanceof AAtomicCompoundStmnt);
 		statementsWithinAtomic = ((AAtomicCompoundStmnt)atomicCompoundStatement).getSequence();
 		return statementsWithinAtomic;
 	}

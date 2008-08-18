@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
+
 import src.etch.checker.Checker;
 import src.etch.env.ChannelEntry;
 import src.etch.env.VarEntry;
@@ -61,7 +61,7 @@ public class Substituter extends DepthFirstAdapter {
 				// Substitute the type variable with byte by default
 				result.setIndexType(Checker.theFactory.generateByteType());
 			} else {
-				Assert.assertTrue(newIndexType instanceof SimpleType);
+				assert(newIndexType instanceof SimpleType);
 				result.setIndexType((SimpleType)newIndexType);
 			}
 			return result;
@@ -74,7 +74,7 @@ public class Substituter extends DepthFirstAdapter {
 			result.setMessageType((InternalType) applySubstitutionsRecursive(((ChanType)tRep).getMessageType(),history));
 			return result;
 		} else {
-			Assert.assertTrue(tRep instanceof ProductType);
+			assert(tRep instanceof ProductType);
 			List<Type> tuple = new ArrayList<Type>();
 			for(int i=0; i<((ProductType)tRep).getArity(); i++) {
 				tuple.add(null);
@@ -104,7 +104,7 @@ public class Substituter extends DepthFirstAdapter {
 		if(nodeTypes.getEnvEntry(node.getText()) instanceof ChannelEntry) {
 			VarEntry entry = (VarEntry) nodeTypes.getEnvEntry(node.getText());
 			Type newType = applySubstitutions(entry.getType());
-			Assert.assertTrue(newType instanceof VisibleType);
+			assert(newType instanceof VisibleType);
 			entry.setType((VisibleType) newType);
 		}
 	}
@@ -120,7 +120,7 @@ public class Substituter extends DepthFirstAdapter {
 		}
 	}
 
-	private List substituteTypeList(List<Type> list) {
+	private List<Type> substituteTypeList(List<Type> list) {
 		List<Type> newValue = new ArrayList<Type>();
 		for(int i=0; i<list.size(); i++) {
 			newValue.add(applySubstitutions(list.get(i)));

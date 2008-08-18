@@ -6,7 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
-import junit.framework.Assert;
+
 import src.etch.typeinference.Substituter;
 import src.promela.lexer.LexerException;
 import src.promela.parser.ParserException;
@@ -42,7 +42,7 @@ public class SymmReducer extends SymmExtractor {
     	
     	if(Config.PROFILE) { Profile.CLASSIFY_START = System.currentTimeMillis(); }
 
-    	Assert.assertNotNull(gap);
+    	assert(null != gap);
     	
     	if(!Config.USE_TRANSPOSITIONS) {
     		gapWriter.write("useTranspositions := false;;\n");
@@ -82,7 +82,7 @@ public class SymmReducer extends SymmExtractor {
     		}
     		break;
     	default:
-    		Assert.assertTrue(false);
+    		assert(false);
     	}
 
     	// Ensure that GAP has finished processing before running the perl program
@@ -144,7 +144,7 @@ public class SymmReducer extends SymmExtractor {
 	private StaticChannelDiagramExtractor parseUserSpecifiedSymmetry() throws FileNotFoundException, IOException {
 		startGAP();
 		StaticChannelDiagramExtractor extractor;
-		Assert.assertNotNull(Config.AUTOS_FILE);
+		assert(null != Config.AUTOS_FILE);
 		extractor = new StaticChannelDiagramExtractor();
 		if(typecheck(true)) {
 			System.out.println("Reparsing source without inlines");

@@ -3,7 +3,7 @@ package src.symmreducer;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ByteType;
@@ -18,8 +18,8 @@ public class PidIndexedArrayReference extends SensitiveVariableReference {
 	
 	public PidIndexedArrayReference(String name, ArrayType type) {
 		super(name,type);
-		Assert.assertTrue(type.getIndexType() instanceof VisibleType);
-		Assert.assertTrue(PidType.isPid((VisibleType) type.getIndexType()));
+		assert(type.getIndexType() instanceof VisibleType);
+		assert(PidType.isPid((VisibleType) type.getIndexType()));
 		this.type = type;
 	}
 

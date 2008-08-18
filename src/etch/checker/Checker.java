@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.Environment;
@@ -395,7 +394,7 @@ public class Checker extends InlineProcessor {
 
 		checkCorrectNumberOfActualArgs(formalArgTypes, actualArgTypes, proctypeName);
 
-		for (int i = 0; i < minSize(formalArgTypes, actualArgTypes); i++) {
+		for (int i = 0; i < Math.min(formalArgTypes.size(), actualArgTypes.size()); i++) {
 			if ((actualArgTypes.get(i) != null)
 					&& (formalArgTypes.get(i) != null)) {
 				
@@ -412,16 +411,12 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	private void checkCorrectNumberOfActualArgs(List formalArgs, List actualArgs, TName proctypeName) {
+	private void checkCorrectNumberOfActualArgs(List<VisibleType> formalArgs, List<VisibleType> actualArgs, TName proctypeName) {
 		if (formalArgs.size() != actualArgs.size()) {
 			addError(proctypeName, new WrongNumParameters(
 					proctypeName.getText(), formalArgs.size(),
 					actualArgs.size()));
 		}
-	}
-
-	private int minSize(List x, List y) {
-		return Math.min(x.size(), y.size());
 	}
 
 	public void outAConditionalExpr(AConditionalExpr node) {
@@ -939,7 +934,7 @@ public class Checker extends InlineProcessor {
 			argTypes.addAll(getArgumentTypes(getNames((AOneParamLst) parameters)));
 			argNames.addAll(getArgumentNames(getNames((AOneParamLst)parameters)));
 		}
-		Assert.assertEquals(argTypes.size(),argNames.size());
+		assert(argTypes.size()==argNames.size());
 		
 		return new ProctypeEntry(argTypes,argNames,lineOfDeclaration);
 	}
@@ -993,7 +988,7 @@ public class Checker extends InlineProcessor {
 					Type max = AnyType.max(leftType, rightType);
 					setOut(node, max);
 				} catch(IncomparableTypesException e) {
-					Assert.assertTrue(false);
+					assert(false);
 					e.printStackTrace();
 				}
 			}
@@ -1239,7 +1234,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void restoreProctypeScope(AProctype node) {
-		Assert.assertTrue(env.get(node.getName().getText()) instanceof ProctypeEntry);
+		assert(env.get(node.getName().getText()) instanceof ProctypeEntry);
 		env.restoreScope(((ProctypeEntry)getEnvEntry(node.getName().getText())).getLocalScope());
 	}
 	

@@ -5,11 +5,7 @@ import java.util.List;
 
 import src.etch.checker.Checker;
 
-
-import junit.framework.Assert;
-import junit.framework.TestCase;
-
-public class TypeTest extends TestCase {
+public class TypeTest {
 
 	public TypeTest() {
 		Checker.theFactory = new EtchTypeFactory();
@@ -34,9 +30,9 @@ public class TypeTest extends TestCase {
 		
 		root.setMessageType(Checker.theFactory.generateProductType(tuple1));
 
-		Assert.assertEquals("rec X . chan { chan { chan { X, int }, int }, int }", root.name());
+		assert("rec X . chan { chan { chan { X, int }, int }, int }".equals(root.name()));
 		
-		Assert.assertEquals("rec X . chan { X, int }", Minimiser.minimise(root).name());
+		assert("rec X . chan { X, int }".equals(Minimiser.minimise(root).name()));
 		
 		List<Type> tuple4 = new ArrayList<Type>();
 		tuple4.add(null); tuple4.add(null);
@@ -51,9 +47,9 @@ public class TypeTest extends TestCase {
 		pt2.setTypeOfPosition(1,new IntType());
 		ChanType root2 = new ChanType(pt2);
 		
-		Assert.assertEquals("chan rec X . { chan { chan X, int }, int }", root2.name());
+		assert("chan rec X . { chan { chan X, int }, int }".equals(root2.name()));
 		
-		Assert.assertEquals("rec X . chan { X, int }", Minimiser.minimise(root2).name());
+		assert("rec X . chan { X, int }".equals(Minimiser.minimise(root2).name()));
 		
 		List<Type> newTuple = new ArrayList<Type>();
 		newTuple.add(null); newTuple.add(null); newTuple.add(null);
@@ -65,17 +61,17 @@ public class TypeTest extends TestCase {
 		pt3.setTypeOfPosition(1,ct);
 		pt3.setTypeOfPosition(2,ct);
 		
-		Assert.assertEquals("rec X . chan { X, X, X }", ct.name());
+		assert("rec X . chan { X, X, X }".equals(ct.name()));
 		
 		pt3.setTypeOfPosition(2,root2);
 
-		Assert.assertEquals("rec X . chan { X, X, chan rec Y . { chan { chan Y, int }, int } }", ct.name());
+		assert("rec X . chan { X, X, chan rec Y . { chan { chan Y, int }, int } }".equals(ct.name()));
 
-		Assert.assertEquals("rec X . chan { X, X, rec Y . chan { Y, int } }", Minimiser.minimise(ct).name());
+		assert("rec X . chan { X, X, rec Y . chan { Y, int } }".equals(Minimiser.minimise(ct).name()));
 
-		Assert.assertEquals("byte", Checker.theFactory.generateByteType().name());
+		assert("byte".equals(Checker.theFactory.generateByteType().name()));
 
-		Assert.assertEquals("byte", Minimiser.minimise(Checker.theFactory.generateByteType()).name());
+		assert("byte".equals(Minimiser.minimise(Checker.theFactory.generateByteType()).name()));
 
 	}
 	
@@ -83,7 +79,7 @@ public class TypeTest extends TestCase {
 
 		ArrayType t = new ArrayType(new MtypeType(), Checker.theFactory.generateByteType(), 25);
 		
-		Assert.assertEquals("array(size 25) of mtype", t.name());
+		assert("array(size 25) of mtype".equals(t.name()));
 				
 	}
 

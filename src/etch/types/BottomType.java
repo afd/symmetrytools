@@ -1,6 +1,6 @@
 package src.etch.types;
 
-import junit.framework.Assert;
+
 
 public final class BottomType extends SimpleType implements VisibleType {
 
@@ -9,7 +9,7 @@ public final class BottomType extends SimpleType implements VisibleType {
 	public static final BottomType uniqueInstance = new BottomType();
 
 	private BottomType() {
-		Assert.assertEquals(numberConstructed,0);
+		assert(numberConstructed == 0);
 		numberConstructed++;
 	}
 	

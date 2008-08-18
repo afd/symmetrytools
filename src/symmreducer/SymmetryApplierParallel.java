@@ -4,7 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.Config;
 import src.utilities.ProgressPrinter;
@@ -66,7 +66,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 
 
 	private void writeRepEnumerate(List<String> groupInfo, FileWriter out) throws IOException {
-		Assert.assertTrue(Config.REDUCTION_STRATEGY==Strategy.ENUMERATE);
+		assert(Config.REDUCTION_STRATEGY==Strategy.ENUMERATE);
 
 		out.write(stateType + "* original;\n\n");
 

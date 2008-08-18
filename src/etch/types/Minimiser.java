@@ -8,7 +8,7 @@ import java.util.Map;
 import src.etch.checker.Checker;
 
 
-import junit.framework.Assert;
+
 
 public class Minimiser {
 
@@ -72,7 +72,7 @@ public class Minimiser {
 		}
 
 		
-		Assert.assertTrue(false);
+		assert(false);
 		return null;
 	}
 
@@ -96,7 +96,7 @@ public class Minimiser {
 			return l;
 		}
 		
-		Assert.assertTrue(t instanceof TypeVariableType);
+		assert(t instanceof TypeVariableType);
 		return l;
 	}
 
@@ -158,7 +158,7 @@ public class Minimiser {
 				} else if(iType instanceof TypeVariableType) {
 					distinguishable[i][j] = !(jType instanceof TypeVariableType && jType.equal(iType));
 				} else {
-					Assert.assertTrue(false);
+					assert(false);
 				}
 				
 			}
@@ -198,7 +198,7 @@ public class Minimiser {
 								}
 							}
 						} else {
-							Assert.assertTrue(false);
+							assert(false);
 						}
 
 						changedInLastPhase = (distinguishable[i][j]?true:changedInLastPhase);

@@ -1,6 +1,6 @@
 package src.promela;
 
-import junit.framework.Assert;
+
 import src.promela.node.AFifoReceive;
 import src.promela.node.AFifoRecvPoll;
 import src.promela.node.AFifopollReceive;
@@ -37,7 +37,7 @@ public class NodeHelper {
 		} else if(node instanceof ARandomReceive) {
 			return ((ARandomReceive)node).getVarref();
 		} else {
-			Assert.assertTrue(node instanceof ARandompollReceive);
+			assert(node instanceof ARandompollReceive);
 			return ((ARandompollReceive)node).getVarref();
 		}
 	}
@@ -46,7 +46,7 @@ public class NodeHelper {
 		if(node instanceof AFifoRecvPoll) {
 			return ((AFifoRecvPoll)node).getVarref();
 		} else {
-			Assert.assertTrue(node instanceof ARandomRecvPoll);
+			assert(node instanceof ARandomRecvPoll);
 			return ((ARandomRecvPoll)node).getVarref();
 		}
 	}
@@ -59,7 +59,7 @@ public class NodeHelper {
 		} else if(node instanceof ARandomReceive) {
 			return ((ARandomReceive)node).getRecvArgs();
 		} else {
-			Assert.assertTrue(node instanceof ARandompollReceive);
+			assert(node instanceof ARandompollReceive);
 			return ((ARandompollReceive)node).getRecvArgs();
 		}
 	}
@@ -68,7 +68,7 @@ public class NodeHelper {
 		if(node instanceof AFifoRecvPoll) {
 			return ((AFifoRecvPoll)node).getRecvArgs();
 		} else {
-			Assert.assertTrue(node instanceof ARandomRecvPoll);
+			assert(node instanceof ARandomRecvPoll);
 			return ((ARandomRecvPoll)node).getRecvArgs();
 		}
 	}	

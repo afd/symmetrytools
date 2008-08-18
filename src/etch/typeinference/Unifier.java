@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
+
 import src.etch.error.Error;
 import src.etch.error.IncompatibleTypesError;
 import src.etch.error.MismatchedArgumentsError;
@@ -37,7 +37,7 @@ public class Unifier {
 			
 	protected Error unifySubtypingConstraint(SubtypingConstraint sc, List<EqualityConstraint> equalityConstraints) {
 
-		Assert.assertFalse(sc.getLhs() instanceof TypeVariableType && sc.getRhs() instanceof TypeVariableType);
+		assert(!(sc.getLhs() instanceof TypeVariableType && sc.getRhs() instanceof TypeVariableType));
 
 		if(sc.getLhs() instanceof BottomType) {
 			return null;
@@ -77,15 +77,15 @@ public class Unifier {
 	}
 
 	protected Error unifySubtype(NumericType s, TypeVariableType x) {
-		Assert.assertTrue(x.getLower().equal(BottomType.uniqueInstance));
-		Assert.assertTrue(x.getUpper().equal(TopType.uniqueInstance));
+		assert(x.getLower().equal(BottomType.uniqueInstance));
+		assert(x.getUpper().equal(TopType.uniqueInstance));
 		x.setLower(s);
 		return null;
 	}
 
 	protected Error unifySubtype(TypeVariableType x, NumericType s) {
-		Assert.assertTrue(x.getLower().equal(BottomType.uniqueInstance));
-		Assert.assertTrue(x.getUpper().equal(TopType.uniqueInstance));
+		assert(x.getLower().equal(BottomType.uniqueInstance));
+		assert(x.getUpper().equal(TopType.uniqueInstance));
 		x.setUpper(s);
 		return null;
 	}

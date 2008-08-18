@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import junit.framework.Assert;
+
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.VarEntry;
@@ -59,11 +59,11 @@ public class Flatten {
 	private static void writeFlattenSensitiveLocals(FileWriter fw, StaticChannelDiagramExtractor typeInfo) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
-			for (ListIterator iter = typeInfo.sensitiveVariableReferencesForProcess(j).listIterator(); iter
+			for (ListIterator<SensitiveVariableReference> iter = typeInfo.sensitiveVariableReferencesForProcess(j).listIterator(); iter
 					.hasNext();) {
 				SensitiveVariableReference reference = (SensitiveVariableReference) iter
 						.next();
-				Assert.assertTrue(PidType.isPid(reference.getType())
+				assert(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
 				fw.write("   " + reference + " = 0;\n");
 			}
@@ -83,12 +83,12 @@ public class Flatten {
 			EnvEntry entry = globalVariables.get(name);
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-				List sensitiveReferences = SensitiveVariableReference.getSensitiveVariableReferences(name,
+				List<SensitiveVariableReference> sensitiveReferences = SensitiveVariableReference.getSensitiveVariableReferences(name,
 						((VarEntry) entry).getType(), referencePrefix, typeInfo);
 				for (int i = 0; i < sensitiveReferences.size(); i++) {
 					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences
 							.get(i);
-					Assert.assertTrue(PidType.isPid(reference.getType()));
+					assert(PidType.isPid(reference.getType()));
 					fw.write("   " + reference + " = 0;\n");
 				}
 			}

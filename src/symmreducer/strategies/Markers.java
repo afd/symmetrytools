@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
+
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProctypeEntry;
@@ -42,19 +42,16 @@ public class Markers {
 	
 				VisibleType entryType = ((VarEntry) entry).getType();
 	
-				Assert.assertFalse(entryType instanceof ChanType);
-				Assert.assertFalse(entryType instanceof ProductType);
+				assert(!(entryType instanceof ChanType));
+				assert(!(entryType instanceof ProductType));
 	
 				if (entryType instanceof ArrayType) {
-					Assert
-							.assertFalse(((ArrayType) entryType)
-									.getElementType() instanceof ChanType);
-					Assert
-							.assertFalse(((ArrayType) entryType)
-									.getElementType() instanceof ArrayType);
-					Assert
-							.assertFalse(((ArrayType) entryType)
-									.getElementType() instanceof ProductType);
+					assert(!(((ArrayType) entryType)
+									.getElementType() instanceof ChanType));
+					assert(!((((ArrayType) entryType)
+									.getElementType() instanceof ArrayType)));
+					assert(!((((ArrayType) entryType)
+									.getElementType() instanceof ProductType)));
 	
 					if (((ArrayType) entryType).getElementType() instanceof RecordType) {
 						System.out
@@ -100,7 +97,7 @@ public class Markers {
 									+ name + "[i];\n";
 						}
 					} else {
-						Assert.assertTrue(((ArrayType) entryType)
+						assert(((ArrayType) entryType)
 								.getIndexType() instanceof ByteType);
 						if (((ArrayType) entryType).getElementType() instanceof PidType) {
 							markerStruct += "   bitvector " + name + ";\n";
@@ -131,10 +128,9 @@ public class Markers {
 			}
 		}
 	
-		Assert.assertEquals(typeInfo.getProctypeNames().size(), 2);
+		assert(typeInfo.getProctypeNames().size() == 2);
 	
-		Assert.assertEquals(typeInfo.getProctypeNames().get(1),
-				ProctypeEntry.initProctypeName);
+		assert(typeInfo.getProctypeNames().get(1).equals(ProctypeEntry.initProctypeName));
 	
 		String proctypeName = typeInfo.getProctypeNames().get(0);
 		ProctypeEntry proctype = (ProctypeEntry) typeInfo
@@ -149,7 +145,7 @@ public class Markers {
 		for (String varName : localScope.keySet()) {
 			if (localScope.get(varName) instanceof VarEntry) {
 				VisibleType entryType = ((VarEntry) localScope.get(varName)).getType();
-				Assert.assertFalse(entryType instanceof ProductType);
+				assert(!(entryType instanceof ProductType));
 				if (entryType instanceof ArrayType) {
 					System.out
 							.println("Local array variables not yet supported with markers");
@@ -201,10 +197,10 @@ public class Markers {
 			int chanLength = ((ChannelEntry) typeInfo.getEnvEntry(chanName))
 					.getLength();
 			for (int i = 0; i < msgType.getArity(); i++) {
-				Assert.assertTrue(msgType.getTypeOfPosition(i) instanceof VisibleType);
+				assert(msgType.getTypeOfPosition(i) instanceof VisibleType);
 				VisibleType fieldType = (VisibleType) msgType.getTypeOfPosition(i);
 	
-				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
+				assert(!(fieldType instanceof ArrayType)); // SPIN
 				// doesn't
 				// allow
 				// this
@@ -267,12 +263,12 @@ public class Markers {
 			EnvEntry entry = globalVariables.get(name);
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-				List sensitiveReferences = SensitiveVariableReference.getSensitiveVariableReferences(name,
+				List<SensitiveVariableReference> sensitiveReferences = SensitiveVariableReference.getSensitiveVariableReferences(name,
 						((VarEntry) entry).getType(), referencePrefix, typeInfo);
 				for (int i = 0; i < sensitiveReferences.size(); i++) {
 					SensitiveVariableReference reference = (SensitiveVariableReference) sensitiveReferences
 							.get(i);
-					Assert.assertTrue(PidType.isPid(reference.getType()));
+					assert(PidType.isPid(reference.getType()));
 					fw.write("   if(" + reference + ">0) "
 							+ reference + " = map["
 							+ reference + "-1]+1;\n");
@@ -287,7 +283,7 @@ public class Markers {
 		for (String varName : localScope.keySet()) {
 			if (localScope.get(varName) instanceof VarEntry) {
 				VisibleType entryType = ((VarEntry) localScope.get(varName)).getType();
-				Assert.assertFalse(entryType instanceof ProductType);
+				assert(!(entryType instanceof ProductType));
 				if (entryType instanceof PidType) {
 					for (int j = 1; j < typeInfo.getNoProcesses(); j++) {
 						fw.write("   if(((P" + typeInfo.proctypeId(proctypeName)
@@ -311,10 +307,10 @@ public class Markers {
 			int chanLength = ((ChannelEntry) typeInfo.getEnvEntry(chanName))
 					.getLength();
 			for (int i = 0; i < msgType.getArity(); i++) {
-				Assert.assertTrue(msgType.getTypeOfPosition(i) instanceof VisibleType);
+				assert(msgType.getTypeOfPosition(i) instanceof VisibleType);
 				VisibleType fieldType = (VisibleType) msgType.getTypeOfPosition(i);
 
-				Assert.assertFalse(fieldType instanceof ArrayType); // SPIN
+				assert(!(fieldType instanceof ArrayType)); // SPIN
 				// doesn't
 				// allow
 				// this

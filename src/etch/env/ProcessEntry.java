@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import junit.framework.Assert;
+
 
 
 public class ProcessEntry extends EnvEntry {
@@ -32,7 +32,7 @@ public class ProcessEntry extends EnvEntry {
 	}
 
 	public String getEntryKind() {
-		Assert.assertTrue(false);
+		assert(false);
 		/* This method should not be called on a process entry,
 		 * as it is only called when a user has declared duplicate-named
 		 * entries, and the user doesn't declare named process entries
@@ -42,7 +42,7 @@ public class ProcessEntry extends EnvEntry {
 	}
 
 	public int getLineOfDeclaration() {
-		Assert.assertTrue(false);
+		assert(false);
 		return super.getLineOfDeclaration();
 	}
 }

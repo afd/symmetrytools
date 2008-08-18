@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import junit.framework.Assert;
+
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
@@ -122,7 +122,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 		}
 	}
 	
-	private String constructSaucyOutput(List edges) {
+	private String constructSaucyOutput(List<Integer> edges) {
 		// Number of nodes
 		String result = (processEntries.size() + staticChannelNames.size())
 				+ " ";
@@ -168,7 +168,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 				}
 			}
 			else {
-				List argNames = proctypeEntry.getArgNames();
+				List<String> argNames = proctypeEntry.getArgNames();
 				for (int k = 0; k < argNames.size(); k++) {
 					if (chanName.equals(argNames.get(k))) {
 
@@ -259,7 +259,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 		
 		PIvar channel = (PIvar) node.parent();
 		
-		Assert.assertTrue(channel instanceof ASingleIvar);
+		assert(channel instanceof ASingleIvar);
 
 		staticChannelNames.add((((ASingleIvar) channel)).getName().getText());
 

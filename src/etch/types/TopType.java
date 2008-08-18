@@ -1,6 +1,6 @@
 package src.etch.types;
 
-import junit.framework.Assert;
+
 
 public class TopType extends SimpleType {
 
@@ -9,7 +9,7 @@ public class TopType extends SimpleType {
 	public static final TopType uniqueInstance = new TopType();
 
 	private TopType() {
-		Assert.assertEquals(numberConstructed,0);
+		assert(numberConstructed == 0);
 		numberConstructed++;
 	}
 	

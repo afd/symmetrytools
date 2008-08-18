@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import junit.framework.Assert;
+
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
@@ -489,7 +489,7 @@ public class SymmetryApplier {
 						((VarEntry) entry).getType(), "", typeInfo);
 				for (SensitiveVariableReference reference : sensitiveReferences) {
 					fw.write("   temp." + reference + " = ");
-					Assert.assertTrue(PidType.isPid(reference.getType()));
+					assert(PidType.isPid(reference.getType()));
 					fw.write("applyToPr(*alpha,s->" + reference
 							+ ");\n");
 				}
@@ -497,8 +497,8 @@ public class SymmetryApplier {
 				List<PidIndexedArrayReference> sensitivelyIndexedArrays = PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
 						name, ((VarEntry) entry).getType(), "", typeInfo);
 				for (PidIndexedArrayReference reference : sensitivelyIndexedArrays) {
-					Assert.assertTrue(((ArrayType) reference.getType()).getIndexType() instanceof VisibleType);
-					Assert.assertTrue(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
+					assert(((ArrayType) reference.getType()).getIndexType() instanceof VisibleType);
+					assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 							.getIndexType()));
 					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
@@ -524,7 +524,7 @@ public class SymmetryApplier {
 
 				fw.write("   " + reference + " = ");
 
-				Assert.assertTrue(PidType.isPid(reference.getType())
+				assert(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
 				if (PidType.isPid(reference.getType())) {
 					fw.write("applyToPr");
@@ -542,9 +542,9 @@ public class SymmetryApplier {
 
 			for (PidIndexedArrayReference reference : typeInfo.sensitivelyIndexedArraysForProcess(j)) {
 
-				Assert.assertTrue(((ArrayType) reference.getType())
+				assert(((ArrayType) reference.getType())
 						.getIndexType() instanceof VisibleType);
-				Assert.assertTrue(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
+				assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 						.getIndexType()));
 				/* uchar must be changed to appropriate type */
 				fw.write("   {\n");
@@ -589,7 +589,7 @@ public class SymmetryApplier {
 						if (PidType.isPid(flattenedFieldTypes.get(j))) {
 							fw.write("applyToPr");
 						} else {
-							Assert.assertTrue(ChanType.isChan(flattenedFieldTypes
+							assert(ChanType.isChan(flattenedFieldTypes
 									.get(j)));
 							fw.write("applyToCh");
 						}
@@ -598,7 +598,7 @@ public class SymmetryApplier {
 						if (ChanType.isChan(flattenedFieldTypes.get(j))) {
 							fw.write("-1)+1;\n");
 						} else {
-							Assert.assertTrue(PidType.isPid(flattenedFieldTypes
+							assert(PidType.isPid(flattenedFieldTypes
 									.get(j)));
 							fw.write(");\n");
 						}
@@ -704,7 +704,7 @@ public class SymmetryApplier {
 				if (!(Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS)) {
 					for (SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(
 							name, ((VarEntry) entry).getType(), referencePrefix, typeInfo)) {
-						Assert.assertTrue(PidType.isPid(reference.getType()));
+						assert(PidType.isPid(reference.getType()));
 						fw.write("   if(" + reference
 								+ "==" + one + ") {\n");
 						fw.write("      " + reference
@@ -719,9 +719,9 @@ public class SymmetryApplier {
 
 				for (PidIndexedArrayReference reference : PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
 						name, ((VarEntry) entry).getType(), referencePrefix, typeInfo)) {
-					Assert.assertTrue(((ArrayType) reference.getType())
+					assert(((ArrayType) reference.getType())
 							.getIndexType() instanceof VisibleType);
-					Assert.assertTrue(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
+					assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 							.getIndexType()));
 					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
@@ -743,7 +743,7 @@ public class SymmetryApplier {
 
 			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
 
-				Assert.assertTrue(PidType.isPid(reference.getType())
+				assert(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
 				if (PidType.isPid(reference.getType())) {
 					writeln(fw, applySwapToSensitiveReference(reference.toString(), one, two));
@@ -752,9 +752,9 @@ public class SymmetryApplier {
 
 			for (PidIndexedArrayReference reference : typeInfo.sensitivelyIndexedArraysForProcess(j)) {
 
-				Assert.assertTrue(((ArrayType) reference.getType())
+				assert(((ArrayType) reference.getType())
 						.getIndexType() instanceof VisibleType);
-				Assert.assertTrue(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
+				assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 						.getIndexType()));
 				/* uchar must be changed to appropriate type */
 				fw.write("   {\n");
@@ -845,7 +845,7 @@ public class SymmetryApplier {
 
 			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
 
-				Assert.assertTrue(PidType.isPid(reference.getType())
+				assert(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
 				if (ChanType.isChan(reference.getType())) {
 

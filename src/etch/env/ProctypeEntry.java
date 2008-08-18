@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import junit.framework.Assert;
+
 import src.etch.types.VisibleType;
 import src.utilities.StringHelper;
 
@@ -76,7 +76,7 @@ public class ProctypeEntry extends EnvEntry {
 	{
 		if(this.equals(initProctypeEntry) && super.getLineOfDeclaration()==-1)
 		{
-			Assert.assertTrue(false);
+			assert(false);
 		}
 		return super.getLineOfDeclaration();
 	}
@@ -110,7 +110,7 @@ public class ProctypeEntry extends EnvEntry {
 		}
 
 		public T setValue(T value) {
-			Assert.assertTrue(false);
+			assert(false);
 			return null;
 		}
 		

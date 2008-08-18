@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import junit.framework.Assert;
 import src.etch.typeinference.Substituter;
 import src.etch.types.Type;
 import src.etch.types.VisibleType;
@@ -89,13 +88,13 @@ public class Environment {
 
 	public void applySubsitutions(Substituter substituter) {
 
-		Assert.assertTrue(stack.size()==1);
+		assert(stack.size()==1);
 
 		for(EnvEntry e : stack.elementAt(0).values()) {
 
 			if(e instanceof VarEntry) {
 				Type typeAfterSubstitutions = substituter.applySubstitutions(((VarEntry)e).getType());
-				Assert.assertTrue(typeAfterSubstitutions instanceof VisibleType);
+				assert(typeAfterSubstitutions instanceof VisibleType);
 				((VarEntry)e).setType((VisibleType) typeAfterSubstitutions);
 			}
 			
@@ -103,7 +102,7 @@ public class Environment {
 				Map<String,EnvEntry> localScope = ((ProctypeEntry)e).getLocalScope();
 				for(Entry<String,VisibleType> entry : ((ProctypeEntry)e).variableNameTypePairs()) {
 					Type typeAfterSubstitutions = substituter.applySubstitutions(entry.getValue());
-					Assert.assertTrue(typeAfterSubstitutions instanceof VisibleType);
+					assert(typeAfterSubstitutions instanceof VisibleType);
 					((VarEntry)localScope.get(entry.getKey())).setType((VisibleType) typeAfterSubstitutions);
 				}
 			}			

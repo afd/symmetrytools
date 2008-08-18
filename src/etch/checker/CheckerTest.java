@@ -1,8 +1,7 @@
 package src.etch.checker;
 
-import junit.framework.TestCase;
 
-public class CheckerTest extends TestCase {
+public class CheckerTest {
 
 	public void testIncorrectLoadBalancerExample() throws Exception {
 		

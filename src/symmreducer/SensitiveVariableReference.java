@@ -3,7 +3,7 @@ package src.symmreducer;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
@@ -69,7 +69,7 @@ public class SensitiveVariableReference {
 		}
 
 		if (ArrayType.isArray(varType)) {
-			Assert.assertTrue(((ArrayType) varType).getIndexType() instanceof VisibleType);
+			assert(((ArrayType) varType).getIndexType() instanceof VisibleType);
 			if (PidType.isPid((VisibleType) ((ArrayType) varType).getIndexType())) {
 				return result;
 			}

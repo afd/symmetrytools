@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import junit.framework.Assert;
+
 import src.promela.node.Node;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.StringHelper;
@@ -96,12 +96,12 @@ public class Permutation {
 		String result = "";
 		Set<Object> marked = new HashSet<Object>();
 		for(Object o : theMap.keySet()) {
-			Assert.assertTrue(o instanceof String);
+			assert(o instanceof String);
 			if(!marked.contains(o)) {
 				result += "(";
 				boolean first = true;
 				for(Object temp = o; !marked.contains(temp); temp = theMap.get(temp)) {
-					Assert.assertTrue(temp instanceof String);
+					assert(temp instanceof String);
 					marked.add(temp);
 					if(!first) {
 						result += ",";
@@ -127,7 +127,7 @@ public class Permutation {
 		Set<Object> toDealWith = new HashSet<Object>(theMap.keySet());
 
 		while (!toDealWith.isEmpty()) {
-			Iterator i = toDealWith.iterator();
+			Iterator<Object> i = toDealWith.iterator();
 			Object cycleStart = i.next();
 			if (((String) cycleStart)
 					.charAt(cycleStart.toString().length() - 1) == ' ')
@@ -182,7 +182,7 @@ public class Permutation {
 
 	public Permutation inverse() {
 		Permutation result = new Permutation();
-		Iterator i = this.theMap.keySet().iterator();
+		Iterator<Object> i = this.theMap.keySet().iterator();
 		while (i.hasNext()) {
 			Object o1 = i.next();
 			Object o2 = this.theMap.get(o1);

@@ -3,7 +3,7 @@ package src.etch.types;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 
 public class ProductType extends ConstructedType implements InternalType {
 
@@ -12,7 +12,7 @@ public class ProductType extends ConstructedType implements InternalType {
 	public ProductType(List<Type> tuple) {
 		this.tuple = new ArrayList<Type>(tuple.size());
 		for(int i=0; i<tuple.size(); i++) {
-			Assert.assertFalse(tuple.get(i) instanceof ProductType);
+			assert(!(tuple.get(i) instanceof ProductType));
 			/* Could also do an assert on array types, as Promela doesn't
 			 * allow arrays to be passed on channels.  Currently, Etch
 			 * won't complain about this though.
@@ -26,7 +26,7 @@ public class ProductType extends ConstructedType implements InternalType {
 	}
 
 	public void setTypeOfPosition(int i, Type t) {
-		Assert.assertFalse(t instanceof ProductType);
+		assert(!(t instanceof ProductType));
 		tuple.set(i,t);
 	}
 	

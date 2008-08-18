@@ -3,7 +3,7 @@ package src.etch.types;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 
 import src.etch.checker.Checker;
 import src.etch.error.IncomparableTypesException;
@@ -21,7 +21,7 @@ public abstract class AnyType implements Type {
 	}
 
 	public static Type uncheckedMax(Type t1, Type t2) {
-		Assert.assertTrue(t1.isSubtype(t2) || t2.isSubtype(t1));
+		assert(t1.isSubtype(t2) || t2.isSubtype(t1));
 		if(t1.isSubtype(t2)) {
 			return t2;
 		}
@@ -40,7 +40,7 @@ public abstract class AnyType implements Type {
 	}
 
 	public static Type uncheckedMin(Type t1, Type t2) {
-		Assert.assertTrue(t1.isSubtype(t2) || t2.isSubtype(t1));
+		assert(t1.isSubtype(t2) || t2.isSubtype(t1));
 		if(t1.isSubtype(t2)) {
 			return t1;
 		}

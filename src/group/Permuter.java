@@ -3,7 +3,7 @@ package src.group;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
@@ -95,7 +95,7 @@ public class Permuter extends DepthFirstAdapter {
 	protected boolean isArrayIndexedByPid(PVarref varref) {
 		PVarref temp = varref;
 
-		Assert.assertTrue(((varref instanceof ASingleVarref && ((ASingleVarref)varref).getArrayref()!=null)
+		assert(((varref instanceof ASingleVarref && ((ASingleVarref)varref).getArrayref()!=null)
 		|| (varref instanceof ARecordVarref && ((ARecordVarref)varref).getArrayref()!=null)));
 
 		List<String> fieldNamesStack = new ArrayList<String>();
@@ -104,12 +104,12 @@ public class Permuter extends DepthFirstAdapter {
 			temp = ((ARecordVarref)temp).getVarref();
 		}
 
-		Assert.assertTrue(typeInfo.getEnvEntry(getVariableName(temp)) instanceof VarEntry);
+		assert(typeInfo.getEnvEntry(getVariableName(temp)) instanceof VarEntry);
 
 		VisibleType t = ((VarEntry)typeInfo.getEnvEntry(getVariableName(temp))).getType();
 		
 		while(!fieldNamesStack.isEmpty()) {
-			Assert.assertTrue(t instanceof RecordType || (t instanceof ArrayType && ((ArrayType)t).getElementType() instanceof RecordType));
+			assert(t instanceof RecordType || (t instanceof ArrayType && ((ArrayType)t).getElementType() instanceof RecordType));
 			String fieldName = (String)fieldNamesStack.remove(fieldNamesStack.size()-1);
 			if(t instanceof RecordType) {
 				t = ((TypeEntry)typeInfo.getEnvEntry(((RecordType)t).name())).getFieldType(fieldName);
@@ -118,7 +118,7 @@ public class Permuter extends DepthFirstAdapter {
 			}
 		}
 		
-		Assert.assertTrue(t instanceof ArrayType);
+		assert(t instanceof ArrayType);
 
 		return ((ArrayType)t).getIndexType() instanceof PidType;
 	}
@@ -207,7 +207,7 @@ public class Permuter extends DepthFirstAdapter {
 		PArgLst arglst;
 
 		if (args instanceof AHeadedlistSendArgs) {
-			Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+			assert(argTypes.getTypeOfPosition(i) instanceof VisibleType);
 			if (isPid((VisibleType) argTypes.getTypeOfPosition(i))
 					&& (isNumericNode(((AHeadedlistSendArgs) args).getExpr()))) {
 				permuteNumericExpression(((AHeadedlistSendArgs) args).getExpr());
@@ -219,12 +219,12 @@ public class Permuter extends DepthFirstAdapter {
 		}
 		
 		while (arglst instanceof AManyArgLst) {
-			Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+			assert(argTypes.getTypeOfPosition(i) instanceof VisibleType);
 			permuteArgument(((AManyArgLst)arglst).getExpr(), (VisibleType) argTypes.getTypeOfPosition(i));
 			arglst = ((AManyArgLst) arglst).getArgLst();
 			i++;
 		}
-		Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+		assert(argTypes.getTypeOfPosition(i) instanceof VisibleType);
 		permuteArgument(((AOneArgLst)arglst).getExpr(),(VisibleType) argTypes.getTypeOfPosition(i));
 	}
 
@@ -289,7 +289,7 @@ public class Permuter extends DepthFirstAdapter {
 		
 		int i = 0;
 		while (!(args instanceof AOneRecvArgs)) {
-			Assert.assertTrue(argTypes.getTypeOfPosition(i) instanceof VisibleType);
+			assert(argTypes.getTypeOfPosition(i) instanceof VisibleType);
 			if (isPid((VisibleType) argTypes.getTypeOfPosition(i))) {
 				PRecvArg arg;
 				if (args instanceof AManyRecvArgs) {
@@ -382,7 +382,7 @@ public class Permuter extends DepthFirstAdapter {
 	}
 
 	private void permuteNumericExpression(PExpr e) {
-		Assert.assertTrue(isNumericNode(e));
+		assert(isNumericNode(e));
 
 		permuteToken(((ANumberConst) ((AConstFactor) ((ASimpleUnExpr) ((ASimpleMultExpr) ((ASimpleAddExpr) ((ASimpleShiftExpr) ((ASimpleRelExpr) ((ASimpleEqExpr) ((ASimpleBitandExpr) ((ASimpleBitxorExpr) ((ASimpleBitorExpr) ((ASimpleAndExpr) ((ASimpleOrExpr) ((ASimpleExpr) e)
 				.getOrExpr()).getAndExpr()).getBitorExpr()).getBitxorExpr())

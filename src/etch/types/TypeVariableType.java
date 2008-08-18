@@ -1,6 +1,6 @@
 package src.etch.types;
 
-import junit.framework.Assert;
+
 
 public class TypeVariableType extends SimpleType implements InternalType {
 
@@ -44,7 +44,7 @@ public class TypeVariableType extends SimpleType implements InternalType {
 	}
 
 	public boolean isSubtype(Type t) {
-		Assert.assertTrue(false);
+		assert(false);
 		return false;
 	}
 

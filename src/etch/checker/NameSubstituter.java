@@ -7,9 +7,9 @@ import src.promela.node.TName;
 
 public class NameSubstituter extends DepthFirstAdapter {
 
-	private Map nameSubstitutions;
+	private Map<String,String> nameSubstitutions;
 	
-	public NameSubstituter(Map nameSubstitutions) {
+	public NameSubstituter(Map<String,String> nameSubstitutions) {
 		this.nameSubstitutions = nameSubstitutions;
 	}
 	

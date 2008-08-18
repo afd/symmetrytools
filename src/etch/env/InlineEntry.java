@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
-
 import src.etch.checker.NameSubstituter;
 import src.promela.node.PSequence;
 
@@ -21,7 +19,7 @@ public class InlineEntry extends EnvEntry {
 	}
 	
 	public PSequence getSequenceWithSubstitutions(List<String> actualArgNames) {
-		Assert.assertEquals(argNames.size(),actualArgNames.size());
+		assert(argNames.size()==actualArgNames.size());
 		Map<String,String> substitutions = new HashMap<String,String>();
 		for(int i=0; i<argNames.size(); i++) {
 			substitutions.put(argNames.get(i),actualArgNames.get(i));

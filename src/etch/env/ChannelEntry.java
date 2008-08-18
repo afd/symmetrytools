@@ -2,7 +2,7 @@ package src.etch.env;
 
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
-import junit.framework.Assert;
+
 
 
 public class ChannelEntry extends VarEntry {
@@ -13,7 +13,7 @@ public class ChannelEntry extends VarEntry {
 
 		super(varEntry.getType(),varEntry.isHidden(),lineOfDeclaration);
 
-		Assert.assertTrue(this.getType() instanceof ChanType || 
+		assert(this.getType() instanceof ChanType || 
 				(this.getType() instanceof ArrayType && ((ArrayType)this.getType()).getElementType() instanceof ChanType));
 		
 		/* Actually, in Promela it is illegal to declare hidden channels.  Etch

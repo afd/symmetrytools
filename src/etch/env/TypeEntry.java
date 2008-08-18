@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.types.VisibleType;
 
 public class TypeEntry extends EnvEntry {
@@ -14,7 +14,7 @@ public class TypeEntry extends EnvEntry {
 	
 	public TypeEntry(List<String> fieldNames, List<VisibleType> fieldTypes, int lineOfDeclaration) {
 		super(lineOfDeclaration);
-		Assert.assertEquals(fieldNames.size(),fieldTypes.size());
+		assert(fieldNames.size() == fieldTypes.size());
 		this.fieldNames = new ArrayList<String>();
 		this.fieldTypes = new ArrayList<VisibleType>();
 		for(int i=0; i<fieldNames.size(); i++) {

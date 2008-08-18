@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.promela.analysis.DepthFirstAdapter;
 import src.promela.node.ACompoundAndExpr;
 import src.promela.node.ACompoundOrExpr;
@@ -109,7 +109,7 @@ public class Normaliser extends DepthFirstAdapter {
 		for(; temp instanceof AManySequence; temp = ((AManySequence)temp).getSequence()) {
 			addStep(result, ((AManySequence)temp).getStep());
 		}
-		Assert.assertTrue(temp instanceof AOneSequence);
+		assert(temp instanceof AOneSequence);
 		addStep(result,((AOneSequence)temp).getStep());
 		return result;
 	}
@@ -144,7 +144,7 @@ public class Normaliser extends DepthFirstAdapter {
 			if(result instanceof AManySequence) {
 				result = ((AManySequence)result).getSequence();
 			} else {
-				Assert.assertEquals(i,noProcesses-2);
+				assert(i == noProcesses-2);
 			}
 		}
 		return result;

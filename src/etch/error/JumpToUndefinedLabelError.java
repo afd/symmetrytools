@@ -1,6 +1,6 @@
 package src.etch.error;
 
-import junit.framework.Assert;
+
 import src.etch.checker.LabelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.InlineEntry;
@@ -13,7 +13,7 @@ public class JumpToUndefinedLabelError extends Error {
 	public JumpToUndefinedLabelError(String labelName, EnvEntry actualEntry) {
 		this.labelName = labelName;
 		this.actualEntry = actualEntry;
-		Assert.assertFalse(actualEntry instanceof LabelEntry);
+		assert(!(actualEntry instanceof LabelEntry));
 	}
 
 	public String message() {

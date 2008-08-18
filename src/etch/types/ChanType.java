@@ -2,7 +2,7 @@ package src.etch.types;
 
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.checker.Checker;
 
 public class ChanType extends ConstructedType implements VisibleType {
@@ -10,7 +10,7 @@ public class ChanType extends ConstructedType implements VisibleType {
 	private InternalType messageType;
 
 	public ChanType(InternalType messageType) {
-		Assert.assertTrue(messageType == null || messageType instanceof ProductType || messageType instanceof TypeVariableType);
+		assert(messageType == null || messageType instanceof ProductType || messageType instanceof TypeVariableType);
 		this.messageType = messageType;
 	}
 

@@ -1,6 +1,6 @@
 package src.symmextractor;
 
-import junit.framework.Assert;
+
 import src.etch.error.Error;
 import src.etch.error.SubtypingError;
 import src.etch.typeinference.Unifier;
@@ -93,7 +93,7 @@ public class PidSensitiveUnifier extends Unifier {
 
 	protected void unifyBooleanSubtypes(Type s, Type t) {
 
-		Assert.assertTrue(s.isSubtype(new BoolType()) && t.isSubtype(new BoolType()));
+		assert(s.isSubtype(new BoolType()) && t.isSubtype(new BoolType()));
 		
 		if(!(isPidLiteral(s) && isPidLiteral(t))) {
 			SymmetryChecker.setNotPidLiteral(s);

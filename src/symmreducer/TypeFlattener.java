@@ -3,7 +3,7 @@ package src.symmreducer;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
+
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ProductType;
@@ -38,7 +38,7 @@ public class TypeFlattener {
 		}
 		
 		else {
-			Assert.assertTrue(t instanceof VisibleType);
+			assert(t instanceof VisibleType);
 			result.add((VisibleType) t);
 		}
 		
