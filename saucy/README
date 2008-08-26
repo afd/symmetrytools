@@ -1,0 +1,4 @@
+The supplied Makefile assumes that saucy will be compiled with gcc.  If
+this is not the case at your site, replace the CC and CFLAGS lines with
+site-specific info, or else delete them and uncomment the .POSIX line to
+get portable behavior.

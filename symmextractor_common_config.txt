@@ -1,5 +1,5 @@
 gap=C:\GAP4R4\bin\gap.bat
-saucy=C:\Program Files\saucy\saucy.exe
+saucy=saucy\saucy.exe
 common=Common\
 quiet=true
 
