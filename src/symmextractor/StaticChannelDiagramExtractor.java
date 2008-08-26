@@ -2,11 +2,9 @@ package src.symmextractor;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 
@@ -45,7 +43,7 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 
 	protected List<String> proctypeNames = new ArrayList<String>();
 
-	private Set<ChannelEntry> distinctChannelSignatures = new HashSet<ChannelEntry>();
+	private List<ChannelEntry> distinctChannelSignatures = new ArrayList<ChannelEntry>();
 
 	private List<Integer> colourPermutation;
 	private List<Integer> colourPartition;
@@ -70,8 +68,8 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 		return getEnv().getTopEntries();
 	}
 	
-	public Set<ChannelEntry> getDistinctChannelSignatures() {
-		return Collections.unmodifiableSet(distinctChannelSignatures);
+	public List<ChannelEntry> getDistinctChannelSignatures() {
+		return Collections.unmodifiableList(distinctChannelSignatures);
 	}
 	
 	public List<Integer> getColourPartition() {

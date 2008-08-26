@@ -15,6 +15,7 @@ import src.symmextractor.testing.SymmExtractorRunTestOutcome;
 import src.symmextractor.testing.SymmExtractorTestCase;
 import src.symmreducer.SymmReducer;
 import src.testing.SystemErrorTestOutcome;
+import src.testing.TestOutcome;
 import src.utilities.AbsentConfigurationFileException;
 import src.utilities.BadConfigurationFileException;
 import src.utilities.Config;
@@ -72,38 +73,11 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 					actualOutcome = SymmExtractorFailTestOutcome.BreaksRestrictions;
 				} else {
 
-					try {
-						if(compileSympanFiles() != 0) {
-							actualOutcome = SymmReducerFailTestOutcome.GCCCompilationFailure;
-							return;
-						}
-
-						ModelCheckingResult result;
-
-						try {
-							result = runVerifier();
-							
-							if(result.getExitValue()!=0)
-							{
-								actualOutcome = SymmReducerFailTestOutcome.VerificationFailure;
-							} else {
-								actualOutcome = new SymmReducerTestOutcome(
-										new SymmExtractorRunTestOutcome(true, reducer.getSizeOfGroup(), reducer.requiredCosetSearch()), 
-										result.getNumberOfStates(), result.getNumberOfTransitions());
-							}
-						} catch(IOException e) {
-							actualOutcome = SymmReducerFailTestOutcome.VerificationIOError;
-						} catch(InterruptedException e) {
-							actualOutcome = SymmReducerFailTestOutcome.VerificationInterrupted;
-						} catch(NumberFormatException e) {
-							actualOutcome = SymmReducerFailTestOutcome.ErrorParsingVerificationResult;
-						}
-
-					} catch(IOException e) {
-						actualOutcome = SymmReducerFailTestOutcome.GCCCompilationIOError;
-					} catch(InterruptedException e) {
-						actualOutcome = SymmReducerFailTestOutcome.GCCCompilationInterrupted;
+					if(null != (actualOutcome = compileSympanFiles())) {
+						return;
 					}
+
+					actualOutcome = runVerifier(reducer);
 				}
 			}
 
@@ -137,9 +111,14 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 
 	private static final String EXECUTABLE = "__topspinmain__";
 	
-	private ModelCheckingResult runVerifier() throws IOException, InterruptedException, NumberFormatException {
+	private TestOutcome runVerifier(SymmReducer reducer) {
 
-		Process sympan = Runtime.getRuntime().exec( ((!Config.isOSWindows()) ? "./" : "") + EXECUTABLE + " -m" + searchDepth);
+		Process sympan;
+		try {
+			sympan = Runtime.getRuntime().exec(((!Config.isOSWindows()) ? "./" : "") + EXECUTABLE + " -m" + searchDepth);
+		} catch (IOException e1) {
+			return SymmReducerFailTestOutcome.VerificationIOError;
+		}
 		
 		// Had to put this line in to stop the program from hanging.  Not sure why.
 		BufferedReader br = new BufferedReader(new InputStreamReader(sympan.getInputStream()));
@@ -161,25 +140,52 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 			}
 		} catch(NumberFormatException e) {
 			sympan.destroy();
-			throw e;
+			return SymmReducerFailTestOutcome.ErrorParsingVerificationResult;
+		} catch (IOException e) {
+			return SymmReducerFailTestOutcome.VerificationIOError;
 		}
 
-		sympan.waitFor();
-		return new ModelCheckingResult(sympan.exitValue(), numberOfStates, numberOfTransitions);
+		try {
+			sympan.waitFor();
+		} catch (InterruptedException e) {
+			return SymmReducerFailTestOutcome.VerificationInterrupted;
+		}
+
+		if(0 != sympan.exitValue()) {
+			return SymmReducerFailTestOutcome.VerificationFailure;
+		}
+
+		return new SymmReducerTestOutcome(
+				new SymmExtractorRunTestOutcome(true, reducer.getSizeOfGroup(), reducer.requiredCosetSearch()), 
+				numberOfStates, numberOfTransitions);
+		
 	}
 
-	private int compileSympanFiles() throws IOException, InterruptedException {
+	private SymmReducerFailTestOutcome compileSympanFiles() {
 		
-		Process gcc = Runtime.getRuntime().exec("gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
-				(Config.PARALLELISE ? "parallel_symmetry_pthreads.c " : "")
-				+ "-DSAFETY -DNOREDUCE " + compilerDirectives);
+		Process gcc;
+		try {
+			gcc = Runtime.getRuntime().exec("gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
+					(Config.PARALLELISE ? "parallel_symmetry_pthreads.c " : "")
+					+ "-DSAFETY -DNOREDUCE " + compilerDirectives);
+		} catch (IOException e1) {
+			return SymmReducerFailTestOutcome.GCCCompilationIOError;
+		}
 
 		ErrorStreamHandler errorHandler = new ErrorStreamHandler(gcc, false);
 		errorHandler.start();
 		
-		gcc.waitFor();
+		try {
+			gcc.waitFor();
+		} catch (InterruptedException e) {
+			return SymmReducerFailTestOutcome.GCCCompilationInterrupted;
+		}
 		
-		return gcc.exitValue();
+		if(0 != gcc.exitValue()) {
+			return SymmReducerFailTestOutcome.GCCCompilationFailure;
+		}
+
+		return null; // Compilation was successful
 
 	}
 

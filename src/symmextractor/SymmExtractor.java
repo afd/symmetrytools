@@ -32,7 +32,6 @@ public class SymmExtractor extends Check {
 	protected Process gap;
 	protected BufferedReader gapReader;
 	protected BufferedWriter gapWriter;
-	private StaticChannelDiagramExtractor extractor;
 	private Group autSCD;
 	private Group largestValidSubgroup;
 	private boolean requiredCosetSearch = false;
@@ -51,7 +50,6 @@ public class SymmExtractor extends Check {
 	public StaticChannelDiagramExtractor extract() throws IOException {
 
 		if(Config.PROFILE) { Profile.EXTRACT_START = System.currentTimeMillis(); }
-		extractor = new StaticChannelDiagramExtractor();
 		
 		isWellTyped = typecheck(true);
 		
@@ -61,6 +59,9 @@ public class SymmExtractor extends Check {
 				ProgressPrinter.println("Reparsing source without inlines");
 			}
 			reparseSourceWithoutInlines();
+
+			StaticChannelDiagramExtractor extractor	= new StaticChannelDiagramExtractor();
+			
 			theAST.apply(extractor);
 
 			obeysSymmetryRestrictions = checkSymmetryResrictionsAreObeyed(extractor);
@@ -86,7 +87,7 @@ public class SymmExtractor extends Check {
 				}
 	
 				if(Config.PROFILE) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
-				computeLargestValidSubgroup();
+				computeLargestValidSubgroup(extractor);
 	
 				if(ProgressPrinter.VERBOSE_MODE) {
 					ProgressPrinter.printSeparator();
@@ -132,7 +133,7 @@ public class SymmExtractor extends Check {
 		parseInputString(inlinedSourceProgram);
 	}
 
-	private void computeLargestValidSubgroup()
+	private void computeLargestValidSubgroup(StaticChannelDiagramExtractor extractor)
 			throws IOException {
 
 		boolean someGeneratorsInvalid = false;
@@ -180,7 +181,7 @@ public class SymmExtractor extends Check {
 			
 			
 			if(Config.NO_CONJUGATES>0) {
-				enlargeBaseGroupWithRandomConjugates(baseGroup.noGenerators());
+				enlargeBaseGroupWithRandomConjugates(baseGroup.noGenerators(), extractor);
 			}
 
 			ProgressPrinter.println("Finding largest valid subgroup");
@@ -201,7 +202,7 @@ public class SymmExtractor extends Check {
 				gapWriter.write("C[" + j + "];\n");
 				gapWriter.flush();
 
-				Permutation nextRepresentative = getPerm();
+				Permutation nextRepresentative = getPerm(extractor);
 
 				if (nextRepresentative.isSafeFor(theAST, extractor)) {
 					ProgressPrinter.println("    " + nextRepresentative + " : valid");
@@ -219,7 +220,7 @@ public class SymmExtractor extends Check {
 					j++;
 				}
 			}
-			largestValidSubgroup = getFinalGroupFromGAP();
+			largestValidSubgroup = getFinalGroupFromGAP(extractor);
 
 			if(Config.TESTING_IN_PROGRESS) {
 				gapWriter.write("Size(H);\n");
@@ -278,7 +279,7 @@ public class SymmExtractor extends Check {
 		gap.destroy();
 	}
 
-	private Group getFinalGroupFromGAP() throws IOException {
+	private Group getFinalGroupFromGAP(StaticChannelDiagramExtractor extractor) throws IOException {
 		gapWriter.write("Size(GeneratorsOfGroup(H));\n");
 		gapWriter.write("Print(JoinStringsWithSeparator(GeneratorsOfGroup(H),\"\\n\"),\"\\n\");\n");
 		gapWriter.flush();
@@ -287,7 +288,7 @@ public class SymmExtractor extends Check {
 
 		Set<Permutation> generators = new HashSet<Permutation>();
 		for(int i=0; i<noGenerators; i++) {
-			generators.add(getPerm());
+			generators.add(getPerm(extractor));
 		}
 
 		return new Group(generators);
@@ -306,7 +307,7 @@ public class SymmExtractor extends Check {
 		return -1;
 	}
 
-	private Permutation getPerm() throws IOException {
+	private Permutation getPerm(StaticChannelDiagramExtractor extractor) throws IOException {
 		String perm = gapReader.readLine();
 		
 		while (perm.charAt(perm.length() - 1) == ',' || perm.charAt(perm.length() - 1) == '\\') {
@@ -327,7 +328,7 @@ public class SymmExtractor extends Check {
 						+ representativePosition + "]]));;\n");
 	}
 
-	private void enlargeBaseGroupWithRandomConjugates(int noGenerators) throws IOException {
+	private void enlargeBaseGroupWithRandomConjugates(int noGenerators, StaticChannelDiagramExtractor extractor) throws IOException {
 
 		for (int l = 1; l <= Config.NO_CONJUGATES; l++) {
 			gapWriter.write("alpha := Random(G);;\n");
@@ -339,7 +340,7 @@ public class SymmExtractor extends Check {
 			gapWriter.flush();
 			
 			for(int j = 1; j <= noGenerators; j++) {
-				Permutation pe = getPerm();
+				Permutation pe = getPerm(extractor);
 				if (pe.isSafeFor(theAST, extractor)) {
 					gapWriter.write("alpha := " + pe.gapRepresentation(extractor) + ";;\n");
 					gapWriter.write("if (not (alpha in H)) then\n");
