@@ -13,7 +13,9 @@ public class FileManager {
 
 	public static void copyTextFile(String sourceName, String destName) throws IOException {
 		try {
-			ProgressPrinter.print("   Copying " + sourceName + " -> " + destName + " ... ");
+			if(ProgressPrinter.VERBOSE_MODE) {
+				ProgressPrinter.print("   Copying " + sourceName + " -> " + destName + " ... ");
+			}
 			BufferedReader br = new BufferedReader(new FileReader(sourceName));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(destName));
 			String line;
@@ -22,7 +24,9 @@ public class FileManager {
 			}
 			br.close();
 			bw.close();
-			ProgressPrinter.println("[OK]");
+			if(ProgressPrinter.VERBOSE_MODE) {
+				ProgressPrinter.println("[OK]");
+			}
 		} catch(FileNotFoundException e) {
 			System.out.println("\n\nError: could not find file \"" + sourceName + "\".");
 			System.exit(1);

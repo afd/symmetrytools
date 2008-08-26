@@ -120,7 +120,9 @@ public class SymmReducer extends SymmExtractor {
     	
     	if(Config.PROFILE) { Profile.CODE_GENERATION_END = System.currentTimeMillis(); 	}
 
-    	ProgressPrinter.printSeparator();
+    	if(ProgressPrinter.VERBOSE_MODE) {
+    		ProgressPrinter.printSeparator();
+    	}
     	ProgressPrinter.println("Completed generation of sympan verifier which includes algorithms for symmetry reduction!\n");
     	ProgressPrinter.println("To generate an executable verifier use the following command:");
     	ProgressPrinter.print("   gcc -o sympan sympan.c group.c");

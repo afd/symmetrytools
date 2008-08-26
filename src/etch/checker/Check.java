@@ -152,7 +152,7 @@ public class Check {
 		substituter.setTypeInformation(chk);
 		theAST.apply(substituter);
 
-		if(!ProgressPrinter.QUIET_MODE) {
+		if(ProgressPrinter.VERBOSE_MODE) {
 			System.out.println(chk.showCompleteTypeInformation(sourceName));
 		}
 

@@ -32,7 +32,8 @@ public class Config {
 	public static boolean PROFILE = false;
 	public static boolean DETECT_ONLY = false;
 	public static boolean VECTORIZE_ID_SWAPPING = false;
-
+	public static boolean VERBOSE = false;
+	
 	public static int NO_CORES = 1;
 	
 	public static boolean PARALLELISE = false;
@@ -59,6 +60,7 @@ public class Config {
 		VECTORIZE_ID_SWAPPING = false;
 		NO_CORES = 1;
 		PARALLELISE = false;
+		VERBOSE = false;
 		previouslySetOptions = new HashMap<String,Integer>();
 
 	}
@@ -177,6 +179,8 @@ public class Config {
 						NO_CORES = safelyParseIntegerOption(value, lineNumber);
 					} else if(name.equals("quiet")) {
 						ProgressPrinter.QUIET_MODE = safelyParseBooleanOption(value, lineNumber);
+					} else if(name.equals("verbose")) {
+						ProgressPrinter.VERBOSE_MODE = safelyParseBooleanOption(value, lineNumber);
 					} else if(name.equals("vectorise")) {
 						VECTORIZE_ID_SWAPPING = safelyParseBooleanOption(value, lineNumber);
 					} else if(name.equals("target")) {

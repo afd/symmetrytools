@@ -914,8 +914,11 @@ public class SymmetryApplier {
 	}
 	
 	private void dealWithGroupFiles() throws IOException, InterruptedException {
-		ProgressPrinter.printSeparator();
-		ProgressPrinter.println("Copying template files for computing with permutations:");
+
+		if(ProgressPrinter.VERBOSE_MODE) {
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("Copying template files for computing with permutations:");
+		}
 		
 		if (!usingMarkers() && Config.USE_TRANSPOSITIONS) {
 			FileManager.copyTextFile(Config.COMMON + "groupTranspositions.c", "group.c");
@@ -950,12 +953,16 @@ public class SymmetryApplier {
 	}
 
 	private void generatePanFiles() throws IOException, InterruptedException {
-		ProgressPrinter.printSeparator();
-		ProgressPrinter.println("Using SPIN to generate pan files");
+		if(ProgressPrinter.VERBOSE_MODE) {
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("Using SPIN to generate pan files");
+		}
 		CommunicatingProcess.execute("spin", "-a", specification); // Generate pan files.
 
-		ProgressPrinter.printSeparator();
-		ProgressPrinter.println("Generating sympan files from pan files:");
+		if(ProgressPrinter.VERBOSE_MODE) {
+			ProgressPrinter.printSeparator();
+			ProgressPrinter.println("Generating sympan files from pan files:");
+		}
 
 		char[] endings = { 'c', 'h', 'b', 't', 'm' };
 		for (char ending : endings) { // Copy pan files into sympan files

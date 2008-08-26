@@ -3,6 +3,7 @@ package src.utilities;
 public class ProgressPrinter {
 
 	public static boolean QUIET_MODE = false;
+	public static boolean VERBOSE_MODE;
 	
 	public static void println(String line) {
 		if(!QUIET_MODE) {
