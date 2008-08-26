@@ -1,0 +1,129 @@
+
+\documentclass[mctitle,oldtoc,a4paper,11pt,oneside]{sty/topspinrapport}
+
+\usepackage[margin=1.0in]{geometry}
+
+\font\chapterfont=cmssdc10 at 40pt
+\font\secfont=cmssdc10 at 14pt
+\font\ssecfont=cmssdc10 at 12pt
+\font\problemfont=cmssdc10 at 14pt
+%
+
+\HeadingFonts{\bfseries}{\bfseries}{\chapterfont}{\secfont}{\ssecfont}{\slshape}{\slshape}{\slshape}
+
+
+
+%\usepackage{mathpazo}
+
+\usepackage{graphicx}
+\usepackage{amssymb,amsmath}
+\usepackage{latexsym}
+\usepackage{nopageno}
+\usepackage{listings}
+\usepackage{times}
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+% Referencing macros %
+%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figref}[1]{Figure~\ref{fig:#1}}
+
+
+%%%%%%%%%%%%%%%%%%
+% Listings stuff %
+%%%%%%%%%%%%%%%%%%
+
+\newcommand{\inline}[1]
+{\lstset{
+basicstyle=\footnotesize\tt}\lstinline|#1|\lstset{
+basicstyle=\scriptsize\tt}}
+
+\lstset{
+basicstyle=\scriptsize\tt,
+commentstyle=\footnotesize\tt, aboveskip=\medskipamount,
+belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
+
+
+%%%%%%%%%%%%%%%%%%
+% Names of tools %
+%%%%%%%%%%%%%%%%%%
+
+\newcommand{\etch}{\mbox{E\scalebox{0.75}{TCH}}}
+\newcommand{\gap}{\mbox{G\scalebox{0.75}{AP}}}
+\newcommand{\spin}{\mbox{S\scalebox{0.75}{PIN}}}
+\newcommand{\topspin}{\mbox{TopS\scalebox{0.75}{PIN}}}
+\newcommand{\saucy}{{\it saucy}}
+
+%%%%%%%%%%%%%%%%%%
+% URLs           %
+%%%%%%%%%%%%%%%%%%
+
+\newcommand{\topspinwebpage}{http://www.allydonaldson.co.uk/topspin/}
+\newcommand{\sourceforgepage}{https://www.sourceforge.net/projects/symmetryglasgow/}
+\newcommand{\sableccwebsite}{http://sablecc.org/}
+\newcommand{\saucywebpage}{http://vlsicad.eecs.umich.edu/BK/SAUCY/}
+\newcommand{\winrarwebsite}{http://www.rarlab.com/}
+\newcommand{\javaurl}{http://java.sun.com/}
+\newcommand{\spinurl}{http://www.spinroot.com/}
+\newcommand{\gapurl}{http://gap-system.org/}
+\newcommand{\gccurl}{http://gcc.gnu.org/}
+
+
+%%%%%%%%%%%%%%%%%%
+% Useful macros  %
+%%%%%%%%%%%%%%%%%%
+
+\newcommand{\chapref}[1]{Chapter~\ref{chapter:#1}}
+\newcommand{\chapsref}[2]{Chapters~\ref{chapter:#1} and~\ref{chapter:#2}}
+\newcommand{\secref}[1]{\S\ref{sec:#1}}
+
+\newcommand{\problem}[1]{\noindent{\bf Problem:} #1}
+\newcommand{\solution}[1]{\noindent{\bf Solution:} #1}
+\newcommand{\exampleerrormessage}{\vspace{1mm}\noindent{\bf Example error message:}}
+
+\newcommand{\ltl}{$\mathit{LTL}$}
+
+%%%%%%%%%%%%%%%%%%
+% Versions       %
+%%%%%%%%%%%%%%%%%%
+
+\newcommand{\sableccversion}{3.2}
+\newcommand{\topspinversion}{2.1}
+\newcommand{\jreversion}{1.5.0\_06}
+\newcommand{\gccversion}{3.4.4}
+\newcommand{\gapversion}{4.4.6}
+\newcommand{\spinversion}{5.1.6}
+
+
+\newcommand{\downloadingandinstalling}{Downloading and Installing}
+\newcommand{\workedexample}{Worked Example}
+\newcommand{\overviewofoptions}{Overview of Options}
+\newcommand{\buildingfromsource}{Compiling From Source}
+\newcommand{\troubleshooting}{Troubleshooting and Bug Reporting}
+
+\title{\protect\topspin\ User Manual}
+
+\author{Alastair F. Donaldson}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\input{tex/beforeyoubegin}
+
+\input{tex/downloadandinstall}
+
+\input{tex/workedexample}
+
+\input{tex/options}
+
+\input{tex/compiling}
+
+\input{tex/troubleshooting}
+
+\input{tex/acknowledgements}
+
+\end{document}

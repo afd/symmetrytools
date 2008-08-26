@@ -1,0 +1,399 @@
+\chapter{\workedexample}\label{chapter:example}
+
+In this chapter, the basic workings of \topspin\ are illustrated via
+a worked example.
+
+\section{Loadbalancer specification}
+
+The \inline{examples} folder in the \topspin\ root directory
+contains a file, \inline{loadbalancer.p}.  This is a Promela
+specification for a \emph{loadbalancer}, which forwards requests
+from a pool of clients to a pool of servers in a fair manner.
+
+Components in the loadbalancer are a set of 2 \emph{server} and 4
+\emph{client} processes with associated communication channels, and
+a \emph{loadbalancer} process with a dedicated input channel.  The
+\emph{load} of a server is the number of messages queued on its
+input channel.  Client processes send requests to the loadbalancer,
+and if some server's channel is not full, the loadbalancer forwards
+a request nondeterministically to one of the least-loaded server
+queues. Each request contains a reference to the input channel of
+its associated client process, and the server designated by the
+loadbalancer uses this channel to service the request.
+
+\section{Applying \protect\spin\ to the loadbalancer specification}\label{sec:example:applyingspin}
+
+Before applying \topspin\ to this example, it is worth checking that
+\spin\ is in good working order by model checking the example
+without symmetry reduction.
+
+Navigate to the \inline{examples} directory, and run the following
+commands:
+%
+\begin{lstlisting}
+C:\Program Files\TopSPIN_2.1\examples>spin -a loadbalancer.p
+C:\Program Files\TopSPIN_2.1\examples>gcc -o pan -O2 -DSAFETY pan.c
+C:\Program Files\TopSPIN_2.1\examples>pan -m100000
+\end{lstlisting}
+%
+\spin\ should successfully verify that the model associated with the
+specification is deadlock-free, producing output similar to:
+%
+\begin{lstlisting}
+(Spin Version 5.1.6 -- 9 May 2008)
+        + Partial Order Reduction
+
+Full statespace search for:
+        never claim             - (none specified)
+        assertion violations    +
+        cycle checks            - (disabled by -DSAFETY)
+        invalid end states      +
+
+State-vector 108 byte, depth reached 73413, errors: 0
+   170903 states, stored
+   413074 states, matched
+   583977 transitions (= stored+matched)
+        6 atomic steps
+hash conflicts:     48755 (resolved)
+
+   24.974       memory usage (Mbyte)
+
+unreached in proctype client
+        line 20, state 6, "-end-"
+        (1 of 6 states)
+unreached in proctype loadBalancer
+        line 34, state 13, "-end-"
+        (1 of 13 states)
+unreached in proctype server
+        line 43, state 7, "-end-"
+        (1 of 7 states)
+unreached in proctype :init:
+        (0 of 9 states)
+
+pan: elapsed time 0.818 seconds pan: rate 208927.87 states/second
+\end{lstlisting}
+
+\section{Setting up a \protect\topspin\ configuration file}\label{sec:example:configuration}
+
+You are almost ready to use \topspin\ for symmetry reduction!  When
+you invoke \topspin\ on a Promela specification, the tool requires
+that a file called \inline{config.txt} is available in the current
+directory.  This file tells \topspin\ where to find the \gap\ and
+\saucy\ programs, the location of some common source code, and the
+values of various runtime options. The ile consists of a series of
+lines, each of which has the form:
+
+\vspace{2mm} \emph{attribute}\texttt{=}\emph{value} \vspace{2mm}
+
+\noindent Three attributes are required in every configuration file:
+
+\vspace{2mm}
+\begin{enumerate}
+\item {\bf \texttt{gap}} -- the absolute path required to launch \gap.  The value for
+the \inline{gap} attribute must be such that typing this value at
+the command prompt is all that is required to launch the \gap\
+program.
+\item {\bf \texttt{saucy}}  -- the absolute path for the \saucy\ executable.  Again, the
+value for the \inline{saucy} attribute must be exactly what you type
+to run \saucy\ from the command line.
+\item {\bf \texttt{common}} -- the absolute path to the \inline{Common} directory in
+the \topspin\ root directory, followed by a (back- or forward-,
+depending on your operating system) slash.
+\end{enumerate}
+%
+Under Windows, \inline{config.txt} might look like this:
+%
+\begin{lstlisting}
+gap=C:\gap4r4\bin\gap.bat saucy=C:\Program
+Files\TopSPIN_2.1\saucy\saucy.exe common=C:\Program
+Files\TopSPIN_2.1\Common\
+\end{lstlisting}
+%
+whereas a possible Linux version of \inline{config.txt} could be:
+%
+\begin{lstlisting}
+gap=/users/grad/ally/Scripts/gap
+saucy=/users/grad/ally/TopSPIN_2.1/saucy/saucy
+common=/users/grad/ally/TopSPIN_2.1/Common/
+\end{lstlisting}
+%
+The remainder of \inline{config.txt} is used to specify \topspin\
+options for a particular specification.  One of these options is
+discussed in \secref{example:enumerate}, and a complete overview of
+options is given in \chapref{overview}.
+
+A configuration file must always be present in the directory from
+where you invoke \topspin.  You will probably use different
+configuration files for different specifications, depending on the
+nature of the symmetry associated with these specifications.
+However, since the \inline{gap}, \inline{saucy} and \inline{common}
+attributes are likely to be the same in all configuration files, it
+makes sense to keep a ``skeleton'' configuration file containing
+just these options, which you can then copy and extend for a given
+Promela specification.
+
+\section{Symmetry reduction with the \emph{fast} strategy}\label{sec:example:fast}
+
+When you run \topspin, you can specify a symmetry reduction
+\emph{strategy} for the tool to use.  The choice of strategy
+influences the speed of symmetry reduction and the factor of
+reduction obtained though the use of symmetry.  Some strategies
+provide the maximum possible state-space reduction due to symmetry,
+at the expense of a slow state-space search.  Other strategies are
+more lightweight, providing potentially sub-optimal reduction, but
+executing more quickly.
+
+By default, \topspin\ uses the \emph{fast} strategy.  In a nutshell,
+when using this strategy \topspin\ attempts to work out an efficient
+symmetry reduction algorithm based on the type of symmetry
+associated with the input specification.  The symmetry reduction
+algorithm used is \emph{approximate} in the sense that it may result
+in exploration of more than one state per symmetric equivalence
+class.
+
+\subsection{Running \protect\topspin}
+
+Copy the basic configuration file created in
+\secref{example:configuration} into the \inline{examples} directory,
+and run \topspin\ on \inline{loadbalancer.p} as
+follows:\footnote{For reasons of space, some lines in the \topspin\
+output have been wrapped. Also note that the output on your system
+will vary slightly according to the paths you have specified in
+\inline{config.txt}.}
+%
+\begin{lstlisting}
+C:\Program Files\TopSPIN_2.1\examples>java -jar "C:\Program
+Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
+
+--------------------------------------
+TopSPIN version 2.1
+--------------------------------------
+Configuration settings:
+    Symmetry detection method: static channel diagram analysis
+    Using 0 random conjugates
+    Timeout for finding largest valid subgroup: 0 seconds
+    Reduction strategy: FAST
+    Using transpositions to represent permutations: true
+    Using stabiliser chain for enumeration: true
+    Using vectorisation: false
+--------------------------------------
+
+Typechecking input specification...
+
+Specification is well typed!
+
+Launching saucy via the following command: C:\Program
+Files\TopSPIN_2.1\saucy\saucy.exe -d "C:\Program
+Files\TopSPIN_2.1\Common\graph.saucy"
+
+Starting GAP with command: C:\gap4r4\bin\gap.bat -L "C:\Program
+Files\TopSPIN_2.1\Common\gapworkspace" -q
+
+The group:
+   G = <(3 2)(clients0 clients1),(5 4)(clients2 clients3),(servers1 servers0)(7 6),
+        (3 4)(clients2 clients1)>
+is a valid group for symmetry reduction.
+
+Generating symmetry reduction algorithms
+
+The symmetry group has size 48 Completed generation of sympan
+verifier which includes algorithms for symmetry reduction!
+
+To generate an executable verifier use the following command:
+   gcc -o sympan sympan.c group.c
+together with SPIN compile-time directives for your specification.
+
+Execute the verifier using the following command:
+   sympan.exe
+together with SPIN run-time options for your specification.
+\end{lstlisting}
+%
+If \topspin\ does \emph{not} produce output like this, then proceed
+to \chapref{troubleshooting} to try to deduce what is wrong, and to
+file a bug report if necessary.
+
+The first part of the \topspin\ output specifies which version of
+the tool is being used, and how the various tool options have been
+configured. These options have all been set to default values.  For
+now, simply note that the \emph{fast} strategy is being used.
+
+The tool then typechecks the input specification, reporting that the
+specification is well-typed.
+
+After typechecking, the \saucy\ and \gap\ programs are launched, to
+perform automatic symmetry detection.  Note that the paths to these
+tools have been taken from the configuration file.  The \saucy\ tool
+is passed the \inline{-d} option to indicate that the graph it will
+operate on is \emph{directed}.  A temporary file,
+\inline{graph.saucy}, is also passed to the program: this is a graph
+generated by \topspin\ from which symmetries of
+\inline{loadbalancer.p} are derived.  The \gap\ package is launched
+with the \inline{-L} option to indicate that a workspace
+(\secref{downloadandinstall:gapworkspace}) should be loaded.  The
+path to this workspace -- \inline{gapworkspace} inside the
+\inline{Common} directory -- is also passed to \gap.  The
+\inline{-q} operation launches \gap\ in \emph{quiet} mode, which
+improves the efficiency of communication between the \gap\ and Java
+components of \topspin.
+
+\topspin\ successfully computes generators for a group of symmetries
+associated with the loadbalancer specification.  From the generators
+of this group, it can be seen that there is full symmetry between
+the \emph{client} processes, as well as symmetry between the
+\emph{server} processes.  \topspin\ then goes on to generate
+symmetry reduction algorithms for this group, reporting that the
+number of symmetries is 48 (4! symmetries between the clients, and 2
+symmetries between the servers, leads to $24\times 2=48$ symmetries
+overall).
+
+The end of the \topspin\ output details how the $C$ files generated
+by \spin\ and \topspin\ should be compiled and executed.
+
+\subsection{Compiling and executing the {\bf \texttt{sympan}} verifier}
+
+The \inline{examples} directory should now contain a number of
+files, including \inline{sympan.c} and \inline{group.c}.  The
+\inline{sympan.c} file is a modified version of the \inline{pan.c}
+file produced by \spin, which includes symmetry reduction
+algorithms.  The \inline{group.c} file includes functions for
+computing with permutations.
+
+Compile and execute this verifier using commands analogous to those
+shown in \secref{example:applyingspin}:
+%
+\begin{lstlisting}
+C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY
+sympan.c group.c C:\Program Files\TopSPIN_2.1\examples>sympan
+-m100000
+
+(Spin Version 5.1.6 -- 9 May 2008)
+        + Partial Order Reduction
+
+Full statespace search for:
+        never claim             - (none specified)
+        assertion violations    +
+        cycle checks            - (disabled by -DSAFETY)
+        invalid end states      +
+
+State-vector 108 byte, depth reached 2323, errors: 0
+     4960 states, stored
+    12254 states, matched
+    17214 transitions (= stored+matched)
+        6 atomic steps
+hash conflicts:        35 (resolved)
+
+    5.735       memory usage (Mbyte)
+
+unreached in proctype client
+        line 20, state 6, "-end-"
+        (1 of 6 states)
+unreached in proctype loadBalancer
+        line 34, state 13, "-end-"
+        (1 of 13 states)
+unreached in proctype server
+        line 43, state 7, "-end-"
+        (1 of 7 states)
+unreached in proctype :init:
+        (0 of 9 states)
+
+pan: elapsed time 0.369 seconds pan: rate 13441.734 states/second
+\end{lstlisting}
+%
+Comparing this model checking result with the result without
+symmetry reduction (\secref{example:applyingspin}) shows that the
+\emph{fast} strategy leads to a state-space reduction factor of
+34.5.  The theoretical maximum symmetry reduction factor is 48,
+which is the size of the symmetry group computed by \topspin, so
+this is a reasonably good result.  Notice that speedup factor is
+just 2.2, and as a result the \emph{states/second} rate for
+verification is significantly lower when symmetry reduction is
+applied.
+%
+\section{Symmetry reduction with the \emph{enumerate} strategy}\label{sec:example:enumerate}
+%
+Although the \emph{fast} strategy provides effective symmetry
+reduction for the loadbalancer example, the strategy does not
+provide space-optimal symmetry reduction. The \emph{enumerate}
+strategy, on the other hand, is guaranteed to provide full symmetry
+reduction.
+
+To use the \emph{enumerate} strategy, open \inline{config.txt} in
+the \inline{examples} directory, and add the following line:
+%
+\begin{lstlisting}
+strategy=enumerate
+\end{lstlisting}
+%
+This additional option tells \topspin\ to use the \emph{enumerate}
+strategy over the default \emph{fast} strategy.
+
+Now apply \topspin\ to the loadbalancer specification, and compile
+and run the generated verifier:
+%
+\begin{lstlisting}
+C:\Program Files\TopSPIN_2.1\examples>java -jar "C:\Program
+Files\TopSPIN_2.1\TopSPIN.jar"
+   ... TopSPIN output ...
+C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY
+sympan.c group.c C:\Program Files\TopSPIN_2.1\examples>sympan
+-m100000
+
+(Spin Version 5.1.6 -- 9 May 2008)
+        + Partial Order Reduction
+
+Full statespace search for:
+        never claim             - (none specified)
+        assertion violations    +
+        cycle checks            - (disabled by -DSAFETY)
+        invalid end states      +
+
+State-vector 108 byte, depth reached 1916, errors: 0
+     4213 states, stored
+    11181 states, matched
+    15394 transitions (= stored+matched)
+        6 atomic steps
+hash conflicts:        23 (resolved)
+
+    5.638       memory usage (Mbyte)
+
+unreached in proctype client
+        line 20, state 6, "-end-"
+        (1 of 6 states)
+unreached in proctype loadBalancer
+        line 34, state 13, "-end-"
+        (1 of 13 states)
+unreached in proctype server
+        line 43, state 7, "-end-"
+        (1 of 7 states)
+unreached in proctype :init:
+        (0 of 9 states)
+
+pan: elapsed time 0.647 seconds pan: rate  6511.592 states/second
+\end{lstlisting}
+%
+Verification using the \emph{enumerate} strategy provides a better
+reduction factor: 40.6 vs. 34.5 with the \emph{fast} strategy
+(\secref{example:fast}). This comes at an expense: the speedup
+factor is reduced from 2.2 for the \emph{fast} strategy to 1.3.  For
+specifications with more symmetric components, this time penalty is
+more significant: the \emph{enumerate} strategy works by applying
+\emph{every} symmetry associated with the input specification to
+\emph{every} state encountered during model checking.  Since a
+specification with $n$ symmetric components has a symmetry group of
+size at least $n!$, use of the \emph{enumerate} strategy quickly
+becomes infeasible.
+
+\section{Summary so far}
+%
+You should now have successfully installed \topspin\ and its
+prerequisite components, created a configuration file, and applied
+the tool to a Promela example.  If you have encountered any problems
+during this process then proceed to \chapref{troubleshooting} for
+troubleshooting ideas and information on how to report \topspin\
+bugs.
+
+At this stage, you may have learned all you need to know about
+\topspin\ for your basic symmetry reduction needs.
+\chapsref{overview}{compilingfromsource} are for advanced users who
+wish to explore \topspin's more sophisticated options, and compile
+the tool from source, respectively.

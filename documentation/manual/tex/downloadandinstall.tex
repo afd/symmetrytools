@@ -1,0 +1,202 @@
+\chapter{\downloadingandinstalling}\label{chapter:downloadandinstall}
+
+\section{Prerequisites}\label{sec:downloadandinstall:prerequisites}
+%
+\topspin\ is written in Java and \gap, interfaces with the \gap\ and
+\spin\ packages, and produces C code which must then be compiled.
+\figref{symmextractorandtopspin:prerequisites} summarises the
+packages which must be installed before \topspin\ can be used, and
+provides a URL for each package. For each package, the version used
+during the development of \topspin\ is specified.  Use of these or
+newer versions is recommended.
+
+\begin{figure}\begin{center}
+\begin{small}
+\begin{tabular}{|l|l|l|} \hline {\bf Package} & {\bf URL} & {\bf
+Version}
+\\\hline
+
+Java runtime environment & \texttt{\javaurl} & \jreversion
+\\\hline
+
+\gap\ system & \texttt{\gapurl} & \gapversion \\\hline
+
+ \spin\ model checker & \texttt{\spinurl} & \spinversion
+\\\hline
+
+ GNU C Compiler (gcc) & \texttt{\gccurl} &
+\gccversion\\\hline
+
+\end{tabular}\end{small}
+\caption{\protect\topspin\
+prerequisites.}\label{fig:symmextractorandtopspin:prerequisites}
+\end{center}
+\end{figure}
+
+Before going further, make sure each of the packages of
+\figref{symmextractorandtopspin:prerequisites} is installed on your
+system
+
+\vspace{2mm}
+%
+\noindent {\bf Important } Make sure that the \spin\ tool is
+installed in such a way that it can be invoked by name from a
+command prompt, i.e. so that typing \inline{spin} will launch \spin.
+To verify that \spin\ is set up appropriately, type \inline{spin} in
+a fresh command prompt.  You should see something like:
+%
+\begin{lstlisting}
+C:\>spin Spin Version 5.1.6 -- 9 May 2008 reading input from stdin:
+\end{lstlisting}
+%
+If you have renamed the \spin\ executable from \inline{spin} to
+something like \inline{spin-linux} or \inline{spin516} then you will
+get errors when you run \topspin.
+%
+\section{Downloading}\label{sec:downloadandinstall:downloading}
+
+To download \topspin\ version \topspinversion, go to the \topspin\
+web page:
+%
+\begin{lstlisting}
+http://www.allydonaldson.co.uk/topspin/
+\end{lstlisting}
+%
+and download the following file:
+%
+\begin{lstlisting}
+TopSPIN_2.1.tgz
+\end{lstlisting}
+%
+Use the \inline{tar} utility, the \emph{WinRAR}
+tool,\footnote{\texttt{\winrarwebsite}} or another suitable program
+to extract this archive to an appropriate location, e.g.
+\inline{C:\\Program Files\\TopSPIN_2.1} under Windows, or
+\inline{/usr/local/TopSPIN_2.1} under Linux.  This location is
+referred to as the \topspin\ \emph{root directory}.
+
+The archive should contain the following:
+
+\begin{itemize}
+\item {\bf \texttt{TopSPIN.jar} } Executable jar for the \topspin\ program
+\item {\bf \texttt{documentation} } Folder containing this document, some related research papers
+and a Ph.D. thesis
+\item {\bf \texttt{Common} } Folder containing various \gap\ and C files files used by \topspin
+\item {\bf \texttt{saucy} } Folder containing source code for the \saucy\ program, which must be
+compiled (as described in
+\secref{downloadandinstall:installation:compilingsaucy}) before
+\topspin\ can be used.
+\end{itemize}
+
+\section{Installing}\label{sec:downloadandinstall:installation}
+
+\subsection{Compiling \saucy}\label{sec:downloadandinstall:installation:compilingsaucy}
+
+\topspin\ uses a prototype extension of the \saucy\ program, which
+is used to compute symmetries of directed graphs.  A version of
+\saucy\ with this capability will eventually be available from the
+\saucy\ website.\footnote{\texttt{\saucywebpage}} For the time
+being, a source distribution of \saucy\ with the required extended
+functionality is provided with \topspin.\footnote{Permission for
+including the \saucy\ distribution with \topspin\ has been granted
+by Paul Darga, lead developer of \saucy.}
+
+Before using \topspin, you need to compile \saucy\ on your platform.
+To do this, navigate to the \inline{saucy} folder, which is inside
+the \topspin\ root directory, and type \inline{make}:
+%
+\begin{lstlisting}
+C:\Program Files\TopSPIN_2.1>cd saucy C:\Program
+Files\TopSPIN_2.1\saucy>make gcc -ansi -pedantic -Wall -O3   -c -o
+main.o main.c gcc -ansi -pedantic -Wall -O3   -c -o saucy.o saucy.c
+gcc -ansi -pedantic -Wall -O3   -c -o saucyio.o saucyio.c gcc  -o
+saucy main.o saucy.o saucyio.o
+\end{lstlisting}
+%
+\subsection{Creating a \protect\gap\ workspace}\label{sec:downloadandinstall:gapworkspace}
+%
+In order to start \gap\ efficiently, \topspin\ requires a \gap\
+\emph{workspace} to be set up.  Essentially, a workspace is an image
+of a \gap\ session with a selection of libraries and files already
+loaded and ready to be executed.  For \topspin, the workspace
+consists of the \gap\ components of \topspin\ which have been
+developed for automatic symmetry reduction.  These are in the
+\inline{Common} folder, inside the \topspin\ root directory.
+
+Navigate into the \inline{Common} folder, and start \gap:
+%
+\begin{lstlisting}
+C:\Program Files\TopSPIN_2.1>cd Common
+
+C:\Program Files\TopSPIN_2.1\Common>gap
+
+C:\Program Files\TopSPIN_2.1\Common>rem sample batch file for GAP
+
+C:\Program Files\TopSPIN_2.1\Common>C:\GAP4R4\bin\gapw95.exe -m 14m
+-l C:\GAP4R4\
+
+            #########           ######         ###########           ###
+         #############          ######         ############         ####
+        ##############         ########        #############       #####
+       ###############         ########        #####   ######      #####
+      ######         #         #########       #####    #####     ######
+     ######                   ##########       #####    #####    #######
+     #####                    ##### ####       #####   ######   ########
+     ####                    #####  #####      #############   ###  ####
+     #####     #######       ####    ####      ###########    ####  ####
+     #####     #######      #####    #####     ######        ####   ####
+     #####     #######      #####    #####     #####         #############
+      #####      #####     ################    #####         #############
+      ######     #####     ################    #####         #############
+      ################    ##################   #####                ####
+       ###############    #####        #####   #####                ####
+         #############    #####        #####   #####                ####
+          #########      #####          #####  #####                ####
+
+     Information at:  http://www.gap-system.org
+     Try '?help' for help. See also  '?copyright' and  '?authors'
+
+   Loading the library. Please be patient, this may take a while.
+GAP4, Version: 4.4.6 of 02-Sep-2005, i686-pc-cygwin-gcc Components:
+... Packages:    ... gap>
+\end{lstlisting}
+%
+Now create a workspace as follows:
+%
+\begin{lstlisting}
+gap> Read("WorkspaceGenerator.gap"); gap>
+SaveWorkspace("gapworkspace"); true gap> quit;
+\end{lstlisting}
+%
+Ensure that these commands are typed \emph{exactly} as shown,
+ensuring that the semi-colon is included after the \inline{quit}
+command.  When you exit \gap, you should find a file called
+\inline{gapworksapce} in the \inline{Common} directory.
+%
+\section{Executing the \protect\topspin\ jar file}
+%
+It should now be possible to run the \topspin\ jar file on no input
+to display a list of \topspin\ options:
+%
+\begin{lstlisting}
+C:\>java -jar "C:\Program Files\TopSPIN_2.1\TopSPIN_2.1.jar"
+
+Usage: topspin [check,detect] <filename>
+
+Configuration file options:
+
+ OPTION           PURPOSE           DEFAULT
+ ------           -------           -------
+  ...              ...               ...
+\end{lstlisting}
+%
+The options displayed by the tool are described fully in
+\chapref{overview}.  For now, successfully displaying these options
+confirms that the Java runtime environment is correctly installed on
+your system, and that the \topspin\ jar file you have obtained is in
+working order.  If \topspin\ does \emph{not} correctly display its
+options, proceed to \chapref{troubleshooting} to try to deduce what
+is wrong, and to file a bug report if necessary.
+
+In \chapref{example}, instructions for running \topspin\ to perform
+symmetry reduction on a Promela specification are given.

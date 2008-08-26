@@ -1,0 +1,267 @@
+\chapter{\troubleshooting}\label{chapter:troubleshooting}
+
+This section will be expanded to include a list of common problems
+with the use of \topspin.  In the mean time, please email the author
+with any queries.
+
+
+\section{Common problems}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Missing configuration file}
+
+\problem{There is no file named \inline{config.txt} in your working
+directory when you run \topspin.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Error opening configuration file "config.txt", which should be
+located in the directory from which you run TopSPIN.
+\end{lstlisting}
+
+\solution{Follow the instructions in \secref{example:configuration}
+on how to create \inline{config.txt}.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The \saucy\ program is not correctly installed}
+
+\problem{You may not have correctly installed and compiled \saucy,
+the graph automorphism program on which \topspin\ relies.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Error launching saucy with command: C:\Program
+Files\TopSPIN_2.1\saucy\saucy.exe -d "C:\Program
+Files\TopSPIN_2.1\Common\graph.saucy" java.io.IOException:
+CreateProcess: C:\Program Files\TopSPIN_2.1\saucy\saucy.exe -d
+"C:\Program Files\TopSPIN_2.1\Common\graph.saucy" error=2
+        at java.lang.ProcessImpl.create(Native Method)
+        ... rest of Java stack trace
+\end{lstlisting}
+
+\solution{Source code for \saucy\ is included with the \topspin\
+distribution, which can be downloaded via the instructions of
+\secref{downloadandinstall:downloading}.  However, you need to
+compile the \saucy\ source code using GCC. To do this, follow the
+instructions given in
+\secref{downloadandinstall:installation:compilingsaucy}.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Path to \saucy\ in configuration file is wrong}
+
+\problem{From \topspin's point of view this is the same as the
+previous problem.  From your point of view there is a difference:
+you may have correctly installed and compiled \saucy, but but
+mistyped the path to \saucy\ in \inline{config.txt}.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Error launching saucy with command: C:\Program
+Files\TopSPIN_2.1\saucy\tsaucy.exe -d "C:\Program
+Files\TopSPIN_2.1\Common\graph.saucy" java.io.IOException:
+CreateProcess: C:\Program Files\TopSPIN_2.1\saucy\tsaucy.exe -d
+"C:\Program Files\TopSPIN_2.1\Common\graph.saucy" error=2
+        at java.lang.ProcessImpl.create(Native Method)
+        ... rest of Java stack trace
+\end{lstlisting}
+%
+Note that \topspin\ is trying to launch \inline{tsaucy.exe} rather
+than \inline{saucy.exe}, due to a typo in \inline{config.txt}.
+
+\solution{Make sure \saucy\ is correctly downloaded and compiled
+(\secref{downloadandinstall:installation:compilingsaucy}), and
+ensure that \inline{config.txt} contains a line for \saucy\ with
+\emph{exactly} the absolute path to the tool
+(\secref{example:configuration}).}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\protect\gap\ is not correctly installed}
+
+\problem{You may not have correctly installed \gap, the
+computational group theory package on which \topspin\ relies.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Starting GAP with command: C:\gap4r4\bin\gap.bat -L "C:\Program
+Files\TopSPIN_2.1\Common\gapworkspace" -q Exception in thread "main"
+java.io.IOException: CreateProcess: C:\gap4r4\bin\gap.bat -L
+"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q error=2
+        at java.lang.ProcessImpl.create(Native Method)
+        ... rest of Java stack trace
+\end{lstlisting}
+
+\solution{Download and install \gap\ from the \gap\ website.  The
+URL for this website and the version of \gap\ which \topspin\
+supports are given in \figref{symmextractorandtopspin:prerequisites}
+(\secref{downloadandinstall:prerequisites}).}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Path to \protect\gap\ in configuration file is wrong}
+
+\problem{From \topspin's point of view this is the same as the
+previous problem.  From your point of view there is a difference:
+you may have correctly installed \gap, but mistyped the path to
+\gap\ in \inline{config.txt}.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Starting GAP with command: C:\gap4r4\bin\tgap.bat -L "C:\Program
+Files\TopSPIN_2.1\Common\gapworkspace" -q Exception in thread "main"
+java.io.IOException: CreateProcess: C:\gap4r4\bin\tgap.bat -L
+"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q error=2
+        at java.lang.ProcessImpl.create(Native Method)
+        ... rest of Java stack trace
+\end{lstlisting}
+%
+Note that \topspin\ is trying to launch \inline{tgap.bat} rather
+than \inline{gap.bat}, due to a typo in \inline{config.txt}.
+
+\solution{Make sure you have correctly downloaded and installed \gap
+(\secref{downloadandinstall:prerequisites}), and ensure that
+\inline{config.txt} contains a line for \gap\ with \emph{exactly}
+the absolute path to the tool (\secref{example:configuration}).}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Common directory does not exist, or user does not have permissions for this directory}
+
+\problem{The location of the \topspin\ \inline{Common} directory has
+been specified incorrectly in \inline{commmon.txt}.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Error while trying to create file "C:\Program
+Files\TopSPIN_2.1\Common\graph.saucy". Make sure that the directory
+C:\Program Files\TopSPIN_2.1\Common\ exists, and that you have write
+permission.
+\end{lstlisting}
+
+\solution{Make sure that \inline{config.txt} contains a line of the
+form \inline{common=}\emph{name}, where \emph{name} is the
+\emph{absolute} path to the \inline{Common} directory provided with
+the \topspin\ distribution.  Make sure this path has not been
+mistyped, and that the path includes a terminating slash.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Bad \protect\gap\ workspace}
+
+\problem{The file \inline{gapworkspace} in the \inline{Common}
+directory is either missing or corrupted.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Starting GAP with command: C:\gap4r4\bin\gap.bat -L "C:\Program
+Files\TopSPIN_2.1\Common\gapworkspace" -q Error -- bad GAP workspace
+specified in configuration file.
+
+GAP produced errors:
+====================
+gap: Press <Enter> to end program End of GAP errors
+\end{lstlisting}
+
+\solution{Check that:
+%
+\begin{enumerate}
+\item You have followed the instructions in \secref{downloadandinstall:gapworkspace} on creating a \gap\ workspace
+\item This workspace has been successfully saved in the \inline{Common} directory
+\item You have not changed the version of \gap\ you are using since creating the workspace
+\item The workspace was created exactly the same machine, with the same operating system,
+on which you are running \topspin.
+\end{enumerate}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\protect\spin\ is not installed properly}
+
+\problem{You have not correctly installed \spin\ in such a way that
+the tool can be invoked by simply typing \inline{spin}, as discussed
+in \secref{downloadandinstall:prerequisites}.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+An error occurred while constructing the "sympan" files.
+java.io.IOException: CreateProcess: spin -a loadbalancer.p error=2
+        at java.lang.ProcessImpl.create(Native Method)
+        ... rest of Java stack trace
+\end{lstlisting}
+
+\solution{Make sure \spin\ is correctly installed.  Perhaps you have
+renamed \inline{spin} to \inline{spin-linux} or \inline{spin516};
+maybe you do not have execute permission for \spin, or perhaps you
+have another application called \inline{spin} installed on your
+machine. Resolve these issues so that \inline{spin} is all that
+needs to be typed to launch the \spin\ tool.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\subsection{}
+%
+%\problem{}
+%
+%\exampleerrormessage
+%
+%\begin{lstlisting}
+%\end{lstlisting}
+%
+%\solution{}
+
+\section{Limitations of \protect\topspin}
+%
+\topspin\ currently supports the verification of \emph{safety}
+properties, expressed using assertions or monitor processes.  The
+tool does not yet support symmetry-reduced \ltl\ model checking
+using never claims.
+%
+\section{Reporting bugs in \protect\topspin}
+%
+If you have a problem using \topspin, first check to see if your
+problem is covered by one of the \emph{common problems} in \secref{
+}.  If this is not the case, then please take the time to report
+your bug to the \topspin\ developers, so that it can be immediately
+documented and ultimately fixed, for the benefit of you and other
+\topspin\ users.
+
+Bug reports should be submitted using the contact details in
+\secref{troubleshooting:gettingintouch}.  Please provide the
+following when reporting a bug:
+
+\begin{itemize}
+\item A description of the problem
+\item A test-case (example Promela specification and \inline{config.txt} file) which exposes the problem
+\item The \topspin\ version you are using, the approximate date on which you downloaded \topspin
+\item Details as to whether you are using a pre-compiled version of \topspin, or a version you have compiled from source
+\item Any ideas you have as to what may have gone wrong!
+\end{itemize}
+
+Please note that bugs do not have to relate to the correctness of
+\topspin\ -- a valuable bug report could be in response to a
+misleading error message generated by \topspin, where there
+\emph{is} something wrong with the input specification, but the
+problem is not what the error message indicates.  Please feel free
+to also submit suggestions for features to be added to \topspin.
+
+\section{Reporting bugs in this manual}
+
+Please also get in touch (\secref{troubleshooting:gettingintouch})
+if you find typos, inconsistencies or ambiguities in this manual --
+this kind of feedback is extremely valuable.
+
+\section{Getting in touch}\label{sec:troubleshooting:gettingintouch}
+
+All correspondence related to \topspin\ should be by email, to
+Alastair Donaldson: \inline{ally@codeplay.com}.

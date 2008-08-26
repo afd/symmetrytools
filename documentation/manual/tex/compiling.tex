@@ -1,0 +1,201 @@
+\chapter{\buildingfromsource}\label{chapter:compilingfromsource}
+
+
+\section{Downloading \protect\topspin\ source
+code}\label{sec:compilingfromsource:downloading}
+
+The \topspin\ source code is stored in a Subversion repository,
+hosted by the Department of Computing Science at the University of
+Glasgow at the following URL:
+%
+\begin{lstlisting}
+https://ouen.dcs.gla.ac.uk/repos/symmetry/
+\end{lstlisting}
+%
+Use subversion to check out the \topspin\ source code to an
+appropriate location:
+%
+\begin{lstlisting}
+C:\prog>svn checkout https://ouen.dcs.gla.ac.uk/repos/symmetry/trunk
+TopSPINSource A    TopSPINSource/TestModels A
+TopSPINSource/TestModels/EtchTesting A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/peterson A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/hello A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/pathfinder A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/snoopy A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/mobile1 A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/mobile2 A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/pftp A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/leader A
+TopSPINSource/TestModels/EtchTesting/ParsePassTests/loops ... A
+TopSPINSource/Common/Minimising.gap A
+TopSPINSource/Common/parallel_symmetry_cell_ppu.c A
+TopSPINSource/Common/Verify.gap A
+TopSPINSource/Common/WorkspaceGenerator.gap A
+TopSPINSource/Common/parallel_symmetry_cell_spu.c A
+TopSPINSource/Common/parallel_symmetry_cell_ppu.h A
+TopSPINSource/symmextractor_common_config.txt Checked out revision
+75.
+\end{lstlisting}
+
+\section{Generating the Promela parser}\label{sec:compilingfromsource:generating}
+
+\topspin\ is based on a Promela parser which is constructed using
+the SableCC parser generator.  Download SableCC version
+\sableccversion\ from the Sable
+website\footnote{\texttt{\sableccwebsite}}, and generate the parser
+as follows (adapting the command according to where you have
+installed SableCC):
+%
+\begin{lstlisting}
+java -jar C:\sablecc-3.2\lib\sablecc.jar promela.grammar
+\end{lstlisting}
+%
+This command should result in output similar to the following:
+%
+\begin{lstlisting}
+C:\prog\TopSPINSource>java -jar C:\sablecc-3.2\lib\sablecc.jar
+promela.grammar
+
+SableCC version 3.2 Copyright (C) 1997-2003 Etienne M. Gagnon
+<etienne.gagnon@uqam.ca> and others.  All rights reserved.
+
+This software comes with ABSOLUTELY NO WARRANTY.  This is free
+software, and you are welcome to redistribute it under certain
+conditions.
+
+Type 'sablecc -license' to view the complete copyright notice and
+license.
+
+ -- Generating parser for promela.grammar in C:\prog\TopSPINSource
+Adding productions and alternative of section AST. Verifying
+identifiers. Verifying ast identifiers. Adding empty productions and
+empty alternative transformation if necessary. Adding productions
+and alternative transformation if necessary. computing alternative
+symbol table identifiers. Verifying production transform
+identifiers. Verifying ast alternatives transform identifiers.
+Generating token classes. Generating production classes. Generating
+alternative classes. Generating analysis classes. Generating utility
+classes. Generating the lexer.
+ State: INITIAL
+ - Constructing NFA.
+..............................................................................
+..............................................................................
+ - Constructing DFA.
+..............................................................................
+..............................................................................
+ - resolving ACCEPT states.
+Generating the parser.
+..............................................................................
+..............................................................................
+\end{lstlisting}
+
+\section{Compiling and creating a jar}\label{sec:compilingfromsource:compiling}
+
+You have now downloaded and generated all the Java source code for
+\topspin, and can proceed to compile this source code.  The
+\inline{javac} compiler and \inline{jar} utility are required to
+compile the source and create an executable jar file respectively.
+The source code is all contained in directories within \inline{src}.
+
+\subsection{Compiling}
+
+There are two options for compilation:
+
+\begin{enumerate}
+
+\item Create an Eclipse project from the \topspin\ source code, in which case
+Eclipse will automatically compile the code.
+
+\item Use the \inline{make} utility and the supplied \inline{Makefile} to compile
+the source code, by typing \inline{make classes} in the \topspin\
+root directory. The provided \inline{Makefile} uses the \inline{sed}
+and \inline{find} utilities, which are provided as standard with
+Linux, and are available on Windows via Cygwin.
+
+\end{enumerate}
+%
+Compiling the source code using the \inline{Makefile} gives output
+along the following lines:
+%
+\begin{lstlisting}
+C:\prog\TopSPINSource>make classes javac src/etch/checker/Check.java
+Note: .\src\promela\parser\Parser.java uses unchecked or unsafe
+operations. Note: Recompile with -Xlint:unchecked for details. javac
+src/etch/checker/CheckerTest.java javac
+src/etch/testing/EtchTestCase.java javac
+src/etch/testing/EtchTester.java javac src/group/Group.java javac
+src/promela/analysis/ReversedDepthFirstAdapter.java javac
+src/symmextractor/InlineReplacer.java javac
+src/symmextractor/SymmExtractor.java javac
+src/symmextractor/testing/SymmExtractorFailTestOutcome.java javac
+src/symmextractor/testing/SymmExtractorRunTestOutcome.java javac
+src/symmextractor/testing/SymmExtractorTestCase.java javac
+src/symmextractor/testing/SymmExtractorTester.java javac
+src/symmreducer/testing/ModelCheckingResult.java javac
+src/symmreducer/testing/SymmReducerFailTestOutcome.java javac
+src/symmreducer/testing/SymmReducerTestCase.java javac
+src/symmreducer/testing/SymmReducerTester.java javac
+src/testing/RunAllTests.java
+\end{lstlisting}
+%
+Note the compile warnings generated for \inline{Parser.java}: these
+are due to code generated by SableCC.  All other files should
+compile without warnings.
+%
+\subsection{Creating a jar file}
+%
+If you are using Eclipse then you can create an executable jar file
+for \topspin\ by exporting your \topspin\ project as a jar, and
+selecting \inline{src.TopSpin} as the \emph{main} class.
+
+If using the supplied \inline{Makefile}, typing \inline{make jars}
+will produce two jar files:
+%
+\begin{lstlisting}
+C:\prog\TopSPINSource>make jars
+
+jar cmf manifest.txt TopSPIN.jar src/etch/checker/Check.class
+src/etch/checker/Checker.class ... <many .class files> ...
+src/utilities/Strategy.class src/utilities/StringHelper.class
+src/promela/lexer/lexer.dat src/promela/parser/parser.dat && echo
+"TopSPIN.jar built successfully." TopSPIN.jar built successfully.
+
+jar cmf tests_manifest.txt TopSPINTests.jar
+src/etch/checker/Check.class src/etch/checker/Checker.class ...
+<many .class files> ... src/utilities/Strategy.class
+src/utilities/StringHelper.class src/promela/lexer/lexer.dat
+src/promela/parser/parser.dat && echo "TopSPINTests.jar built
+successfully." TopSPINTests.jar built successfully.
+\end{lstlisting}
+%
+Note that you can skip the \inline{make classes} step, and type
+\inline{make jars} to both compile the Java files and produce jar
+files.  To delete all jar and class files, use \inline{make clean}.
+
+\section{Try your compiled version on an example}
+
+Now that you have successfully compiled a jar file from the
+\topspin\ source, you are effectively in the same position as a user
+who has downloaded the \topspin\ jar file using the instructions
+given in \secref{downloadandinstall:downloading}.  Of course, you
+have the advantage of being able to modify \topspin\ to suit your
+purposes!
+
+The next steps involve compiling \saucy, creating a \gap\ workspace,
+and testing \topspin\ on a simple example.  Therefore you should
+work your way through \chapsref{downloadandinstall}{example}, using
+your compiled jar file in place of the downloaded jar file.
+%
+\section{Acceptance Tests}\label{sec:compilingfromsource:testing}
+
+{\bf Important } Before running the acceptance tests, make sure that
+the GCC tool is installed in such a way that it can be invoked by
+name from a command prompt, i.e. so that typing \inline{gcc} will
+launch GCC. To check this, try typing \inline{gcc} from a fresh
+prompt.  You should see something like:
+%
+\begin{lstlisting}
+C:\>gcc gcc: no input files
+\end{lstlisting}
