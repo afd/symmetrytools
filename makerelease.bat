@@ -69,6 +69,7 @@ cp TopSPIN.jar %RELEASE%\TopSPIN_%VERSION%.jar
 
 tar -cvf %RELEASE%.tar %RELEASE%
 gzip %RELEASE%.tar
+mv %RELEASE%.tar.gz %RELEASE%.tgz
 
 pause
 
