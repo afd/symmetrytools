@@ -46,7 +46,9 @@ To verify that \spin\ is set up appropriately, type \inline{spin} in
 a fresh command prompt.  You should see something like:
 %
 \begin{lstlisting}
-C:\>spin Spin Version 5.1.6 -- 9 May 2008 reading input from stdin:
+C:\>spin
+Spin Version 5.1.6 -- 9 May 2008
+reading input from stdin:
 \end{lstlisting}
 %
 If you have renamed the \spin\ executable from \inline{spin} to
@@ -158,15 +160,19 @@ C:\Program Files\TopSPIN_2.1\Common>C:\GAP4R4\bin\gapw95.exe -m 14m
      Try '?help' for help. See also  '?copyright' and  '?authors'
 
    Loading the library. Please be patient, this may take a while.
-GAP4, Version: 4.4.6 of 02-Sep-2005, i686-pc-cygwin-gcc Components:
-... Packages:    ... gap>
+GAP4, Version: 4.4.6 of 02-Sep-2005, i686-pc-cygwin-gcc
+Components:  ...
+Packages:    ...
+gap>
 \end{lstlisting}
 %
 Now create a workspace as follows:
 %
 \begin{lstlisting}
-gap> Read("WorkspaceGenerator.gap"); gap>
-SaveWorkspace("gapworkspace"); true gap> quit;
+gap> Read("WorkspaceGenerator.gap");
+gap> SaveWorkspace("gapworkspace");
+true
+gap> quit;
 \end{lstlisting}
 %
 Ensure that these commands are typed \emph{exactly} as shown,

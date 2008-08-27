@@ -104,9 +104,9 @@ depending on your operating system) slash.
 Under Windows, \inline{config.txt} might look like this:
 %
 \begin{lstlisting}
-gap=C:\gap4r4\bin\gap.bat saucy=C:\Program
-Files\TopSPIN_2.1\saucy\saucy.exe common=C:\Program
-Files\TopSPIN_2.1\Common\
+gap=C:\gap4r4\bin\gap.bat
+saucy=C:\Program Files\TopSPIN_2.1\saucy\saucy.exe
+common=C:\Program Files\TopSPIN_2.1\Common\
 \end{lstlisting}
 %
 whereas a possible Linux version of \inline{config.txt} could be:
@@ -162,8 +162,8 @@ will vary slightly according to the paths you have specified in
 \inline{config.txt}.}
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>java -jar "C:\Program
-Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
+C:\Program Files\TopSPIN_2.1\examples>java -jar
+"C:\Program Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
 
 --------------------------------------
 TopSPIN version 2.1
@@ -182,12 +182,11 @@ Typechecking input specification...
 
 Specification is well typed!
 
-Launching saucy via the following command: C:\Program
-Files\TopSPIN_2.1\saucy\saucy.exe -d "C:\Program
-Files\TopSPIN_2.1\Common\graph.saucy"
+Launching saucy via the following command: C:\Program Files\TopSPIN_2.1\saucy\saucy.exe -d
+"C:\Program Files\TopSPIN_2.1\Common\graph.saucy"
 
-Starting GAP with command: C:\gap4r4\bin\gap.bat -L "C:\Program
-Files\TopSPIN_2.1\Common\gapworkspace" -q
+Starting GAP with command: C:\gap4r4\bin\gap.bat -L
+"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q
 
 The group:
    G = <(3 2)(clients0 clients1),(5 4)(clients2 clients3),(servers1 servers0)(7 6),
@@ -196,8 +195,8 @@ is a valid group for symmetry reduction.
 
 Generating symmetry reduction algorithms
 
-The symmetry group has size 48 Completed generation of sympan
-verifier which includes algorithms for symmetry reduction!
+The symmetry group has size 48
+Completed generation of sympan verifier which includes algorithms for symmetry reduction!
 
 To generate an executable verifier use the following command:
    gcc -o sympan sympan.c group.c
@@ -262,9 +261,8 @@ Compile and execute this verifier using commands analogous to those
 shown in \secref{example:applyingspin}:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY
-sympan.c group.c C:\Program Files\TopSPIN_2.1\examples>sympan
--m100000
+C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY sympan.c group.c
+C:\Program Files\TopSPIN_2.1\examples>sympan -m100000
 
 (Spin Version 5.1.6 -- 9 May 2008)
         + Partial Order Reduction
@@ -331,12 +329,13 @@ Now apply \topspin\ to the loadbalancer specification, and compile
 and run the generated verifier:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>java -jar "C:\Program
-Files\TopSPIN_2.1\TopSPIN.jar"
+C:\Program Files\TopSPIN_2.1\examples>java -jar
+"C:\Program Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
+
    ... TopSPIN output ...
-C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY
-sympan.c group.c C:\Program Files\TopSPIN_2.1\examples>sympan
--m100000
+
+C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY sympan.c group.c
+C:\Program Files\TopSPIN_2.1\examples>sympan -m100000
 
 (Spin Version 5.1.6 -- 9 May 2008)
         + Partial Order Reduction

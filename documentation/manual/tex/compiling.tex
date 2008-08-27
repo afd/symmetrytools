@@ -16,27 +16,28 @@ Use subversion to check out the \topspin\ source code to an
 appropriate location:
 %
 \begin{lstlisting}
-C:\prog>svn checkout https://ouen.dcs.gla.ac.uk/repos/symmetry/trunk
-TopSPINSource A    TopSPINSource/TestModels A
-TopSPINSource/TestModels/EtchTesting A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/peterson A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/hello A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/pathfinder A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/snoopy A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/mobile1 A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/mobile2 A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/pftp A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/leader A
-TopSPINSource/TestModels/EtchTesting/ParsePassTests/loops ... A
-TopSPINSource/Common/Minimising.gap A
-TopSPINSource/Common/parallel_symmetry_cell_ppu.c A
-TopSPINSource/Common/Verify.gap A
-TopSPINSource/Common/WorkspaceGenerator.gap A
-TopSPINSource/Common/parallel_symmetry_cell_spu.c A
-TopSPINSource/Common/parallel_symmetry_cell_ppu.h A
-TopSPINSource/symmextractor_common_config.txt Checked out revision
-75.
+C:\prog>svn checkout https://ouen.dcs.gla.ac.uk/repos/symmetry/trunk TopSPINSource
+A TopSPINSource/TestModels
+A TopSPINSource/TestModels/EtchTesting
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/peterson
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/hello
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/pathfinder
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/snoopy
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/mobile1
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/mobile2
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/pftp
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/leader
+A TopSPINSource/TestModels/EtchTesting/ParsePassTests/loops
+...
+A TopSPINSource/Common/Minimising.gap
+A TopSPINSource/Common/parallel_symmetry_cell_ppu.c
+A TopSPINSource/Common/Verify.gap
+A TopSPINSource/Common/WorkspaceGenerator.gap
+A TopSPINSource/Common/parallel_symmetry_cell_spu.c
+A TopSPINSource/Common/parallel_symmetry_cell_ppu.h
+A TopSPINSource/symmextractor_common_config.txt
+Checked out revision 75.
 \end{lstlisting}
 
 \section{Generating the Promela parser}\label{sec:compilingfromsource:generating}
@@ -58,26 +59,29 @@ This command should result in output similar to the following:
 C:\prog\TopSPINSource>java -jar C:\sablecc-3.2\lib\sablecc.jar
 promela.grammar
 
-SableCC version 3.2 Copyright (C) 1997-2003 Etienne M. Gagnon
-<etienne.gagnon@uqam.ca> and others.  All rights reserved.
+SableCC version 3.2 Copyright (C) 1997-2003 Etienne M. Gagnon <etienne.gagnon@uqam.ca>
+and others.  All rights reserved.
 
-This software comes with ABSOLUTELY NO WARRANTY.  This is free
-software, and you are welcome to redistribute it under certain
-conditions.
+This software comes with ABSOLUTELY NO WARRANTY.  This is free software,
+and you are welcome to redistribute it under certain conditions.
 
-Type 'sablecc -license' to view the complete copyright notice and
-license.
+Type 'sablecc -license' to view the complete copyright notice and license.
 
  -- Generating parser for promela.grammar in C:\prog\TopSPINSource
-Adding productions and alternative of section AST. Verifying
-identifiers. Verifying ast identifiers. Adding empty productions and
-empty alternative transformation if necessary. Adding productions
-and alternative transformation if necessary. computing alternative
-symbol table identifiers. Verifying production transform
-identifiers. Verifying ast alternatives transform identifiers.
-Generating token classes. Generating production classes. Generating
-alternative classes. Generating analysis classes. Generating utility
-classes. Generating the lexer.
+Adding productions and alternative of section AST.
+Verifying identifiers.
+Verifying ast identifiers.
+Adding empty productions and empty alternative transformation if necessary.
+Adding productions and alternative transformation if necessary.
+computing alternative symbol table identifiers.
+Verifying production transform identifiers.
+Verifying ast alternatives transform identifiers.
+Generating token classes.
+Generating production classes.
+Generating alternative classes.
+Generating analysis classes.
+Generating utility classes.
+Generating the lexer.
  State: INITIAL
  - Constructing NFA.
 ..............................................................................
@@ -109,7 +113,7 @@ There are two options for compilation:
 Eclipse will automatically compile the code.
 
 \item Use the \inline{make} utility and the supplied \inline{Makefile} to compile
-the source code, by typing \inline{make classes} in the \topspin\
+the source code, by typing the command \inline{make classes} in the \topspin\
 root directory. The provided \inline{Makefile} uses the \inline{sed}
 and \inline{find} utilities, which are provided as standard with
 Linux, and are available on Windows via Cygwin.
@@ -120,24 +124,26 @@ Compiling the source code using the \inline{Makefile} gives output
 along the following lines:
 %
 \begin{lstlisting}
-C:\prog\TopSPINSource>make classes javac src/etch/checker/Check.java
-Note: .\src\promela\parser\Parser.java uses unchecked or unsafe
-operations. Note: Recompile with -Xlint:unchecked for details. javac
-src/etch/checker/CheckerTest.java javac
-src/etch/testing/EtchTestCase.java javac
-src/etch/testing/EtchTester.java javac src/group/Group.java javac
-src/promela/analysis/ReversedDepthFirstAdapter.java javac
-src/symmextractor/InlineReplacer.java javac
-src/symmextractor/SymmExtractor.java javac
-src/symmextractor/testing/SymmExtractorFailTestOutcome.java javac
-src/symmextractor/testing/SymmExtractorRunTestOutcome.java javac
-src/symmextractor/testing/SymmExtractorTestCase.java javac
-src/symmextractor/testing/SymmExtractorTester.java javac
-src/symmreducer/testing/ModelCheckingResult.java javac
-src/symmreducer/testing/SymmReducerFailTestOutcome.java javac
-src/symmreducer/testing/SymmReducerTestCase.java javac
-src/symmreducer/testing/SymmReducerTester.java javac
-src/testing/RunAllTests.java
+C:\prog\TopSPINSource>make classes
+javac src/etch/checker/Check.java
+Note: .\src\promela\parser\Parser.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+javac src/etch/checker/CheckerTest.java
+javac src/etch/testing/EtchTestCase.java
+javac src/etch/testing/EtchTester.java
+javac src/group/Group.java
+javac src/promela/analysis/ReversedDepthFirstAdapter.java
+javac src/symmextractor/InlineReplacer.java
+javac src/symmextractor/SymmExtractor.java
+javac src/symmextractor/testing/SymmExtractorFailTestOutcome.java
+javac src/symmextractor/testing/SymmExtractorRunTestOutcome.java
+javac src/symmextractor/testing/SymmExtractorTestCase.java
+javac src/symmextractor/testing/SymmExtractorTester.java
+javac src/symmreducer/testing/ModelCheckingResult.java
+javac src/symmreducer/testing/SymmReducerFailTestOutcome.java
+javac src/symmreducer/testing/SymmReducerTestCase.java
+javac src/symmreducer/testing/SymmReducerTester.java
+javac src/testing/RunAllTests.java
 \end{lstlisting}
 %
 Note the compile warnings generated for \inline{Parser.java}: these
@@ -156,18 +162,18 @@ will produce two jar files:
 \begin{lstlisting}
 C:\prog\TopSPINSource>make jars
 
-jar cmf manifest.txt TopSPIN.jar src/etch/checker/Check.class
-src/etch/checker/Checker.class ... <many .class files> ...
-src/utilities/Strategy.class src/utilities/StringHelper.class
-src/promela/lexer/lexer.dat src/promela/parser/parser.dat && echo
-"TopSPIN.jar built successfully." TopSPIN.jar built successfully.
+jar cmf manifest.txt TopSPIN.jar src/etch/checker/Check.class src/etch/checker/Checker.class
+... <many .class files> ...
+src/utilities/Strategy.class src/utilities/StringHelper.class src/promela/lexer/lexer.dat
+src/promela/parser/parser.dat && echo "TopSPIN.jar built successfully."
+TopSPIN.jar built successfully.
 
-jar cmf tests_manifest.txt TopSPINTests.jar
-src/etch/checker/Check.class src/etch/checker/Checker.class ...
-<many .class files> ... src/utilities/Strategy.class
-src/utilities/StringHelper.class src/promela/lexer/lexer.dat
-src/promela/parser/parser.dat && echo "TopSPINTests.jar built
-successfully." TopSPINTests.jar built successfully.
+jar cmf tests_manifest.txt TopSPINTests.jar src/etch/checker/Check.class
+src/etch/checker/Checker.class
+... <many .class files> ...
+src/utilities/Strategy.class src/utilities/StringHelper.class src/promela/lexer/lexer.dat
+src/promela/parser/parser.dat && echo "TopSPINTests.jar built successfully."
+TopSPINTests.jar built successfully.
 \end{lstlisting}
 %
 Note that you can skip the \inline{make classes} step, and type
@@ -187,15 +193,119 @@ The next steps involve compiling \saucy, creating a \gap\ workspace,
 and testing \topspin\ on a simple example.  Therefore you should
 work your way through \chapsref{downloadandinstall}{example}, using
 your compiled jar file in place of the downloaded jar file.
-%
+
 \section{Acceptance Tests}\label{sec:compilingfromsource:testing}
 
-{\bf Important } Before running the acceptance tests, make sure that
-the GCC tool is installed in such a way that it can be invoked by
+The \topspin\ source checkout includes a reasonably large set of
+acceptance tests.  It is highly recommended that you run these
+tests using the instructions below before commencing any development
+work on \topspin\ -- passing the acceptance tests confirms that
+you are starting from a stable base.  The acceptance tests can
+also be run regularly during development, to ensure that the
+addition of new features to \topspin\ does not adversely affect
+the tool's existing features.
+
+\vspace{2mm}
+\noindent{\bf Important } Before running the acceptance tests, make sure that
+the \gcc\ tool is installed in such a way that it can be invoked by
 name from a command prompt, i.e. so that typing \inline{gcc} will
-launch GCC. To check this, try typing \inline{gcc} from a fresh
+launch \gcc. To check this, try typing \inline{gcc} from a fresh
 prompt.  You should see something like:
+\vspace{2mm}
 %
 \begin{lstlisting}
-C:\>gcc gcc: no input files
+C:\>gcc
+gcc: no input files
 \end{lstlisting}
+
+\subsection{Setting up a configuration file for testing}
+
+The \topspin\ test suite uses a called \inline{symmextractor_common_config.txt}
+for some configuration options which apply to most tests.  Open
+this file, and edit the \inline{gap} line to use the appropriate command
+for your setup.  You should not have to change the \inline{Common} or
+\inline{saucy} lines: the source code checkout is organised so that the
+\inline{saucy} and \inline{Common} directories are sub-directories of
+the directory in which \inline{symmextractor_common_config.txt} is
+contained.
+
+\subsection{Running the tests}
+
+You can now run the acceptance
+tests via the \inline{TopSPINTests.jar} file:
+%
+\begin{lstlisting}
+java -ea -jar TopSPINTests.jar 2> temp.txt
+\end{lstlisting}
+%
+The \inline{-ea} argument switches on assertion checking, which is useful for
+finding potential problems with \topspin.  The final part of the command,
+\inline{2> temp.txt}, pipes error messages generated during testing to the
+file \inline{temp.txt}.  This is useful since many of the tests are
+\emph{fail} tests, which check that the \topspin\ typechecker correctly
+rejects Promela specifications which are not suitable for processing by
+\topspin.  Redirecting these error messages to a text file means that
+the screen is not cluttered with error messages.
+
+You should see something like this when you run the tests:
+%
+\begin{lstlisting}
+ETCH TESTS
+==========
+   [PASS] expected and actual: BadlyTyped, file: TestModels/EtchTesting/FailTests/failrec...
+   [PASS] expected and actual: WellTyped, file: TestModels/EtchTesting/PassTests/testtele...
+   [PASS] expected and actual: WellTyped, file: TestModels/EtchTesting/PassTests/test_ex_...
+   [PASS] expected and actual: WellTyped, file: TestModels/EtchTesting/PassTests/testtele...
+   [PASS] expected and actual: BadlyTyped, file: TestModels/EtchTesting/FailTests/faildup...
+   [PASS] expected and actual: ParsePass, file: TestModels/EtchTesting/ParsePassTests/pet...
+   ...
+
+
+SYMMEXTRACTOR TESTS
+===================
+   [PASS] expected and actual: (well typed, group size = 72, coset search: no), file: Tes...
+   [PASS] expected and actual: (well typed, group size = 1296, coset search: no), file: T...
+   [PASS] expected and actual: BreaksRestrictions, file: TestModels/SymmExtractorTests/Ba...
+   [PASS] expected and actual: (well typed, group size = 3628800, coset search: no), file...
+   [PASS] expected and actual: BreaksRestrictions, file: TestModels/SymmExtractorTests/Ba...
+   ...
+
+
+SYMMREDUCER TESTS
+=================
+   [PASS] expected and actual: ((well typed, group size = 120, coset search: no), no. sta...
+   [PASS] expected and actual: ((well typed, group size = 3628800, coset search: no), no....
+   [PASS] expected and actual: ((well typed, group size = 6, coset search: no), no. state...
+   [PASS] expected and actual: ((well typed, group size = 5040, coset search: no), no. st...
+   [PASS] expected and actual: ((well typed, group size = 720, coset search: no), no. sta...
+   ...
+
+
+Summary:
+   238 passes
+   0 fails
+
+
+Acceptance tests passed - you may commit your changes!
+\end{lstlisting}
+%
+There are in the order of 250 test cases.  These are divided into
+\etch\ tests, which test the typechecking component of \topspin;
+\symmextractor\ tests, which check the symmetry detection
+capabilities of the tool, and \symmreducer\
+tests, which perform symmetry reduction on Promela examples, checking
+that verification results for these examples are as expected.
+The \etch\ tests run very quickly, the \symmextractor\ tests run
+at a moderate speed, and the \symmreducer\ tests run fairly slowly.
+Testing takes approximately 10 minutes on an average PC.
+
+\subsection{Problems running the tests}
+
+If you have compiled a fresh checkout of \topspin\ then all of the acceptance
+tests should pass, since their passing is a condition for committing
+changes to the source code repository.  Therefore, if you have any problems
+running the tests this is likely due to a problem with the way you have
+set up \gap, \saucy, \spin, or \gcc.  Have a look at \secref{troubleshooting:common}
+which details common problems encountered when using \topspin.  If test
+cases continue to fail then please send a bug report to the \topspin\
+development team: see \secref{troubleshooting:reportingbugs} for details.
