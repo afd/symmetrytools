@@ -30,6 +30,7 @@ import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
 import src.symmextractor.SymmetryChecker;
 import src.utilities.Config;
+import src.utilities.ErrorStreamHandler;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
 
@@ -99,9 +100,24 @@ public class Check {
 		BufferedReader br = null;
 		try {
 
+			String cppCommand = "cpp ";
 			
-			Process p = Runtime.getRuntime().exec("cpp \"" + sourceName + "\"");
-			BufferedReader cppReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			if(Config.isOSWindows()) {
+				cppCommand += "\"";
+			}
+
+			cppCommand += sourceName;
+
+			if(Config.isOSWindows()) {
+				cppCommand += "\"";
+			}
+			
+			Process cpp = Runtime.getRuntime().exec(cppCommand);
+
+/*			ErrorStreamHandler errorHandler = new ErrorStreamHandler(cpp, "\ncpp produced errors:\n======================",  "End of cpp errors", true);
+			errorHandler.start();*/
+			
+			BufferedReader cppReader = new BufferedReader(new InputStreamReader(cpp.getInputStream()));
 			String programForParsing = "";
 			String line;
 			int currentLine = 1;
@@ -119,8 +135,19 @@ public class Check {
 				
 			}
 			br = new BufferedReader(new StringReader(programForParsing));
+			
+			cpp.waitFor();
+			
+/*			if(0 != cpp.exitValue()) {
+				System.out.println("C preprocessor (cpp) exited with error code " + cpp.exitValue() + ".  TopSPIN will run on un-preprocessed file, and will not work correctly on files which use #define or #include.");
+				br = new BufferedReader(new FileReader(sourceName));
+			}*/
+			
 		} catch (IOException e) {
-			System.out.println("C preprocessor not available");
+			System.out.println("C preprocessor (cpp) not available - TopSPIN will not work correctly on files which use #define or #include.");
+			br = new BufferedReader(new FileReader(sourceName));
+		} catch (InterruptedException e) {
+			System.out.println("C preprocessor (cpp) was interrupted.  TopSPIN will run on un-preprocessed file, and will not work correctly on files which use #define or #include.");
 			br = new BufferedReader(new FileReader(sourceName));
 		}
 		return br;
