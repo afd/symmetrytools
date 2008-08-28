@@ -10,7 +10,7 @@ make jars
 
 rm -rf %RELEASE%
 
-rm -f %RELEASE%.tar.gz
+rm -f %RELEASE%.tgz
 
 mkdir %RELEASE%
 
