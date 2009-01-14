@@ -200,6 +200,8 @@ public class EtchTester {
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testtypeinferencearrays.p", EtchTestOutcome.WellTyped));
 		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testmisc4.p", EtchTestOutcome.WellTyped));
+
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testmultidimarray.p", EtchTestOutcome.WellTyped));
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
