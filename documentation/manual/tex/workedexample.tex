@@ -80,7 +80,7 @@ you invoke \topspin\ on a Promela specification, the tool requires
 that a file called \inline{config.txt} is available in the current
 directory.  This file tells \topspin\ where to find the \gap\ and
 \saucy\ programs, the location of some common source code, and the
-values of various runtime options. The ile consists of a series of
+values of various runtime options. The file consists of a series of
 lines, each of which has the form:
 
 \vspace{2mm} \emph{attribute}\texttt{=}\emph{value} \vspace{2mm}
@@ -89,7 +89,8 @@ lines, each of which has the form:
 
 \vspace{2mm}
 \begin{enumerate}
-\item {\bf \texttt{gap}} -- the absolute path required to launch \gap.  The value for
+\item {\bf \texttt{gap}} -- the absolute path for the shell script or batch file
+required to launch \gap.  The value for
 the \inline{gap} attribute must be such that typing this value at
 the command prompt is all that is required to launch the \gap\
 program.
@@ -112,11 +113,15 @@ common=C:\Program Files\TopSPIN_2.1\Common\
 whereas a possible Linux version of \inline{config.txt} could be:
 %
 \begin{lstlisting}
-gap=/users/grad/ally/Scripts/gap
+gap=/home/username/bin/gap
 saucy=/users/grad/ally/TopSPIN_2.1/saucy/saucy
 common=/users/grad/ally/TopSPIN_2.1/Common/
 \end{lstlisting}
 %
+Note that the \inline{gap} option should \emph{not} specify the
+\gap\ executable itself, rather the shell script (\inline{gap.sh})
+or batch file (\inline{gap.bat}) used to launch \gap.
+
 The remainder of \inline{config.txt} is used to specify \topspin\
 options for a particular specification.  One of these options is
 discussed in \secref{example:enumerate}, and a complete overview of
@@ -153,8 +158,8 @@ class.
 
 \subsection{Running \protect\topspin}
 
-Copy the basic configuration file created in
-\secref{example:configuration} into the \inline{examples} directory,
+Copy \inline{config.txt}, the basic configuration file created in
+\secref{example:configuration}, into the \inline{examples} directory,
 and run \topspin\ on \inline{loadbalancer.p} as
 follows:\footnote{For reasons of space, some lines in the \topspin\
 output have been wrapped. Also note that the output on your system
@@ -162,6 +167,7 @@ will vary slightly according to the paths you have specified in
 \inline{config.txt}.}
 %
 \begin{lstlisting}
+C:\Program Files\TopSPIN_2.1\examples>cp ../config.txt .
 C:\Program Files\TopSPIN_2.1\examples>java -jar
 "C:\Program Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
 
@@ -255,7 +261,7 @@ files, including \inline{sympan.c} and \inline{group.c}.  The
 \inline{sympan.c} file is a modified version of the \inline{pan.c}
 file produced by \spin, which includes symmetry reduction
 algorithms.  The \inline{group.c} file includes functions for
-computing with permutations.
+manipulating permutations.
 
 Compile and execute this verifier using commands analogous to those
 shown in \secref{example:applyingspin}:

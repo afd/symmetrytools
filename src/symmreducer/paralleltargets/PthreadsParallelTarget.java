@@ -9,6 +9,7 @@ import src.symmreducer.SymmetryApplier;
 import src.symmreducer.strategies.StabiliserChainEnumeration;
 import src.utilities.Config;
 import src.utilities.FileManager;
+import src.utilities.StringOption;
 
 public class PthreadsParallelTarget implements ParallelTarget {
 
@@ -105,8 +106,8 @@ public class PthreadsParallelTarget implements ParallelTarget {
 	}
 
 	public void copyFilesForMultiThreadedSymmetryReduction() throws IOException {
-		FileManager.copyTextFile(Config.COMMON + "parallel_symmetry_pthreads.c", "parallel_symmetry_pthreads.c");
-		FileManager.copyTextFile(Config.COMMON + "parallel_symmetry_pthreads.h", "parallel_symmetry_pthreads.h");
+		FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "parallel_symmetry_pthreads.c", "parallel_symmetry_pthreads.c");
+		FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "parallel_symmetry_pthreads.h", "parallel_symmetry_pthreads.h");
 	}
 		
 }

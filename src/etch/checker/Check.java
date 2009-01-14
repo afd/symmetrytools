@@ -30,7 +30,6 @@ import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
 import src.symmextractor.SymmetryChecker;
 import src.utilities.Config;
-import src.utilities.ErrorStreamHandler;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
 
@@ -43,7 +42,7 @@ public class Check {
 	
 	public Check(String sourceName) throws ParserException, IOException, LexerException {
 
-		if(Config.PROFILE) { Profile.PARSE_START = System.currentTimeMillis(); }
+		if(Config.profiling()) { Profile.PARSE_START = System.currentTimeMillis(); }
 
 		this.sourceName = sourceName;
 
@@ -84,7 +83,7 @@ public class Check {
 			}
 		}
 		
-		if(Config.PROFILE) { Profile.PARSE_END = System.currentTimeMillis(); }
+		if(Config.profiling()) { Profile.PARSE_END = System.currentTimeMillis(); }
 
 	}
 
@@ -167,7 +166,7 @@ public class Check {
 
 			if(Config.TESTING_IN_PROGRESS) {
 				System.err.println(chk.getErrorTable().output("while processing " + sourceName));
-			} else if(!ProgressPrinter.QUIET_MODE) {
+			} else if(!Config.inQuietMode()) {
 				System.out.println(chk.getErrorTable().output("while processing " + sourceName));
 			}
 
@@ -179,7 +178,7 @@ public class Check {
 		substituter.setTypeInformation(chk);
 		theAST.apply(substituter);
 
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			System.out.println(chk.showCompleteTypeInformation(sourceName));
 		}
 

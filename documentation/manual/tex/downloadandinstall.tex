@@ -35,13 +35,18 @@ prerequisites.}\label{fig:symmextractorandtopspin:prerequisites}
 
 Before going further, make sure each of the packages of
 \figref{symmextractorandtopspin:prerequisites} is installed on your
-system
+system.  It is sufficient to download and install the \gap\ core
+package only. The archive of redistributed \gap\ packages, referred
+to as \emph{packages-...} in the \gap\ installation instructions, is not
+mandatory.
 
 \vspace{2mm}
 %
 \noindent {\bf Important } Make sure that the \spin\ tool is
 installed in such a way that it can be invoked by name from a
 command prompt, i.e. so that typing \inline{spin} will launch \spin.
+This is usually achieved by adding the folder for the \spin\ executable
+to your \emph{path} environment variable.
 To verify that \spin\ is set up appropriately, type \inline{spin} in
 a fresh command prompt.  You should see something like:
 %
@@ -109,11 +114,12 @@ To do this, navigate to the \inline{saucy} folder, which is inside
 the \topspin\ root directory, and type \inline{make}:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1>cd saucy C:\Program
-Files\TopSPIN_2.1\saucy>make gcc -ansi -pedantic -Wall -O3   -c -o
-main.o main.c gcc -ansi -pedantic -Wall -O3   -c -o saucy.o saucy.c
-gcc -ansi -pedantic -Wall -O3   -c -o saucyio.o saucyio.c gcc  -o
-saucy main.o saucy.o saucyio.o
+C:\Program Files\TopSPIN_2.1>cd saucy
+C:\Program Files\TopSPIN_2.1\saucy>make
+gcc -ansi -pedantic -Wall -O3   -c -o main.o main.c
+gcc -ansi -pedantic -Wall -O3   -c -o saucy.o saucy.c
+gcc -ansi -pedantic -Wall -O3   -c -o saucyio.o saucyio.c
+gcc  -o saucy main.o saucy.o saucyio.o
 \end{lstlisting}
 %
 \subsection{Creating a \protect\gap\ workspace}\label{sec:downloadandinstall:gapworkspace}
@@ -126,7 +132,23 @@ consists of the \gap\ components of \topspin\ which have been
 developed for automatic symmetry reduction.  These are in the
 \inline{Common} folder, inside the \topspin\ root directory.
 
-Navigate into the \inline{Common} folder, and start \gap:
+Navigate into the \inline{Common} folder, and start \gap.  \gap\ is
+usually started via a shell script (under Linux) or batch file (under
+Windows).  If the folder containing this script/batch file is on your
+path then you should be able to start \gap\ simply by typing \inline{gap}.
+Otherwise, start the tool by typing the full path for the script/batch file,
+e.g.
+%
+\begin{lstlisting}
+C:\gap4r4\bin\gap
+\end{lstlisting}
+%
+or
+\begin{lstlisting}
+/home/username/bin/gap
+\end{lstlisting}
+%
+You should see something like this:
 %
 \begin{lstlisting}
 C:\Program Files\TopSPIN_2.1>cd Common
@@ -162,7 +184,6 @@ C:\Program Files\TopSPIN_2.1\Common>C:\GAP4R4\bin\gapw95.exe -m 14m
    Loading the library. Please be patient, this may take a while.
 GAP4, Version: 4.4.6 of 02-Sep-2005, i686-pc-cygwin-gcc
 Components:  ...
-Packages:    ...
 gap>
 \end{lstlisting}
 %

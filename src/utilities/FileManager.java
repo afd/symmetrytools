@@ -13,7 +13,7 @@ public class FileManager {
 
 	public static void copyTextFile(String sourceName, String destName) throws IOException {
 		try {
-			if(ProgressPrinter.VERBOSE_MODE) {
+			if(Config.inVerboseMode()) {
 				ProgressPrinter.print("   Copying " + sourceName + " -> " + destName + " ... ");
 			}
 			BufferedReader br = new BufferedReader(new FileReader(sourceName));
@@ -24,7 +24,7 @@ public class FileManager {
 			}
 			br.close();
 			bw.close();
-			if(ProgressPrinter.VERBOSE_MODE) {
+			if(Config.inVerboseMode()) {
 				ProgressPrinter.println("[OK]");
 			}
 		} catch(FileNotFoundException e) {

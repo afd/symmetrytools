@@ -8,6 +8,7 @@ import java.util.List;
 
 import src.utilities.Config;
 import src.utilities.FileManager;
+import src.utilities.StringOption;
 
 public class CellParallelTarget implements ParallelTarget {
 
@@ -121,10 +122,10 @@ public class CellParallelTarget implements ParallelTarget {
 	}
 
 	public void copyFilesForMultiThreadedSymmetryReduction() throws IOException {
-		FileManager.copyTextFile(Config.COMMON + "parallel_symmetry_cell_ppu.c", "parallel_symmetry_cell_ppu.c");
-		FileManager.copyTextFile(Config.COMMON + "parallel_symmetry_cell_ppu.h", "parallel_symmetry_cell_ppu.h");
-		FileManager.copyTextFile(Config.COMMON + "parallel_symmetry_cell_spu.c", "parallel_symmetry_cell_spu.c");
-		FileManager.copyTextFile(Config.COMMON + "parallel_symmetry_cell_spu.h", "parallel_symmetry_cell_spu.h");	
+		FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "parallel_symmetry_cell_ppu.c", "parallel_symmetry_cell_ppu.c");
+		FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "parallel_symmetry_cell_ppu.h", "parallel_symmetry_cell_ppu.h");
+		FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "parallel_symmetry_cell_spu.c", "parallel_symmetry_cell_spu.c");
+		FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "parallel_symmetry_cell_spu.h", "parallel_symmetry_cell_spu.h");	
 	}
 	
 	

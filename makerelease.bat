@@ -66,6 +66,7 @@ cp examples\loadbalancer.p %RELEASE%\examples\loadbalancer.p
 
 cp TopSPIN.jar %RELEASE%\TopSPIN_%VERSION%.jar
 
+cp releasenotes.txt %RELEASE%\releasenotes.txt
 
 tar -cvf %RELEASE%.tar %RELEASE%
 gzip %RELEASE%.tar

@@ -20,11 +20,14 @@ import src.promela.lexer.Lexer;
 import src.promela.lexer.LexerException;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
+import src.utilities.CommandLineSwitch;
 import src.utilities.CommunicatingProcess;
 import src.utilities.Config;
 import src.utilities.ErrorStreamHandler;
+import src.utilities.IntegerOption;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
+import src.utilities.StringOption;
 
 
 public class SymmExtractor extends Check {
@@ -49,12 +52,12 @@ public class SymmExtractor extends Check {
 	
 	public StaticChannelDiagramExtractor extract() throws IOException {
 
-		if(Config.PROFILE) { Profile.EXTRACT_START = System.currentTimeMillis(); }
+		if(Config.profiling()) { Profile.EXTRACT_START = System.currentTimeMillis(); }
 		
 		isWellTyped = typecheck(true);
 		
 		if(isWellTyped) {
-			if(ProgressPrinter.VERBOSE_MODE) {
+			if(Config.inVerboseMode()) {
 				ProgressPrinter.printSeparator();
 				ProgressPrinter.println("Reparsing source without inlines");
 			}
@@ -70,26 +73,26 @@ public class SymmExtractor extends Check {
 			
 				Substituter substituter = extractor.unify();
 				applyTypeSubstitutions(extractor, substituter);
-				if(Config.PROFILE) { Profile.EXTRACT_END = System.currentTimeMillis(); }
+				if(Config.profiling()) { Profile.EXTRACT_END = System.currentTimeMillis(); }
 	
-				if(Config.PROFILE) { Profile.SAUCY_START = System.currentTimeMillis(); }
+				if(Config.profiling()) { Profile.SAUCY_START = System.currentTimeMillis(); }
 
-				if(ProgressPrinter.VERBOSE_MODE) {
+				if(Config.inVerboseMode()) {
 					ProgressPrinter.printSeparator();
 				}
 				
 				computeStaticChannelDiagramAutomorphisms(extractor);
-				if(Config.PROFILE) { Profile.SAUCY_END = System.currentTimeMillis(); }
+				if(Config.profiling()) { Profile.SAUCY_END = System.currentTimeMillis(); }
 
-				if(ProgressPrinter.VERBOSE_MODE) {
+				if(Config.inVerboseMode()) {
 					ProgressPrinter.println("Saucy computed the following generators for Aut(SCD(P)):");
 					ProgressPrinter.println("   Aut(SCD(P)) = " + autSCD);
 				}
 	
-				if(Config.PROFILE) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
+				if(Config.profiling()) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
 				computeLargestValidSubgroup(extractor);
 	
-				if(ProgressPrinter.VERBOSE_MODE) {
+				if(Config.inVerboseMode()) {
 					ProgressPrinter.printSeparator();
 				} else {
 					ProgressPrinter.print("\n");
@@ -99,7 +102,7 @@ public class SymmExtractor extends Check {
 				ProgressPrinter.println("   G = " + largestValidSubgroup);
 				ProgressPrinter.println("is a valid group for symmetry reduction.");
 
-				if(ProgressPrinter.VERBOSE_MODE) {
+				if(Config.inVerboseMode()) {
 					ProgressPrinter.printSeparator();
 				} else {
 					ProgressPrinter.print("\n");
@@ -108,14 +111,13 @@ public class SymmExtractor extends Check {
 				return extractor;
 			}
 		}
-		if(Config.PROFILE) { Profile.EXTRACT_END = System.currentTimeMillis(); }
+		if(Config.profiling()) { Profile.EXTRACT_END = System.currentTimeMillis(); }
 		return null;
 	}
 
-
 	private boolean checkSymmetryResrictionsAreObeyed(StaticChannelDiagramExtractor extractor) {
 		if(extractor.getErrorTable().hasErrors()) {
-			if(!ProgressPrinter.QUIET_MODE) {
+			if(!Config.inQuietMode()) {
 				System.out.println(extractor.getErrorTable().output("while processing " + sourceName));
 			}
 			return false;
@@ -138,7 +140,7 @@ public class SymmExtractor extends Check {
 
 		boolean someGeneratorsInvalid = false;
 
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Computing valid generators:");
 		}
@@ -147,12 +149,12 @@ public class SymmExtractor extends Check {
 				
 		for(Permutation alpha : autSCD.getGenerators()) {
 			if (alpha.isSafeFor(theAST, extractor)) {
-				if(ProgressPrinter.VERBOSE_MODE) {
+				if(Config.inVerboseMode()) {
 					ProgressPrinter.println("    " + alpha + " : valid");
 				}
 				safeGenerators.add(alpha);
 			} else {
-				if(ProgressPrinter.VERBOSE_MODE) {
+				if(Config.inVerboseMode()) {
 					ProgressPrinter.println("    " + alpha + " : not valid");
 				}
 				someGeneratorsInvalid = true;
@@ -171,7 +173,7 @@ public class SymmExtractor extends Check {
 			gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
 
 
-			if(Config.PROFILE) {
+			if(Config.profiling()) {
 				gapWriter.write("Size(G);\n");
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
@@ -180,7 +182,7 @@ public class SymmExtractor extends Check {
 			}
 			
 			
-			if(Config.NO_CONJUGATES>0) {
+			if(Config.getIntegerOption(IntegerOption.CONJUGATES)>0) {
 				enlargeBaseGroupWithRandomConjugates(baseGroup.noGenerators(), extractor);
 			}
 
@@ -192,13 +194,14 @@ public class SymmExtractor extends Check {
 
 			int noCosets = Integer.parseInt(gapReader.readLine());
 			
-			if(ProgressPrinter.VERBOSE_MODE) {
+			if(Config.inVerboseMode()) {
 				ProgressPrinter.println("No cosets: " + noCosets);
 			}
 
 			int j = 2;
 			long initialTime = System.currentTimeMillis();
-			while (j <= noCosets && (Config.TIME_BOUND==0 || (System.currentTimeMillis()-initialTime < Config.TIME_BOUND))) {
+			while (j <= noCosets && (Config.getIntegerOption(IntegerOption.TIMEBOUND)==0 || 
+					(System.currentTimeMillis()-initialTime < Config.getIntegerOption(IntegerOption.TIMEBOUND)))) {
 				gapWriter.write("C[" + j + "];\n");
 				gapWriter.flush();
 
@@ -228,7 +231,7 @@ public class SymmExtractor extends Check {
 				sizeOfLargestValidSubgroup  = Long.parseLong(gapReader.readLine());
 			}
 	
-			if(Config.PROFILE) {
+			if(Config.profiling()) {
 				Profile.LARGEST_VALID_END = System.currentTimeMillis();
 				gapWriter.write("Size(H);\n");
 				gapWriter.flush();
@@ -237,7 +240,7 @@ public class SymmExtractor extends Check {
 		} else {
 			largestValidSubgroup = baseGroup;
 
-			if(Config.DETECT_ONLY && Config.TESTING_IN_PROGRESS) {
+			if(Config.commandLineSwitchIsSet(CommandLineSwitch.DETECT) && Config.TESTING_IN_PROGRESS) {
 				startGAP();
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
 				gapWriter.write("Size(H);\n");
@@ -246,7 +249,7 @@ public class SymmExtractor extends Check {
 			}
 			
 			
-			if(!Config.DETECT_ONLY) {
+			if(!Config.commandLineSwitchIsSet(CommandLineSwitch.DETECT)) {
 				startGAP();
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
 
@@ -256,7 +259,7 @@ public class SymmExtractor extends Check {
 					sizeOfLargestValidSubgroup  = Long.parseLong(gapReader.readLine());
 				}
 			
-			} else if(Config.PROFILE) {
+			} else if(Config.profiling()) {
 				Profile.LARGEST_VALID_END = System.currentTimeMillis();
 				startGAP();
 				gapWriter.write("H := " + baseGroup.gapGenerators(extractor) + ";\n");
@@ -330,7 +333,7 @@ public class SymmExtractor extends Check {
 
 	private void enlargeBaseGroupWithRandomConjugates(int noGenerators, StaticChannelDiagramExtractor extractor) throws IOException {
 
-		for (int l = 1; l <= Config.NO_CONJUGATES; l++) {
+		for (int l = 1; l <= Config.getIntegerOption(IntegerOption.CONJUGATES); l++) {
 			gapWriter.write("alpha := Random(G);;\n");
 			for (int j = 1; j <= noGenerators; j++) {
 				gapWriter.write("(alpha^-1) * (GeneratorsOfGroup(H)[" + j
@@ -356,21 +359,21 @@ public class SymmExtractor extends Check {
 			StaticChannelDiagramExtractor extractor) {
 
 		try {
-			FileWriter fw = new FileWriter(Config.COMMON+"graph.saucy");
+			FileWriter fw = new FileWriter(Config.getStringOption(StringOption.COMMON)+"graph.saucy");
 			fw.write(extractor.directedSaucyRepresentation());
 			fw.close();
 		} catch(FileNotFoundException e) {
-			System.out.println("Error while trying to create file \"" + Config.COMMON+"graph.saucy\".  Make sure that the directory " + Config.COMMON + " exists, and that you have write permission.");
+			System.out.println("Error while trying to create file \"" + Config.getStringOption(StringOption.COMMON)+"graph.saucy\".  Make sure that the directory " + Config.getStringOption(StringOption.COMMON) + " exists, and that you have write permission.");
 			System.exit(1);
 		} catch (IOException e) {
-			System.out.println("An error occurred while trying to create the file \"" + Config.COMMON+"graph.saucy\".");
+			System.out.println("An error occurred while trying to create the file \"" + Config.getStringOption(StringOption.COMMON)+"graph.saucy\".");
 			System.exit(1);
 		}
 		
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.println("Computing the group Aut(C(P)) using directed saucy.");
 		}
-		String saucyGenerators = computeAutomorphismsOfDirectedGraph(Config.COMMON+"graph.saucy");
+		String saucyGenerators = computeAutomorphismsOfDirectedGraph(Config.getStringOption(StringOption.COMMON)+"graph.saucy");
 		
 		autSCD = new Group(saucyGenerators, extractor);
 	}
@@ -381,9 +384,9 @@ public class SymmExtractor extends Check {
 		
 		String saucyString; 
 		if(Config.isOSWindows()) {
-			saucyString = Config.SAUCY + " -d \"" + filename + "\"";
+			saucyString = Config.getStringOption(StringOption.SAUCY) + " -d \"" + filename + "\"";
 		} else {
-			saucyString = Config.SAUCY + " -d " + filename;
+			saucyString = Config.getStringOption(StringOption.SAUCY) + " -d " + filename;
 		}
 
 		ProgressPrinter.println("\nLaunching saucy via the following command: " + saucyString + "\n");
@@ -442,16 +445,16 @@ public class SymmExtractor extends Check {
 	
 	protected void startGAP() throws IOException {
 		
-		if(Config.PROFILE) { Profile.GAP_LAUNCH_START = System.currentTimeMillis(); }
+		if(Config.profiling()) { Profile.GAP_LAUNCH_START = System.currentTimeMillis(); }
 
 		String gapString;
 
 		if(Config.isOSWindows()) {
-			gapString = Config.GAP + " -L \"" + Config.COMMON + "gapworkspace\" -q";
+			gapString = Config.getStringOption(StringOption.GAP) + " -L \"" + Config.getStringOption(StringOption.COMMON) + "gapworkspace\" -q";
 		} else {
-			gapString = Config.GAP + " -L " + Config.COMMON + "gapworkspace -q";
+			gapString = Config.getStringOption(StringOption.GAP) + " -L " + Config.getStringOption(StringOption.COMMON) + "gapworkspace -q";
 		}
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();
 		}
 		ProgressPrinter.print("Starting GAP with command: " + gapString + "\n");
@@ -467,13 +470,13 @@ public class SymmExtractor extends Check {
 		gapWriter.write("0;\n");
 		gapWriter.flush();
 
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.println("Output produced by GAP at startup:");
 		}
 		String line = gapReader.readLine();
 		while(!line.equals("0")) {
 			
-			if(ProgressPrinter.VERBOSE_MODE) {
+			if(Config.inVerboseMode()) {
 				ProgressPrinter.println(line);
 			}
 			if(line.contains("Couldn't open saved workspace")) {
@@ -483,7 +486,7 @@ public class SymmExtractor extends Check {
 			line = gapReader.readLine();
 		}
 		
-		if(Config.PROFILE) { Profile.GAP_LAUNCH_END = System.currentTimeMillis(); }
+		if(Config.profiling()) { Profile.GAP_LAUNCH_END = System.currentTimeMillis(); }
 
 	}
 

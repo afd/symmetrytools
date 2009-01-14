@@ -244,7 +244,7 @@ public class Markers {
 		out.write(eqMethod);
 		out.write(ltMethod);
 		
-		if (Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS) {
+		if (Config.strategy() == Strategy.APPROXMARKERS) {
 			writeMarkPID(out, typeInfo);
 		}
 
@@ -426,9 +426,9 @@ public class Markers {
 		int procsminus1 = typeInfo.getNoProcesses() - 1;
 		// FOR SIMPLICITY, I HAVE INCLUDED DUPLICATE CODE FOR
 		// EACH MARKERS STRATEGY.
-		if (Config.REDUCTION_STRATEGY == Strategy.EXACTMARKERS) {
+		if (Config.strategy() == Strategy.EXACTMARKERS) {
 			writeRepExactMarkers(out, procsminus1);
-		} else if (Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS) {
+		} else if (Config.strategy() == Strategy.APPROXMARKERS) {
 			writeRepApproxMarkers(out, procsminus1);
 		}		
 	}

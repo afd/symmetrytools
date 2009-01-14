@@ -6,6 +6,7 @@ import java.util.List;
 
 
 import src.symmextractor.StaticChannelDiagramExtractor;
+import src.utilities.BooleanOption;
 import src.utilities.Config;
 import src.utilities.ProgressPrinter;
 import src.utilities.Strategy;
@@ -27,7 +28,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 	@Override
 	protected void writeRepFunction(List<String> groupInfo, FileWriter out) throws IOException {
 		
-		if(Config.REDUCTION_STRATEGY==Strategy.ENUMERATE) {
+		if(Config.strategy()==Strategy.ENUMERATE) {
 			writeRepEnumerate(groupInfo, out);
 			return;
 		}
@@ -43,7 +44,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 	
 	
 	private void dealWithSymmetryThreadFiles() throws IOException {
-		if(Config.PARALLELISE) {
+		if(Config.getBooleanOption(BooleanOption.PARALLELISE)) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Copying files for multi-threaded symmetry reduction:");
 
@@ -66,14 +67,14 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 
 
 	private void writeRepEnumerate(List<String> groupInfo, FileWriter out) throws IOException {
-		assert(Config.REDUCTION_STRATEGY==Strategy.ENUMERATE);
+		assert(Config.strategy()==Strategy.ENUMERATE);
 
 		out.write(stateType + "* original;\n\n");
 
 		out.write("void * thread_body(void* arg) {\n");
 		out.write("   int id, start, end, i;\n");
 	
-		if(Config.USE_STABILISER_CHAIN) {
+		if(Config.getBooleanOption(BooleanOption.STABILISERCHAIN)) {
 			Config.parallelTarget.writeThreadBodyStabiliserChain(out, groupInfo);
 		} else {
 			Config.parallelTarget.writeThreadBodyBasic(out, Integer.parseInt(StringHelper.trimWhitespace(groupInfo.get(1))));
@@ -82,14 +83,14 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 		out.write("   return 0;\n\n");
 		out.write("}\n\n\n");
 
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			out.write("AugmentedState orig_now_augmented;\n\n");
 		}
 		
 		
 		out.write("State *rep(State *orig_now) {\n");
 
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			
 			out.write("   memcpy(&orig_now_augmented.state, orig_now, vsize);\n");
 			out.write("   extractIdentifierVariables(&orig_now_augmented);\n");
@@ -104,7 +105,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 		out.write("   wake_threads();\n");
 		out.write("   wait_for_threads();\n");
 
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			out.write("   replaceIdentifierVariables(&min_now);\n");
 			out.write("   return &min_now.state;\n");
 		} else {

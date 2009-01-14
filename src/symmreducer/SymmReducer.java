@@ -12,9 +12,11 @@ import src.promela.lexer.LexerException;
 import src.promela.parser.ParserException;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.SymmExtractor;
+import src.utilities.BooleanOption;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
+import src.utilities.StringOption;
 
 public class SymmReducer extends SymmExtractor {
 
@@ -26,7 +28,7 @@ public class SymmReducer extends SymmExtractor {
     	
     	StaticChannelDiagramExtractor extractor;
 
-    	if(!Config.AUTOMATIC_DETECTION) {
+    	if(null != Config.getStringOption(StringOption.SYMMETRYFILE)) {
         	// TODO Typecheck first
     		extractor = parseUserSpecifiedSymmetry();
     	}
@@ -40,19 +42,19 @@ public class SymmReducer extends SymmExtractor {
 
     	ProgressPrinter.println("Generating symmetry reduction algorithms\n");
     	
-    	if(Config.PROFILE) { Profile.CLASSIFY_START = System.currentTimeMillis(); }
+    	if(Config.profiling()) { Profile.CLASSIFY_START = System.currentTimeMillis(); }
 
     	assert(null != gap);
     	
-    	if(!Config.USE_TRANSPOSITIONS) {
+    	if(!Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
     		gapWriter.write("useTranspositions := false;;\n");
     	}
     	
-    	if(!Config.USE_STABILISER_CHAIN) {
+    	if(!Config.getBooleanOption(BooleanOption.STABILISERCHAIN)) {
     		gapWriter.write("useStabiliserChain := false;;\n");
     	}
 
-    	switch (Config.REDUCTION_STRATEGY) {
+    	switch (Config.strategy()) {
     	case FAST:
     	case SEGMENT:
     	case FLATTEN:
@@ -74,9 +76,9 @@ public class SymmReducer extends SymmExtractor {
     			System.exit(0);
     		} else {
     			ProgressPrinter.println("Full symmetry group detected - symmetry markers can be applied");
-    			if(!Config.USE_TRANSPOSITIONS) {
+    			if(!Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
     				System.out.println("Transpositions must be used with this strategy - switch made automatically");
-    				Config.USE_TRANSPOSITIONS = true;
+    				Config.setBooleanOption(BooleanOption.TRANSPOSITIONS, true);
     			}
     		
     		}
@@ -104,13 +106,13 @@ public class SymmReducer extends SymmExtractor {
 
     	groupGenerators = removeSpaces(groupGenerators);
 
-    	if(Config.PROFILE) { Profile.CLASSIFY_END = System.currentTimeMillis(); 	}
+    	if(Config.profiling()) { Profile.CLASSIFY_END = System.currentTimeMillis(); 	}
     	
-    	if(Config.PROFILE) { Profile.CODE_GENERATION_START = System.currentTimeMillis(); 	}
+    	if(Config.profiling()) { Profile.CODE_GENERATION_START = System.currentTimeMillis(); 	}
 
     	SymmetryApplier symmetryApplier;
     	
-    	if(Config.PARALLELISE) {
+    	if(Config.getBooleanOption(BooleanOption.PARALLELISE)) {
     		symmetryApplier = new SymmetryApplierParallel(sourceName, extractor, groupGenerators);
     	} else {
     		symmetryApplier = new SymmetryApplier(sourceName, extractor, groupGenerators);
@@ -118,16 +120,16 @@ public class SymmReducer extends SymmExtractor {
     	
     	symmetryApplier.applySymmetry();
     	
-    	if(Config.PROFILE) { Profile.CODE_GENERATION_END = System.currentTimeMillis(); 	}
+    	if(Config.profiling()) { Profile.CODE_GENERATION_END = System.currentTimeMillis(); 	}
 
-    	if(ProgressPrinter.VERBOSE_MODE) {
+    	if(Config.inVerboseMode()) {
     		ProgressPrinter.printSeparator();
     	}
     	ProgressPrinter.println("Completed generation of sympan verifier which includes algorithms for symmetry reduction!\n");
     	ProgressPrinter.println("To generate an executable verifier use the following command:");
     	ProgressPrinter.print("   gcc -o sympan sympan.c group.c");
     	    	
-    	if(Config.PARALLELISE) {
+    	if(Config.getBooleanOption(BooleanOption.PARALLELISE)) {
     		ProgressPrinter.print(" symmetry_threads.c -DNUM_THREADS=...");
     	}
     	
@@ -146,7 +148,7 @@ public class SymmReducer extends SymmExtractor {
 	private StaticChannelDiagramExtractor parseUserSpecifiedSymmetry() throws FileNotFoundException, IOException {
 		startGAP();
 		StaticChannelDiagramExtractor extractor;
-		assert(null != Config.AUTOS_FILE);
+		assert(null != Config.getStringOption(StringOption.SYMMETRYFILE));
 		extractor = new StaticChannelDiagramExtractor();
 		if(typecheck(true)) {
 			System.out.println("Reparsing source without inlines");
@@ -155,7 +157,7 @@ public class SymmReducer extends SymmExtractor {
 			Substituter substituter = extractor.unify();
 			applyTypeSubstitutions(extractor, substituter);
 			
-			BufferedReader gensReader = new BufferedReader(new FileReader(Config.AUTOS_FILE));
+			BufferedReader gensReader = new BufferedReader(new FileReader(Config.getStringOption(StringOption.SYMMETRYFILE)));
 			
 			gapWriter.write("H := Group(");
 

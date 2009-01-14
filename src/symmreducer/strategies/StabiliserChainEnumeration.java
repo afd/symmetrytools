@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import src.symmreducer.SymmetryApplier;
+import src.utilities.BooleanOption;
 import src.utilities.Config;
 import src.utilities.StringHelper;
 
@@ -36,7 +37,7 @@ public class StabiliserChainEnumeration {
 		out.write("for(i" + partitionIndex + "=" + start.get(partitionIndex) + "; ");
 		out.write("(i" + partitionIndex + "<" + end.get(partitionIndex) + ")");
 		
-		if(Config.PARALLELISE) {
+		if(Config.getBooleanOption(BooleanOption.PARALLELISE)) {
 			out.write(" && (count<(end-start))");			
 		}
 		
@@ -63,7 +64,7 @@ public class StabiliserChainEnumeration {
 			writeSimsEnumerationForLoop(out, setCounter, level+1, stabiliserChainSize, start, end, minName, originalName);
 		} else {
 		
-			if(Config.PARALLELISE) {
+			if(Config.getBooleanOption(BooleanOption.PARALLELISE)) {
 				StringHelper.indent(out, stabiliserChainSize+1);
 				out.write("count++;\n");
 			}

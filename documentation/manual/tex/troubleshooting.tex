@@ -26,6 +26,24 @@ on how to create \inline{config.txt}.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsection{Incomplete configuration file}
+
+\problem{The file \inline{config.txt} does not contain entries for all of the
+mandatory options, \inline{gap}, \inline{saucy} and \inline{common}.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+No configuration specified for GAP.
+No configuration specified for saucy.
+No common directory specified.
+\end{lstlisting}
+
+\solution{Follow the instructions in \secref{example:configuration}
+on how to create \inline{config.txt} with these mandatory options.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{The \saucy\ program is not correctly installed}
 
 \problem{You may not have correctly installed and compiled \saucy,
@@ -154,7 +172,53 @@ mistyped, and that the path includes a terminating slash.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Bad \protect\gap\ workspace}
+\subsection{Path to Common directory does not have terminating slash}
+
+\problem{The location of the \topspin\ \inline{Common} directory has
+been specified without a final forward- (Linux) or back- (Windows) slash.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+
+\end{lstlisting}
+
+\solution{Make sure that \inline{config.txt} contains a line of the
+form \inline{common=}\emph{name}, where \emph{name} is the
+\emph{absolute} path to the \inline{Common} directory provided with
+the \topspin\ distribution.  Make sure this path has not been
+mistyped, and that the path includes a terminating slash.}
+
+
+
+
+Launching saucy via the following command: C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\saucy -d "C:\Documents and Settings\Ally D\TopSPINSo
+urce\TopSpin\Commongraph.saucy"
+
+Error launching saucy with command: C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\saucy -d "C:\Documents and Settings\Ally D\TopSPINSource\To
+pSpin\Commongraph.saucy"
+java.io.IOException: CreateProcess: C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\saucy -d "C:\Documents and Settings\Ally D\TopSPINSource\To
+pSpin\Commongraph.saucy" error=2
+        at java.lang.ProcessImpl.create(Native Method)
+        at java.lang.ProcessImpl.<init>(ProcessImpl.java:81)
+        at java.lang.ProcessImpl.start(ProcessImpl.java:30)
+        at java.lang.ProcessBuilder.start(ProcessBuilder.java:451)
+        at java.lang.Runtime.exec(Runtime.java:591)
+        at java.lang.Runtime.exec(Runtime.java:429)
+        at java.lang.Runtime.exec(Runtime.java:326)
+        at src.utilities.CommunicatingProcess.create(CommunicatingProcess.java:12)
+        at src.symmextractor.SymmExtractor.computeAutomorphismsOfDirectedGraph(SymmExtractor.java:395)
+        at src.symmextractor.SymmExtractor.computeStaticChannelDiagramAutomorphisms(SymmExtractor.java:375)
+        at src.symmextractor.SymmExtractor.extract(SymmExtractor.java:83)
+        at src.symmreducer.SymmReducer.reduce(SymmReducer.java:36)
+        at src.TopSpin.doAutomaticSymmetryReduction(TopSpin.java:70)
+        at src.TopSpin.main(TopSpin.java:63)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Missing or corrupt \protect\gap\ workspace}
 
 \problem{The file \inline{gapworkspace} in the \inline{Common}
 directory is either missing or corrupted.}
@@ -185,7 +249,31 @@ on which you are running \topspin.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{\protect\spin\ is not installed properly}
+\subsection{\protect\gap\ executable specified in configuration file, instead of shell script/batch file}
+
+\problem{You have specified the path to the \gap\ executable as the \inline{gap} option in \inline{config.txt}.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+GAP produced errors:
+====================
+Error, the library file 'system.g' must exist and be readable called from
+CallFuncList( func, arg ); called from
+RereadLib( "system.g" ); called from
+<function>( <arguments> ) called from read-eval-loop
+Entering break read-eval-print loop ...
+you can 'quit;' to quit to outer loop, or
+you can 'return;' to continue
+brk>
+\end{lstlisting}
+
+\solution{Open \inline{config.txt} and change the \inline{gap} option to refer to the shell script
+(\inline{gap.sh}) or batch file (\inline{gap.bat}).}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\protect\spin\ is not correctly installed}
 
 \problem{You have not correctly installed \spin\ in such a way that
 the tool can be invoked by simply typing \inline{spin}, as discussed
@@ -200,12 +288,35 @@ java.io.IOException: CreateProcess: spin -a loadbalancer.p error=2
         ... rest of Java stack trace
 \end{lstlisting}
 
-\solution{Make sure \spin\ is correctly installed.  Perhaps you have
+\solution{Make sure \spin\ is correctly installed, and that the
+directory containing the \spin\ executable is part of your
+\emph{path} environment variable.  Perhaps you have
 renamed \inline{spin} to \inline{spin-linux} or \inline{spin516};
 maybe you do not have execute permission for \spin, or perhaps you
 have another application called \inline{spin} installed on your
 machine. Resolve these issues so that \inline{spin} is all that
 needs to be typed to launch the \spin\ tool.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{C preprocessor, \protect\inline{cpp}, unavailable}
+
+\problem{\topspin\ uses the \inline{cpp} program to expand \inline{#define} and \inline{#include}
+macros before processing a specification.  If \inline{cpp} is not available then \topspin\ can
+still be invoked, but cannot handle specifications which include these directives.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+C preprocessor (cpp) not available - TopSPIN will not work correctly on files which use
+#define or #include.
+src.promela.lexer.LexerException: [1,1] Unknown token: #
+    ... rest of Java stack trace
+\end{lstlisting}
+
+\solution{Install the \inline{cpp} program on your system.  Linux distributions provide
+\inline{cpp} as standard; under Windows the \inline{cpp} program is provided as part of
+Cygwin.  Make sure \inline{cpp} is in your path.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

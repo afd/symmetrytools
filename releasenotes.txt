@@ -1,0 +1,25 @@
+---------------------------------
+Version         2.2
+Release Date    
+SVN Revision    
+---------------------------------
+Changes since last release
+
+
+---------------------------------
+
+
+
+---------------------------------
+Version         2.1
+Release Date    28th Auguset 2008
+SVN Revision    84
+---------------------------------
+Changes since last release
+
+- This is the first release to feature a proper user manual
+- Bug with using the C preprocessor under Linux fixed
+- Vectorisation added
+- Some parallel techniques added
+- Made various usability improvements
+---------------------------------

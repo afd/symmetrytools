@@ -58,7 +58,11 @@ public class SymmExtractorTester {
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failpidindexedarraywithwronglength.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/BadlyTyped/", "failpidindexedarraywithwronglength2.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 
-				
+
+		
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/misc/", "testambiguousindexedarray.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/misc/", "testmultidimensionalarray2.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/loadbalancer/", "loadbalancer.p", new SymmExtractorRunTestOutcome(true, 432, false)));
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/", "failrunsdynamicprocess.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 		

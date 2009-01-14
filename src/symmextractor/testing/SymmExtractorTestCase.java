@@ -28,6 +28,8 @@ public class SymmExtractorTestCase extends TestCase {
 	@Override
 	public void run() {
 
+		Config.initialiseCommandLineSwitches();
+
 		try {
 
 			EtchTestCase etchTest = new EtchTestCase(filename, EtchTestOutcome.WellTyped);
@@ -39,9 +41,9 @@ public class SymmExtractorTestCase extends TestCase {
 				actualOutcome = etchTest.getOutcome();
 			} else {
 			
-				Config.readConfigFile("symmextractor_common_config.txt");
+				Config.readConfigFile("symmextractor_common_config.txt", true, false);
 
-				Config.readConfigFile(foldername + "config.txt");
+				Config.readConfigFile(foldername + "config.txt", false, true);
 
 				SymmExtractor extractor = new SymmExtractor(filename);
 	

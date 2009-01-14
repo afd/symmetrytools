@@ -18,6 +18,7 @@ import src.testing.SystemErrorTestOutcome;
 import src.testing.TestOutcome;
 import src.utilities.AbsentConfigurationFileException;
 import src.utilities.BadConfigurationFileException;
+import src.utilities.BooleanOption;
 import src.utilities.Config;
 import src.utilities.ErrorStreamHandler;
 
@@ -47,8 +48,9 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 	@Override
 	public void run() {
 
-		try {
+		Config.initialiseCommandLineSwitches();
 
+		try {
 
 			EtchTestCase etchTest = new EtchTestCase(filename, EtchTestOutcome.WellTyped);
 			
@@ -59,9 +61,9 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 				actualOutcome = etchTest.getOutcome();
 			} else {
 			
-				Config.readConfigFile("symmextractor_common_config.txt");
+				Config.readConfigFile("symmextractor_common_config.txt", true, false);
 
-				Config.readConfigFile(foldername + "config.txt");
+				Config.readConfigFile(foldername + "config.txt", false, true);
 
 				SymmReducer reducer = new SymmReducer(filename);
 
@@ -166,7 +168,7 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 		Process gcc;
 		try {
 			gcc = Runtime.getRuntime().exec("gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
-					(Config.PARALLELISE ? "parallel_symmetry_pthreads.c " : "")
+					(Config.getBooleanOption(BooleanOption.PARALLELISE) ? "parallel_symmetry_pthreads.c " : "")
 					+ "-DSAFETY -DNOREDUCE " + compilerDirectives);
 		} catch (IOException e1) {
 			return SymmReducerFailTestOutcome.GCCCompilationIOError;

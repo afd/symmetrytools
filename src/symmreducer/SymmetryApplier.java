@@ -26,12 +26,14 @@ import src.symmreducer.strategies.LocalSearch;
 import src.symmreducer.strategies.Markers;
 import src.symmreducer.strategies.MinimisingSet;
 import src.symmreducer.strategies.StabiliserChainEnumeration;
+import src.utilities.BooleanOption;
 import src.utilities.CommunicatingProcess;
 import src.utilities.Config;
 import src.utilities.FileManager;
 import src.utilities.ProgressPrinter;
 import src.utilities.Strategy;
 import src.utilities.StringHelper;
+import src.utilities.StringOption;
 
 public class SymmetryApplier {
 
@@ -59,10 +61,10 @@ public class SymmetryApplier {
 		this.typeInfo = typeInfo;
 		this.groupGenerators = groupGenerators;
 
-		stateType = Config.VECTORIZE_ID_SWAPPING ? "AugmentedState" : "State";
+		stateType = Config.getBooleanOption(BooleanOption.VECTORISE) ? "AugmentedState" : "State";
 
-		memoryCopy = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcpy" : "memcpy";
-		memoryCompare = Config.VECTORIZE_ID_SWAPPING ? "augmented_memcmp" : "memcmp";
+		memoryCopy = Config.getBooleanOption(BooleanOption.VECTORISE) ? "augmented_memcpy" : "memcpy";
+		memoryCompare = Config.getBooleanOption(BooleanOption.VECTORISE) ? "augmented_memcmp" : "memcmp";
 		
 	}
 
@@ -122,7 +124,7 @@ public class SymmetryApplier {
 
 				writePreprocessorMacros(out);
 
-				if(Config.VECTORIZE_ID_SWAPPING) {
+				if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 					swapVectorizer = new SwapVectorizer(typeInfo);
 					swapVectorizer.writeIdSwappingDataStructuresAndProcedures(out);
 				}
@@ -131,7 +133,7 @@ public class SymmetryApplier {
 
 				out.write("#include \"apply_permutation.h\"\n");
 				
-				if (Config.USE_TRANSPOSITIONS) {
+				if (Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 
 					writeApplyPrSwapToState();
 
@@ -145,14 +147,14 @@ public class SymmetryApplier {
 
 				writeParallelIncludeLines(out);
 				
-				if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+				if (Config.strategy() == Strategy.SEGMENT) {
 					writeLt(out);
 					writeEqualProcesses(out);
 					writeEqualChannels(out);
 					writeConstructPartition(out);
 					out.write("#include \"segment.h\"\n");
 
-				} else if (Config.REDUCTION_STRATEGY == Strategy.FLATTEN) {
+				} else if (Config.strategy() == Strategy.FLATTEN) {
 					Flatten.writeFlatten(out, typeInfo);
 				} else if (usingMarkers()) {
 					Markers.writeMarkers(out, typeInfo);
@@ -166,7 +168,7 @@ public class SymmetryApplier {
 			}
 
 			if (verificationEndPoint(lines, counter)) {
-				if(Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+				if(Config.strategy() == Strategy.SEGMENT) {
 					writeWrapUpSegment(out);
 				}
 				
@@ -195,7 +197,7 @@ public class SymmetryApplier {
 
 		// LOOK IN THE GROUP INFO FILE AND FILL UP THE ARRAYS FOR
 		// EACH SET
-		if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+		if (Config.strategy() == Strategy.SEGMENT) {
 			writeSendGroupToGAP(out);
 		}
 
@@ -214,7 +216,7 @@ public class SymmetryApplier {
 			}
 			
 			// Sims method
-			if (Config.USE_STABILISER_CHAIN
+			if (Config.getBooleanOption(BooleanOption.STABILISERCHAIN)
 					&& groupInfo.get(groupInfoCounter).contains(
 							"<enumerate>")) {
 				groupInfoCounter = writeInstantiateStabiliserChain(
@@ -247,7 +249,7 @@ public class SymmetryApplier {
 			perm = perm.substring(0, perm.length() - 2)
 					+ groupInfo.get(++groupInfoCounter);
 		}
-		if (Config.USE_TRANSPOSITIONS) {
+		if (Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 			symmetryGroupFile.write(StringHelper.trimWhitespace(perm));
 		} else {
 			symmetryGroupFile.write(convertPerm(StringHelper.trimWhitespace(perm)));
@@ -273,7 +275,7 @@ public class SymmetryApplier {
 			symmetryGroupFile.write("\n   elementset_" + setCounter + "[" + partitionCounter
 					+ "] = malloc(" + partitionSize
 					+ " * sizeof(perm_t));\n");
-			if (Config.USE_TRANSPOSITIONS) {
+			if (Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 				symmetryGroupFile.write("   elementset_" + setCounter + "["
 						+ partitionCounter + "][0] = constructPerm(\"\");\n");
 			} else {
@@ -289,7 +291,7 @@ public class SymmetryApplier {
 					perm = perm.substring(0, perm.length() - 2)
 							+ groupInfo.get(++groupInfoCounter);
 				}
-				if (Config.USE_TRANSPOSITIONS) {
+				if (Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 					symmetryGroupFile.write(StringHelper.trimWhitespace(perm));
 				} else {
 					symmetryGroupFile.write(convertPerm(StringHelper.trimWhitespace(perm)));
@@ -331,7 +333,7 @@ public class SymmetryApplier {
 			}
 			
 			if (groupInfo.get(groupInfoCounter).contains("<")) {
-				if (Config.USE_STABILISER_CHAIN
+				if (Config.getBooleanOption(BooleanOption.STABILISERCHAIN)
 						&& groupInfo.get(groupInfoCounter).contains(
 								"<enumerate>")) {
 					symmetryGroupFile.write("static perm_t* elementset_");
@@ -359,14 +361,14 @@ public class SymmetryApplier {
 		if (usingMarkers()) {
 			Markers.writeRepFunction(typeInfo, out);
 		} else {
-			if(Config.VECTORIZE_ID_SWAPPING) {
+			if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 				out.write("   memcpy(&(min_now.state),orig_now, vsize);\n");
 				out.write("   extractIdentifierVariables(&min_now);\n");
 			} else {
 				out.write("   memcpy(&min_now,orig_now, vsize);\n");
 			}
 			// STRATEGIES GO HERE
-			if (Config.REDUCTION_STRATEGY == Strategy.FLATTEN) {
+			if (Config.strategy() == Strategy.FLATTEN) {
 				out.write("   flatten(&min_now);\n");
 			}
 			int groupInfoCounter = 0;
@@ -374,7 +376,7 @@ public class SymmetryApplier {
 			while (groupInfoCounter < groupInfo.size()) {
 
 				// ENUMERATION STRATEGY WITH SIMS METHOD
-				if (Config.USE_STABILISER_CHAIN
+				if (Config.getBooleanOption(BooleanOption.STABILISERCHAIN)
 						&& groupInfo.get(groupInfoCounter).contains(
 								"<enumerate>")) {
 					groupInfoCounter = writeRepEnumerateStabiliserChain(
@@ -383,7 +385,7 @@ public class SymmetryApplier {
 				}
 
 				// BASIC ENUMERATION STRATEGY
-				if (!Config.USE_STABILISER_CHAIN
+				if (!Config.getBooleanOption(BooleanOption.STABILISERCHAIN)
 						&& groupInfo.get(groupInfoCounter).contains(
 								"<enumerate>")) {
 					BasicEnumeration.writeRepFunction(groupInfo, out, groupInfoCounter,
@@ -409,13 +411,13 @@ public class SymmetryApplier {
 				groupInfoCounter++;
 			}
 
-			if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+			if (Config.strategy() == Strategy.SEGMENT) {
 				out.write("   segment(&min_now);\n\n");
 			}
 
 		}
 
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			out.write("   replaceIdentifierVariables(&min_now);\n");
 			out.write("   return &(min_now.state);\n");
 		} else {
@@ -665,7 +667,7 @@ public class SymmetryApplier {
 		permutationFile.write("void applyChSwapToState(" + stateType + " *s, int a, int b) {\n");
 		permutationFile.write("   uchar tempCid;\n");
 		permutationFile.write("   int slot;\n");
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			swapVectorizer.writeChannelSwaps(permutationFile);
 		} else {
 			swapProctypeLocalChannelVariables(permutationFile);
@@ -680,7 +682,7 @@ public class SymmetryApplier {
 		permutationFile.write("   uchar tempPid;\n");
 		permutationFile.write("   int slot;\n");
 
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			swapVectorizer.writeProcessSwaps(permutationFile, "a", "b");
 		} else {
 			swapGlobalPidVariables(permutationFile,"a","b");
@@ -701,7 +703,7 @@ public class SymmetryApplier {
 			if ((entry instanceof VarEntry)
 					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
 
-				if (!(Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS)) {
+				if (!(Config.strategy() == Strategy.APPROXMARKERS)) {
 					for (SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(
 							name, ((VarEntry) entry).getType(), referencePrefix, typeInfo)) {
 						assert(PidType.isPid(reference.getType()));
@@ -870,7 +872,7 @@ public class SymmetryApplier {
 		writeln(out, "#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var");
 		writeln(out, "#define QVAR(state,cid,var,type) ((type *)QSEG(state,cid))->var\n");
 
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			writeln(out, "#define TOPSPIN_VECTORS\n");
 		}
 
@@ -905,29 +907,29 @@ public class SymmetryApplier {
 	}
 
 	private void dealWithSegmentFiles() throws IOException {
-		if(Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+		if(Config.strategy() == Strategy.SEGMENT) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Copying files for segmented strategy:");
 			
-			FileManager.copyTextFile(Config.COMMON + "segment.h", "segment.h");
+			FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "segment.h", "segment.h");
 		}
 	}
 	
 	private void dealWithGroupFiles() throws IOException, InterruptedException {
 
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Copying template files for computing with permutations:");
 		}
 		
-		if (!usingMarkers() && Config.USE_TRANSPOSITIONS) {
-			FileManager.copyTextFile(Config.COMMON + "groupTranspositions.c", "group.c");
+		if (!usingMarkers() && Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
+			FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "groupTranspositions.c", "group.c");
 			// Copy group theory files into current directory
-			FileManager.copyTextFile(Config.COMMON + "groupTranspositions.h", "group.h");
-		} else if (!usingMarkers() && !Config.USE_TRANSPOSITIONS) {
+			FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "groupTranspositions.h", "group.h");
+		} else if (!usingMarkers() && !Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 			/* Copy group theory files into current directory */
-			FileManager.copyTextFile(Config.COMMON + "groupBasic.c", "group.c");
-			FileManager.copyTextFile(Config.COMMON + "groupBasic.h", "group.h");
+			FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "groupBasic.c", "group.c");
+			FileManager.copyTextFile(Config.getStringOption(StringOption.COMMON) + "groupBasic.h", "group.h");
 		}
 
 		if (!usingMarkers()) {
@@ -953,13 +955,13 @@ public class SymmetryApplier {
 	}
 
 	private void generatePanFiles() throws IOException, InterruptedException {
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Using SPIN to generate pan files");
 		}
 		CommunicatingProcess.execute("spin", "-a", specification); // Generate pan files.
 
-		if(ProgressPrinter.VERBOSE_MODE) {
+		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Generating sympan files from pan files:");
 		}
@@ -1200,7 +1202,7 @@ public class SymmetryApplier {
 	}
 
 	private void writeLt(FileWriter fw) throws IOException {
-		if(Config.VECTORIZE_ID_SWAPPING) {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			fw.write("int lt(const AugmentedState *s, const AugmentedState *t) {\n");
 			fw.write("   return memcmp(&(s->state), &(t->state),vsize)<0;\n");
 			fw.write("}\n\n");
@@ -1310,7 +1312,7 @@ public class SymmetryApplier {
 			fw.write("   if(a==" + j + ") {\n");
 			swapTwoProcesses(fw, proctypeIdentifier, "a", "b");
 
-			if(Config.VECTORIZE_ID_SWAPPING) {
+			if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 				swapVectorizer.swapTwoProcesses(fw, j, "a", "b");
 			}
 
@@ -1354,7 +1356,7 @@ public class SymmetryApplier {
 			fw.write("      QVAR(s,b,_t,Q" + chantypeIdentifier
 					+ ") = tempCid;\n");
 
-			if(Config.VECTORIZE_ID_SWAPPING) {
+			if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 				swapVectorizer.swapTwoChannels(fw, j, "a", "b");
 			}
 			
@@ -1374,15 +1376,15 @@ public class SymmetryApplier {
 	}
 
 	public static String compare(String x, String y) {
-		if (Config.REDUCTION_STRATEGY == Strategy.SEGMENT) {
+		if (Config.strategy() == Strategy.SEGMENT) {
 			return "lt(" + x + "," + y + ")";
 		}
 		return memoryCompare + "(" + x + "," + y + ",vsize)<0";
 	}
 
 	private static boolean usingMarkers() {
-		return Config.REDUCTION_STRATEGY == Strategy.APPROXMARKERS
-				|| Config.REDUCTION_STRATEGY == Strategy.EXACTMARKERS;
+		return Config.strategy() == Strategy.APPROXMARKERS
+				|| Config.strategy() == Strategy.EXACTMARKERS;
 	}
 
 }
