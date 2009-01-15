@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 import src.etch.types.VisibleType;
 
 public class TypeEntry extends EnvEntry {
@@ -47,6 +46,10 @@ public class TypeEntry extends EnvEntry {
 
 	public String getEntryKind() {
 		return "typedef";
+	}
+
+	public void setFieldType(String fieldName, VisibleType t) {
+		fieldTypes.set(fieldNames.indexOf(fieldName), t);
 	}
 
 }

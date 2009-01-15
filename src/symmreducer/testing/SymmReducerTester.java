@@ -103,7 +103,9 @@ public class SymmReducerTester {
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 17321, 86602)));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson6.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 720, false), 89850, 539096), 25000));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 142669, 998678), 100));
-						
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/misc/nestedarraywithambiguousindex/", "test.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2, false), 8, 10), 100));
+		
 		return testCases;
 	}
 	

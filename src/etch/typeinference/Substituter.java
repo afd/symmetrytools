@@ -5,14 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import src.etch.checker.Checker;
 import src.etch.env.ChannelEntry;
+import src.etch.env.TypeEntry;
 import src.etch.env.VarEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
 import src.etch.types.InternalType;
 import src.etch.types.ProductType;
+import src.etch.types.RecordType;
 import src.etch.types.SimpleType;
 import src.etch.types.Type;
 import src.etch.types.TypeVariableType;
@@ -49,6 +50,17 @@ public class Substituter extends DepthFirstAdapter {
 		Type tRep = graph.find(t);
 
 		if(tRep instanceof SimpleType) {
+			
+			if(tRep instanceof RecordType) {
+				
+				TypeEntry typeEntry = (TypeEntry) nodeTypes.getEnvEntry(((RecordType)tRep).name());
+				
+				for(String fieldName : typeEntry.getFieldNames()) {
+					typeEntry.setFieldType(fieldName, (VisibleType) applySubstitutions(typeEntry.getFieldType(fieldName)));
+				}
+				
+			}
+			
 			return tRep;
 		}
 
