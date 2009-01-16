@@ -57,7 +57,7 @@ public class TopSpin {
 
 		if(Config.commandLineSwitchIsSet(CommandLineSwitch.CHECK)) {
 			Config.resetConfiguration();
-			Config.setBooleanOption(BooleanOption.PROFILE, false);
+			Config.setUnspecifiedOptionsToDefaultValues();
 			System.out.println("Type-check only");
 			new Check(specificationFile).typecheck(true);
 			System.exit(0);

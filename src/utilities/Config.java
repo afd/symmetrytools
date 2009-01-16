@@ -115,7 +115,7 @@ public class Config {
 
 
 
-	private static void setUnspecifiedOptionsToDefaultValues() {
+	public static void setUnspecifiedOptionsToDefaultValues() {
 		for(StringOption option : stringOptions.keySet()) {
 			if(null == stringOptions.get(option).getValue()) {
 				stringOptions.get(option).setToDefaultValue();
