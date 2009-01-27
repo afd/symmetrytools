@@ -1,6 +1,7 @@
 package src.testing;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import src.utilities.Config;
@@ -10,7 +11,7 @@ public class Tester {
 	static Set<TestCase> passes = new HashSet<TestCase>();
 	static Set<TestCase> fails = new HashSet<TestCase>();
 
-	public static void runTests(Set<TestCase> testCases) {
+	public static void runTests(List<TestCase> testCases) {
 
 		Config.TESTING_IN_PROGRESS = true;
 				

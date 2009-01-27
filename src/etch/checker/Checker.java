@@ -29,6 +29,7 @@ import src.etch.error.LiteralValueTooLargeError;
 import src.etch.error.NameAlreadyUsedError;
 import src.etch.error.NotBoolError;
 import src.etch.error.NotNumericError;
+import src.etch.error.RecordUsedAsExpressionStatement;
 import src.etch.error.SubtypingError;
 import src.etch.error.VariableNotArrayError;
 import src.etch.error.VariableNotChannelError;
@@ -89,7 +90,11 @@ public class Checker extends InlineProcessor {
 	private Map<String,List<Integer>> gotoDestinations;
 
 	public static TypeFactory theFactory = null;
-
+	
+	/* This token is used for generating line numbers for error messages when it is hard
+	 * to get a line number from an AST node (e.g. for an expression)
+	 */
+	private Token lastIdentifierToken = null;
 
 	public Checker() {
 		Checker.theFactory = new EtchTypeFactory();
@@ -885,6 +890,21 @@ public class Checker extends InlineProcessor {
 
 	public void outAConstRecvArg(AConstRecvArg node) {
 		setOut(node, getOut(node.getConst()));
+	}
+	
+	public void caseTName(TName node) {
+		lastIdentifierToken = node;
+	}
+	
+	public void outAExpressionSimpleStmnt(AExpressionSimpleStmnt node) {
+		/* This method checks that records are not used as expression statements */
+		if(null != getOut(node.getExpr())) {
+			Type t = (Type)getOut(node.getExpr());
+			if(t instanceof RecordType) {
+				addError(lastIdentifierToken, new RecordUsedAsExpressionStatement(((RecordType)t).name()));
+			}
+		}
+		
 	}
 
 	public void caseAProctype(AProctype node) {

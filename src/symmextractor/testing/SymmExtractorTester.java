@@ -1,6 +1,8 @@
 package src.symmextractor.testing;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import src.testing.Tester;
@@ -14,9 +16,9 @@ public class SymmExtractorTester {
 		Tester.runTests(getTestCases());
 	}
 
-	private static Set<TestCase> getTestCases() {
+	private static List<TestCase> getTestCases() {
 
-		Set<TestCase> testCases = new HashSet<TestCase>();
+		List<TestCase> testCases = new ArrayList<TestCase>();
 		Set<TestCase> missingFeatureTestCases = new HashSet<TestCase>();
 
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/mutex/", "mutex5.p", new SymmExtractorRunTestOutcome(true, 120, false)));
@@ -63,6 +65,9 @@ public class SymmExtractorTester {
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/misc/", "testambiguousindexedarray.p", new SymmExtractorRunTestOutcome(true, 2, false)));
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/misc/", "testmultidimensionalarray2.p", new SymmExtractorRunTestOutcome(true, 2, false)));
 
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/soil/", "soil.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		
+		
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/loadbalancer/", "loadbalancer.p", new SymmExtractorRunTestOutcome(true, 432, false)));
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/", "failrunsdynamicprocess.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 		

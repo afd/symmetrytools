@@ -24,6 +24,10 @@ public class SymmReducer extends SymmExtractor {
 		super(sourceName);
 	}
 
+	public StaticChannelDiagramExtractor makeStaticChannelDiagramExtractor() {
+		return new StaticChannelDiagramExtractorForSymmetryReduction();
+	}
+	
     public void reduce() throws IOException {
     	
     	StaticChannelDiagramExtractor extractor;
@@ -37,6 +41,9 @@ public class SymmReducer extends SymmExtractor {
     	}
 
     	if(extractor==null) {
+    		if(Config.TESTING_IN_PROGRESS) {
+    			return;
+    		}
     		System.exit(1);
     	}
 
@@ -149,7 +156,7 @@ public class SymmReducer extends SymmExtractor {
 		startGAP();
 		StaticChannelDiagramExtractor extractor;
 		assert(null != Config.getStringOption(StringOption.SYMMETRYFILE));
-		extractor = new StaticChannelDiagramExtractor();
+		extractor = makeStaticChannelDiagramExtractor();
 		if(typecheck(true)) {
 			System.out.println("Reparsing source without inlines");
 			reparseSourceWithoutInlines();

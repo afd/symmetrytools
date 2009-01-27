@@ -42,6 +42,10 @@ public class SymmExtractor extends Check {
 	private boolean isWellTyped;
 	public boolean obeysSymmetryRestrictions;
 	
+	public StaticChannelDiagramExtractor makeStaticChannelDiagramExtractor() {
+		return new StaticChannelDiagramExtractor();
+	}
+	
 	public SymmExtractor(String sourceName) throws IOException, ParserException, LexerException {
 		super(sourceName);
 	}
@@ -63,7 +67,7 @@ public class SymmExtractor extends Check {
 			}
 			reparseSourceWithoutInlines();
 
-			StaticChannelDiagramExtractor extractor	= new StaticChannelDiagramExtractor();
+			StaticChannelDiagramExtractor extractor	= makeStaticChannelDiagramExtractor();
 			
 			theAST.apply(extractor);
 

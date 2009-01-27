@@ -1,8 +1,9 @@
 package src.symmreducer.testing;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
+import src.symmextractor.testing.SymmExtractorFailTestOutcome;
 import src.symmextractor.testing.SymmExtractorRunTestOutcome;
 import src.testing.TestCase;
 import src.testing.Tester;
@@ -15,9 +16,9 @@ public class SymmReducerTester {
 		Tester.runTests(getTestCases());
 	}
 
-	private static Set<TestCase> getTestCases() {
+	private static List<TestCase> getTestCases() {
 
-		Set<TestCase> testCases = new HashSet<TestCase>();
+		List<TestCase> testCases = new ArrayList<TestCase>();
 		
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/enumerate_basic/", "mutex5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 12, 47)));
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/enumerate_basic_swaps/", "mutex5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 12, 47)));
@@ -105,6 +106,9 @@ public class SymmReducerTester {
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/peterson/exactmarkers/", "peterson7.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 5040, false), 142669, 998678), 100));
 
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/misc/nestedarraywithambiguousindex/", "test.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2, false), 8, 10), 100));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/soil/", "soil.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		
 		
 		return testCases;
 	}

@@ -41,7 +41,7 @@ public class Check {
 	protected String sourceName;
 	
 	public Check(String sourceName) throws ParserException, IOException, LexerException {
-
+		
 		if(Config.profiling()) { Profile.PARSE_START = System.currentTimeMillis(); }
 
 		this.sourceName = sourceName;
@@ -194,6 +194,9 @@ public class Check {
 
 		boolean isPidSensitive = (args.length > 1) && (args[1].equals("-symm"));
 
+		Config.resetConfiguration();
+		Config.setUnspecifiedOptionsToDefaultValues();
+		
 		new Check(args[0]).typecheck(isPidSensitive);
 	}
 }

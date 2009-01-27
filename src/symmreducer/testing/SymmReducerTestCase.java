@@ -13,6 +13,7 @@ import src.promela.parser.ParserException;
 import src.symmextractor.testing.SymmExtractorFailTestOutcome;
 import src.symmextractor.testing.SymmExtractorRunTestOutcome;
 import src.symmextractor.testing.SymmExtractorTestCase;
+import src.symmextractor.testing.SymmExtractorTestOutcome;
 import src.symmreducer.SymmReducer;
 import src.testing.SystemErrorTestOutcome;
 import src.testing.TestOutcome;
@@ -31,6 +32,10 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 		super(foldername, modelFilename, expectedOutcome);
 		this.compilerDirectives = compilerDirectives;
 		this.searchDepth = searchDepth;
+	}
+
+	public SymmReducerTestCase(String foldername, String modelFilename, SymmExtractorTestOutcome expectedOutcome) {
+		super(foldername, modelFilename, expectedOutcome);
 	}
 	
 	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerTestOutcome expectedOutcome, int searchDepth) {

@@ -1,7 +1,9 @@
 package src.etch.testing;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import src.etch.types.TypeTest;
@@ -22,8 +24,8 @@ public class EtchTester {
 		Tester.displayResults();
 	}
 
-	private static Set<TestCase> getTestCases() {
-		Set<TestCase> testCases = new HashSet<TestCase>();
+	private static List<TestCase> getTestCases() {
+		List<TestCase> testCases = new ArrayList<TestCase>();
 		Set<TestCase> missingFeatureTestCases = new HashSet<TestCase>();
 
 		runUnitTests();
@@ -203,6 +205,13 @@ public class EtchTester {
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testmisc4.p", EtchTestOutcome.WellTyped));
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testmultidimarray.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testchannelexpression.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testrecordfieldexpression.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failrecordexpression.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failrecordexpression2.p", EtchTestOutcome.BadlyTyped));
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelbeforeunless.p", EtchTestOutcome.BadlyTyped));
