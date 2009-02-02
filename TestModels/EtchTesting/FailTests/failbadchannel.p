@@ -26,7 +26,7 @@ O_T_Null:
       assert(partner[selfid]==null); 
       /* either attempt a call, or receive one */ 
      if 
-       :: empty(self) -> state=st_idle; 
+   :: empty(self) -> state=st_idle; 
           if 
             :: state==st_blocked -> state = on; goto O_T_Null
             :: else->state=on 

@@ -212,20 +212,53 @@ public class EtchTester {
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failrecordexpression.p", EtchTestOutcome.BadlyTyped));
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failrecordexpression2.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_conditional.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_conditional2.p", EtchTestOutcome.WellTyped));
+	
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_assert_non_bool.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_attempt_at_function_pointer.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_5.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_eq.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_send.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_conditional.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_conditional2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_ill_formed_inline.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_ill_formed_inline2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_inconsistent_channel_usage.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_inline_with_duplicate_arg_names.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_macro_badly_typed.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_macro_used_with_wrong_num_args.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_missing_run.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_not_bool.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_not_numeric.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_type_used_as_variable.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_variable_not_array.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_variable_not_defined.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_variable_not_record.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failbadinlinemacro.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failnamealreadyusedasinline.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failbadinlines.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failbadinlines2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failbadinlines3.p", EtchTestOutcome.BadlyTyped));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failemailmissingchanneltwo.p", EtchTestOutcome.BadlyTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/testanothertelephone.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_engine3F99.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_protype_with_duplicate_args_names.p", EtchTestOutcome.BadlyTyped));
+				
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_misc.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_funny_semi_colons.p", EtchTestOutcome.WellTyped));
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelbeforeunless.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/testpotsmodel2.p", EtchTestOutcome.WellTyped));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/test_engine3F99.p", EtchTestOutcome.WellTyped));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/testanothertelephone.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelinunless.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/wordcount",  EtchTestOutcome.ParsePass));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failbadinlines.p", EtchTestOutcome.BadlyTyped));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failbadinlines2.p", EtchTestOutcome.BadlyTyped));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failbadinlines3.p", EtchTestOutcome.BadlyTyped));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/failemailmissingchanneltwo.p", EtchTestOutcome.BadlyTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/fail_bad_use_of_local_keyword.p", EtchTestOutcome.BadlyTyped));
-		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/failnamealreadyusedasinline.p", EtchTestOutcome.BadlyTyped));
 		
 		return testCases;
 	}

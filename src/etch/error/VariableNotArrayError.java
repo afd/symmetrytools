@@ -19,18 +19,27 @@
 
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+import src.etch.types.Minimiser;
+import src.etch.types.Type;
+
 public class VariableNotArrayError extends Error {
 
 	private String variableName;
-    private String type;
+    private Type type;
     
-    public VariableNotArrayError(String variableName, String type) {
+    public VariableNotArrayError(String variableName, Type type) {
     	this.variableName = variableName;
     	this.type = type;
     }
 
     public String message() {
-	return "variable \"" + variableName + "\" is used as an array, but has type \"" + type + "\"";
+    	return "variable \"" + variableName + "\" is used as an array, but has type \"" + Minimiser.minimise(type).name() + "\"";
     } 
 
+    @Override
+	public void applySubstitutions(Substituter substituter) {
+		type = substituter.applySubstitutions(type);
+    }
+    
 }

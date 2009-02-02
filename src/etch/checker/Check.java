@@ -162,21 +162,21 @@ public class Check {
 		theAST.apply(chk);
 		Substituter substituter = chk.unify();
 	
+		substituter.setTypeInformation(chk);
+
 		if (chk.getErrorTable().hasErrors()) {
 
-			if(Config.TESTING_IN_PROGRESS) {
+			if(Config.TESTING_IN_PROGRESS || !Config.inQuietMode()) {
+				chk.getErrorTable().applySubstitutions(substituter);
 				System.err.println(chk.getErrorTable().output("while processing " + sourceName));
-			} else if(!Config.inQuietMode()) {
-				System.out.println(chk.getErrorTable().output("while processing " + sourceName));
 			}
 
 			return false;
 		}
 
-		ProgressPrinter.println("Specification is well typed!");
-
-		substituter.setTypeInformation(chk);
 		theAST.apply(substituter);
+		
+		ProgressPrinter.println("Specification is well typed!");
 
 		if(Config.inVerboseMode()) {
 			System.out.println(chk.showCompleteTypeInformation(sourceName));

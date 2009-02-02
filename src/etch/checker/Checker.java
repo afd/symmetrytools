@@ -8,6 +8,7 @@ import java.util.Map;
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.Environment;
+import src.etch.env.InlineEntry;
 import src.etch.env.MtypeEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.TypeEntry;
@@ -24,12 +25,14 @@ import src.etch.error.ErrorTable;
 import src.etch.error.IfCondError;
 import src.etch.error.IfMismatchError;
 import src.etch.error.IncomparableTypesException;
+import src.etch.error.InlineMacroDoesNotExistError;
 import src.etch.error.JumpToUndefinedLabelError;
 import src.etch.error.LiteralValueTooLargeError;
 import src.etch.error.NameAlreadyUsedError;
 import src.etch.error.NotBoolError;
 import src.etch.error.NotNumericError;
 import src.etch.error.RecordUsedAsExpressionStatement;
+import src.etch.error.SemiColonInParenthesesError;
 import src.etch.error.SubtypingError;
 import src.etch.error.VariableNotArrayError;
 import src.etch.error.VariableNotChannelError;
@@ -61,12 +64,11 @@ import src.etch.types.TypeVariableType;
 import src.etch.types.VisibleType;
 import src.promela.NodeHelper;
 import src.promela.node.*;
+import src.utilities.StringHelper;
 
 public class Checker extends InlineProcessor {
 	
 	protected ErrorTable errorTable = new ErrorTable();
-
-	private Environment env = new Environment();
 
 	protected ConstraintSet constraintSet;
 
@@ -74,7 +76,8 @@ public class Checker extends InlineProcessor {
 
 	protected boolean inTypedef = false;
 
-	private List<String> callStack = new ArrayList<String>();
+	private List<Integer> callStackLineNumbers = new ArrayList<Integer>();
+	private List<String> callStackNames = new ArrayList<String>();
 	
 	private static final String USER_TYPE = "user defined type";
 	private static final String PROCTYPE = "proctype";
@@ -138,10 +141,6 @@ public class Checker extends InlineProcessor {
 		} else {
 			env.put(name, new MtypeEntry(tok.getLine()));
 		}
-	}
-
-	private boolean nameExists(String name) {
-		return env.get(name) != null;
 	}
 	
 	public void caseAUtype(AUtype node) {
@@ -224,7 +223,7 @@ public class Checker extends InlineProcessor {
 	
 	public void outAAssignmentAssignment(AAssignmentAssignment node) {
 		VisibleType leftType = getOutVisibleType(node.getVarref());
-		VisibleType rightType = getOutVisibleType(node.getExpr());
+		VisibleType rightType = getOutVisibleType(node.getOrExpr());
 
 		if ((leftType != null) && (rightType != null)) {
 
@@ -233,8 +232,7 @@ public class Checker extends InlineProcessor {
 				postEqualityConstraint(leftType, rightType,
 						node.getAssign());
 			} else if (!(rightType.isSubtype(leftType))) {
-				addError(node.getAssign(), new AssignmentMismatchError(leftType
-						.name(), rightType.name()));
+				addError(node.getAssign(), new AssignmentMismatchError(leftType, rightType));
 			}
 		}
 	}
@@ -301,7 +299,7 @@ public class Checker extends InlineProcessor {
 		}
 		
 		if (!(t instanceof RecordType)) {
-			addError(node.getDot(), new VariableNotRecordError(t.name()));
+			addError(node.getDot(), new VariableNotRecordError(StringHelper.removeWhitespace(node.toString()), t));
 			return;
 		} 
 		
@@ -327,7 +325,7 @@ public class Checker extends InlineProcessor {
 			setOut(node, elementType);
 			dealWithArrayIndex(node,t);
 		} else {
-			addError(NodeHelper.getNameFromVaribableReference(node), new VariableNotArrayError(NodeHelper.getNameFromVaribableReference(node).getText(),t.name()));
+			addError(NodeHelper.getNameFromVaribableReference(node), new VariableNotArrayError(NodeHelper.getNameFromVaribableReference(node).getText(), t));
 		}
 	}
 
@@ -362,9 +360,9 @@ public class Checker extends InlineProcessor {
 	}
 	
 	public void outAArrayref(AArrayref node) {
-		Type exprType = getOutType(node.getExpr());
+		Type exprType = getOutType(node.getOrExpr());
 		if ((exprType != null) && !suitableTypeForArrayIndex(exprType)) {
-			addError(node.getLBracket(), new BadArrayIndexError(exprType.name(),byteType().name()));
+			addError(node.getLBracket(), new BadArrayIndexError(exprType, byteType()));
 		}
 	}
 
@@ -424,27 +422,30 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	public void outAConditionalExpr(AConditionalExpr node) {
+	public void outAConditionalFactor(AConditionalFactor node) {
 		VisibleType condType = getOutVisibleType(node.getIf());
 		VisibleType thenType = getOutVisibleType(node.getThen());
 		VisibleType elseType = getOutVisibleType(node.getElse());
-
+		
+		if(node.getSeparator().getText().equals(";")) {
+			addError(node.getSeparator(), new SemiColonInParenthesesError());
+		}
+		
 		if ((condType != null) && (!isBoolSubtype(condType))) {
-			addError(node.getRightarrow(), new IfCondError(condType.name()));
+			addError(node.getSeparator(), new IfCondError(condType));
 		}
 
 		if ((thenType != null) && (elseType != null)) {
 
 			if (isChan(thenType) && isChan(elseType)) {
 				postEqualityConstraint(thenType, elseType,
-						node.getRightarrow());
+						node.getSeparator());
 				setOut(node, thenType);
 			} else {
 				try {
 					setOut(node, AnyType.max(thenType, elseType));
 				} catch(IncomparableTypesException e) {
-					addError(node.getRightarrow(), new IfMismatchError(thenType
-							.name(), elseType.name()));
+					addError(node.getSeparator(), new IfMismatchError(thenType, elseType));
 				}
 			}
 		}
@@ -500,8 +501,8 @@ public class Checker extends InlineProcessor {
 				setOut(node, boolType());
 			} else if (!((leftType.isSubtype(rightType)) || (rightType
 					.isSubtype(leftType)))) {
-				addError(node.getEqop(), new EqMismatchError(leftType.name(),
-						rightType.name(), node));
+				addError(node.getEqop(), new EqMismatchError(leftType,
+						rightType, node));
 			} else
 				setOut(node, boolType());
 		}
@@ -555,7 +556,7 @@ public class Checker extends InlineProcessor {
 			if (t.isSubtype(boolType())) {
 				setOut(node, t);
 			} else {
-				addError(node.getBang(), new NotBoolError(t.name(), node
+				addError(node.getBang(), new NotBoolError(t, node
 						.getBang().getText(), Error.UNARY));
 			}
 		}
@@ -567,14 +568,10 @@ public class Checker extends InlineProcessor {
 			if (isNumeric(t)) {
 				setOut(node, t);
 			} else {
-				addError(node.getComplement(), new NotNumericError(t.name(),
+				addError(node.getComplement(), new NotNumericError(t,
 						node.getComplement().getText(), Error.UNARY));
 			}
 		}
-	}
-
-	public void outASimpleExpr(ASimpleExpr node) {
-		setOut(node, getOut(node.getOrExpr()));
 	}
 
 	public void outASimpleOrExpr(ASimpleOrExpr node) {
@@ -618,7 +615,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAParentheseFactor(AParentheseFactor node) {
-		setOut(node, getOut(node.getExpr()));
+		setOut(node, getOut(node.getOrExpr()));
 	}
 
 	public void outAConstFactor(AConstFactor node) {
@@ -659,7 +656,7 @@ public class Checker extends InlineProcessor {
 
 			if (!isChan(varType)) {
 				addError(node.getLParenthese(), new VariableNotChannelError(
-						varType.name(), node.getChanop()));
+						varType, node.getChanop()));
 			}
 
 			else {
@@ -673,7 +670,7 @@ public class Checker extends InlineProcessor {
 		if (varType != null) {
 			if (!isChan(varType)) {
 				addError(node.getLParenthese(), new VariableNotChannelError(
-						varType.name(), node.getLen()));
+						varType, node.getLen()));
 			}
 
 			else {
@@ -701,9 +698,9 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAAssertSimpleStmnt(AAssertSimpleStmnt node) {
-		VisibleType type = getOutVisibleType(node.getExpr());
+		VisibleType type = getOutVisibleType(node.getOrExpr());
 		if ((type != null) && !type.isSubtype(boolType())) {
-			addError(node.getAssert(), new AssertAppliedToNonBooleanError(type.name()));
+			addError(node.getAssert(), new AssertAppliedToNonBooleanError(type));
 		}
 	}
 	
@@ -754,14 +751,14 @@ public class Checker extends InlineProcessor {
 	@SuppressWarnings("unchecked")
 	public void outAHeadedlistSendArgs(AHeadedlistSendArgs node) {
 		List<Type> tailTypes = (List<Type>)getOut(node.getArgLst());
-		if ((tailTypes) != null && (getOut(node.getExpr()) != null)) {
-			tailTypes.add(0, getOutType(node.getExpr()));
+		if ((tailTypes) != null && (getOut(node.getOrExpr()) != null)) {
+			tailTypes.add(0, getOutType(node.getOrExpr()));
 			setOut(node, tailTypes);
 		}
 	}
 
 	public void outAOneArgLst(AOneArgLst node) {
-		setOut(node, processArg(node.getExpr()));
+		setOut(node, processArg(node.getOrExpr()));
 	}
 
 	public void outAOneRecvArgs(AOneRecvArgs node) {
@@ -769,7 +766,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAManyArgLst(AManyArgLst node) {
-		setOut(node, processArgs(node.getExpr(), node.getArgLst()));
+		setOut(node, processArgs(node.getOrExpr(), node.getArgLst()));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -881,7 +878,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	public void outAEvalRecvArg(AEvalRecvArg node) {
-		VisibleType t = getOutVisibleType(node.getExpr());
+		VisibleType t = getOutVisibleType(node.getOrExpr());
 		if (isNumeric(t)) {
 			((NumericType) t).setIsTypeOfConstant();
 		}
@@ -898,8 +895,8 @@ public class Checker extends InlineProcessor {
 	
 	public void outAExpressionSimpleStmnt(AExpressionSimpleStmnt node) {
 		/* This method checks that records are not used as expression statements */
-		if(null != getOut(node.getExpr())) {
-			Type t = (Type)getOut(node.getExpr());
+		if(null != getOut(node.getOrExpr())) {
+			Type t = (Type)getOut(node.getOrExpr());
 			if(t instanceof RecordType) {
 				addError(lastIdentifierToken, new RecordUsedAsExpressionStatement(((RecordType)t).name()));
 			}
@@ -982,7 +979,7 @@ public class Checker extends InlineProcessor {
 	private boolean checkForNotNumericError(VisibleType t, Token operator, int nature, String variableName) {
 		if (t != null) {
 			if (!isNumeric(t)) {
-				addError(operator, new NotNumericError(t.name(), operator
+				addError(operator, new NotNumericError(t, operator
 						.getText(), nature, variableName));
 				return false;
 			}
@@ -1025,7 +1022,7 @@ public class Checker extends InlineProcessor {
 	private void checkForNotBoolError(VisibleType t, Token operator, int nature) {
 		if (t != null) {
 			if (!isBoolSubtype(t)) {
-				addError(operator, new NotBoolError(t.name(), operator
+				addError(operator, new NotBoolError(t, operator
 						.getText(), nature));
 			}
 		}
@@ -1079,7 +1076,7 @@ public class Checker extends InlineProcessor {
 			VisibleType initType = (VisibleType) getOut(((AArrayIvar) var).getConst());
 			if (initType != null) {
 				if(!initType.isSubtype(byteType())) {
-					addError(((AArrayIvar) var).getName(),new SubtypingError(initType.name(),byteType().name()));
+					addError(((AArrayIvar) var).getName(),new SubtypingError(initType, byteType()));
 					length = 0; // Set the length to be an undefined value, and carry on type-checking.
 				} else {
 					length = Integer.parseInt(((ANumberConst)((AArrayIvar)var).getConst()).getNumber().getText());
@@ -1119,6 +1116,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	private void addVariableToEnvironment(TName name, VisibleType type, boolean isHidden) {
+		
 		if ((!inTypedef && nameExists(name.getText())) || nameExistsInTopScope(name.getText())) {
 			addError(name, new NameAlreadyUsedError(name.getText(),env.get(name.getText())));
 		} else {
@@ -1146,18 +1144,18 @@ public class Checker extends InlineProcessor {
 	}
 
 	private void checkVariableInitialisation(AVariableIvarassignment assignment, VisibleType type) {
-		VisibleType assignType = getOutVisibleType(assignment.getExpr());
+		VisibleType assignType = getOutVisibleType(assignment.getOrExpr());
 		if (assignType != null) {
 			if (isChan(type) && isChan(assignType)) {
 				postEqualityConstraint(type, assignType,assignment.getAssign());
 			} else if (isArray(type)) {
 				if(!assignType.isSubtype(((ArrayType)type).getElementType())) {
 				addError(assignment.getAssign(), new AssignmentMismatchError(
-						((ArrayType)type).getElementType().name(), assignType.name()));
+						((ArrayType)type).getElementType(), assignType));
 				}
 			} else if (!(assignType.isSubtype(type))) {
 				addError(assignment.getAssign(), new AssignmentMismatchError(
-						type.name(), assignType.name()));
+						type, assignType));
 			}
 		}
 	}
@@ -1170,7 +1168,7 @@ public class Checker extends InlineProcessor {
 				postEqualityConstraint(((ArrayType)type).getElementType(), getChannelAssignmentType(assignment), assignment.getAssign());
 			} else {
 				addError(assignment.getAssign(),new AssignmentMismatchError(
-						type.name(),getChannelAssignmentType(assignment).name()));
+						type, getChannelAssignmentType(assignment)));
 			}
 		}
 	}
@@ -1202,10 +1200,10 @@ public class Checker extends InlineProcessor {
 
 	protected void addError(Token t, Error e) {
 				
-		if(callStack.isEmpty()) {
+		if(callStackLineNumbers.isEmpty()) {
 			errorTable.add(t.getLine(), e);
 		} else {
-			errorTable.add(t.getLine(),callStack,e);
+			errorTable.add(t.getLine(),callStackLineNumbers, callStackNames, e);
 		}
 	}
 
@@ -1295,6 +1293,55 @@ public class Checker extends InlineProcessor {
 		
 		return result;
 		
+	}
+
+
+	@Override
+	public void outAInlineSimpleStmnt(AInlineSimpleStmnt node) {
+		if(! ( env.get(node.getName().getText()) instanceof InlineEntry )) {
+			addError(node.getLParenthese(), new InlineMacroDoesNotExistError(node.getName().getText()));
+			return;
+		} 
+		
+		InlineEntry inline = (InlineEntry) env.get(node.getName().getText());
+
+		List<POrExpr> exprList = toListOfExpressions(node.getExprLst());
+
+		if(inline.getArity() != exprList.size()) {
+			addError(node.getLParenthese(), new WrongNumParameters(node.getName().getText(), inline.getArity(), 
+					exprList.size()));
+			return;
+		}
+		
+		if(allExpressionsAreWellTyped(exprList)) {
+			
+			env.openScope();
+			
+			callStackLineNumbers.add(node.getLParenthese().getLine());
+			callStackNames.add(node.getName().getText());
+			
+			for(int i =0; i < inline.getArgNames().size(); i++) {
+				env.put(inline.getArgNames().get(i), new VarEntry((VisibleType)getOut(exprList.get(i)), false, node.getLParenthese().getLine()));
+			}
+			
+			inline.getCopyOfSequence().apply(this);
+			
+			callStackLineNumbers.remove(callStackLineNumbers.size()-1);
+			callStackNames.remove(callStackNames.size()-1);
+
+			env.closeScope();
+			
+		}
+	
+	}
+
+	private boolean allExpressionsAreWellTyped(List<POrExpr> exprList) {
+		for(POrExpr expr : exprList) {
+			if(!(getOut(expr) instanceof VisibleType)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }

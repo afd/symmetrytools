@@ -6,14 +6,13 @@ import java.util.List;
 
 public class ErrorTableInlineEntry extends ErrorTableEntry {
 
-	private List<String> callStack;
+	private List<Integer> callStackLineNumbers;
+	private List<String> callStackNames;
 	
-	public ErrorTableInlineEntry(int line, List<String> callStack, Error e) {
+	public ErrorTableInlineEntry(int line, List<Integer> callStackLineNumbers, List<String> callStackNames, Error e) {
 		super(line,e);
-		this.callStack = new ArrayList<String>(callStack.size());
-		for(int i=0; i<callStack.size(); i++) {
-			this.callStack.add(callStack.get(i));
-		}
+		this.callStackLineNumbers = new ArrayList<Integer>(callStackLineNumbers);
+		this.callStackNames = new ArrayList<String>(callStackNames);
 	}
 	
 	public void output(PrintStream out) {
@@ -22,8 +21,14 @@ public class ErrorTableInlineEntry extends ErrorTableEntry {
 
 	public String output() {
 		String result = super.output();
-		for(int i=callStack.size()-1; i>=0; i--) {
-			result = result + "\n   called from line " + callStack.get(i);
+		for(int i=callStackLineNumbers.size()-1; i>=0; i--) {
+			result += "\n   called from ";
+			if(i>0) {
+				result += "\"" + callStackNames.get(i-1) + "\"";
+			} else {
+				result += "main specification";
+			}
+			result += " at line " + callStackLineNumbers.get(i);
 		}
 		return result;
 	}

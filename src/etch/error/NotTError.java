@@ -1,23 +1,27 @@
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+import src.etch.types.Minimiser;
+import src.etch.types.Type;
+
 public abstract class NotTError extends Error {
 
-	protected String type;
+	protected Type type;
 	protected String operator;
-	protected String correctType;
+	protected String correctKindOfType;
 	protected int nature;
 	private String argumentName;
 
-	public NotTError(String type, String operator, String correctType, int nature, String argumentName) {
+	public NotTError(Type type, String operator, String correctKindOfType, int nature, String argumentName) {
 		this.type = type;
 		this.operator = operator;
-		this.correctType = correctType;
+		this.correctKindOfType = correctKindOfType;
 		this.nature = nature;
 		this.argumentName = argumentName;
 	}
 	
-	public NotTError(String type, String operator, String correctType, int nature) {
-		this(type,operator,correctType,nature,null);
+	public NotTError(Type type, String operator, String correctKindOfType, int nature) {
+		this(type,operator,correctKindOfType,nature,null);
 	}
 
 	public String message() {
@@ -28,22 +32,27 @@ public abstract class NotTError extends Error {
 		}
 		
 		
-		result += "the";
+		result += "the ";
 		if(nature == LEFT) {
 			result = result + "first";
 		}
 		else if(nature == RIGHT) {
 			result = result + "second";
 		}
-		result += " argument of " + operator;
+		result += " argument of \"" + operator + "\"";
 		
 		if(null != argumentName) {
 			result += ","; 
 		}
 
-		result += " should have " + correctType + " type, but here it is \"" + type + "\"";
+		result += " should have " + correctKindOfType + " type, but here it is \"" + Minimiser.minimise(type).name() + "\"";
 		
 		return result;
 	}
+
+    @Override
+	public void applySubstitutions(Substituter substituter) {
+		type = substituter.applySubstitutions(type);
+    }
 
 }

@@ -26,7 +26,7 @@ public class PidSensitiveUnifier extends Unifier {
 			x.setLower(s);
 			result = null;
 		} else {
-			result = new SubtypingError(s.name(),x.getUpper().name());
+			result = new SubtypingError(s, x.getUpper());
 		}
 		
 		if (s.isSubtype(x.getLower()) && !isPidLiteral(s)) {

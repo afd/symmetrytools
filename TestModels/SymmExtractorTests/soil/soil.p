@@ -1,4 +1,3 @@
-
 #define MAX_X 4
 #define MAX_Y 4
 
@@ -57,8 +56,8 @@ inline soil(){
 }
 
 proctype soiling(){
-    int i=0;
-    int j =0;
+    byte i=0;
+    byte j =0;
     int timer = -1;
 
     do
@@ -73,14 +72,17 @@ proctype soiling(){
 	od;
 }
 
+#define LESS_THAN_BYTE(x,y) ((255==x)||(x<y))
+
+#define GREATER_EQ_BYTE(x,y) ((255!=x)&&(x>=y))
 
 inline select_tag(x, y){
-    i= -1;
-    j= -1;
+    i= 255;
+    j= 255;
     do
-    :: (i < 2) ->
+    :: (LESS_THAN_BYTE(i,2)) ->
       do
-      ::(j < 2 
+      ::((LESS_THAN_BYTE(j,2)) 
             && x + i < MAX_X 
             && y + j < MAX_Y 
             && x + i >= 0 
@@ -89,18 +91,18 @@ inline select_tag(x, y){
           currentx = x+i;
           currenty = y+j;
           j = j + 1;
-      :: (j < 2 && 
+      :: ((LESS_THAN_BYTE(j,2)) && 
             !(x + i < MAX_X 
             && y + j < MAX_Y 
             && x + i >= 0 
             && y + j >= 0 && tags[x+i].row[y+j].occupied == false  
             && tags[x+i].row[y+j].soilinglevel > tags[x].row[y].soilinglevel))->
           j = j + 1;
-      ::(j >= 2) ->break;
+      ::(GREATER_EQ_BYTE(j,2)) ->break;
       od;
-      j = -1; 
+      j = 255; 
       i = i + 1;
-    :: (i >= 2) -> break;
+    :: (GREATER_EQ_BYTE(i,2)) -> break;
     od;
 }
 
@@ -111,8 +113,8 @@ proctype agent(){
     byte currentx = 0;
     byte currenty = 0;
     int timer = 0;
-    int i;
-    int j;
+    byte i;
+    byte j;
 
     byte status = SELECT;
 

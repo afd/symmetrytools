@@ -54,7 +54,7 @@ public class SymmExtractor extends Check {
 		return isWellTyped;
 	}
 	
-	public StaticChannelDiagramExtractor extract() throws IOException {
+	public StaticChannelDiagramExtractor extract() throws IOException, ParserException, LexerException {
 
 		if(Config.profiling()) { Profile.EXTRACT_START = System.currentTimeMillis(); }
 		
@@ -70,7 +70,7 @@ public class SymmExtractor extends Check {
 			StaticChannelDiagramExtractor extractor	= makeStaticChannelDiagramExtractor();
 			
 			theAST.apply(extractor);
-
+			
 			obeysSymmetryRestrictions = checkSymmetryResrictionsAreObeyed(extractor);
 				
 			if(obeysSymmetryRestrictions) {
@@ -92,7 +92,7 @@ public class SymmExtractor extends Check {
 					ProgressPrinter.println("Saucy computed the following generators for Aut(SCD(P)):");
 					ProgressPrinter.println("   Aut(SCD(P)) = " + autSCD);
 				}
-	
+
 				if(Config.profiling()) { Profile.LARGEST_VALID_START = System.currentTimeMillis(); }
 				computeLargestValidSubgroup(extractor);
 	
@@ -131,7 +131,7 @@ public class SymmExtractor extends Check {
 
 	}
 	
-	protected void reparseSourceWithoutInlines() {
+	protected void reparseSourceWithoutInlines() throws ParserException, LexerException, IOException {
 		InlineReplacer inlineReplacer = new InlineReplacer();
 		theAST.apply(inlineReplacer);
 		String inlinedSourceProgram = inlineReplacer.getInlinedProgram();
@@ -152,6 +152,7 @@ public class SymmExtractor extends Check {
 		Set<Permutation> safeGenerators = new HashSet<Permutation>();
 				
 		for(Permutation alpha : autSCD.getGenerators()) {
+						
 			if (alpha.isSafeFor(theAST, extractor)) {
 				if(Config.inVerboseMode()) {
 					ProgressPrinter.println("    " + alpha + " : valid");
@@ -436,15 +437,10 @@ public class SymmExtractor extends Check {
 		theAST.apply(substituter);
 	}
 
-	private void parseInputString(String source) {
+	private void parseInputString(String source) throws ParserException, LexerException, IOException {
 		Lexer scanner = new Lexer(new PushbackReader(new BufferedReader(new StringReader(source))));
 		Parser parser = new Parser(scanner);
-		try {
-			theAST = parser.parse();
-		} catch (Exception e) {
-			System.out.println(e);
-			System.exit(1);
-		}
+		theAST = parser.parse();
 	}
 	
 	protected void startGAP() throws IOException {

@@ -19,9 +19,11 @@
 
 package src.etch.error;
 
+import src.etch.types.Type;
+
 public class AssignmentMismatchError extends SubtypingError {
 
-    public AssignmentMismatchError(String v, String e) {
+    public AssignmentMismatchError(Type v, Type e) {
     	super(e,v);
     }
 

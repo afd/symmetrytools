@@ -19,20 +19,25 @@
 
 package src.etch.error;
 
+import src.etch.types.ChanType;
+import src.etch.types.Type;
 import src.promela.node.Token;
 
 public class VariableNotChannelError extends Error {
 
-    private String type;
+    private Type type;
     private Token chanop;
     
-    public VariableNotChannelError(String type, Token chanop) {
+    public VariableNotChannelError(Type type, Token chanop) {
+    	assert(!(type instanceof ChanType));
     	this.type = type;
     	this.chanop = chanop;
     }
 
     public String message() {
-    	return "The \"" + chanop.getText() + "\" operator can only be applied a channel variable; here it has been applied to a variable of type \"" + type + "\"";
-    } 
+    	return "The \"" + chanop.getText() + "\" operator can only be applied a channel variable; here it has been applied to a variable of type \"" + type.name() + "\"";
+    }
+    
+    /* There is no need to override the applySubstitutions, since "type" cannot be a channel */
 
 }

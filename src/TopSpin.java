@@ -161,12 +161,12 @@ public class TopSpin {
 		}
 	}
 
-	public static void doAutomaticSymmetryReduction(SymmReducer reducer) throws IOException, InterruptedException {
+	public static void doAutomaticSymmetryReduction(SymmReducer reducer) throws IOException, InterruptedException, ParserException, LexerException {
 		reducer.reduce();
 		reducer.destroyGAP();
 	}
 
-	public static void doAutomaticSymmetryDetection(String filename, SymmExtractor extractor) throws IOException, InterruptedException {
+	public static void doAutomaticSymmetryDetection(String filename, SymmExtractor extractor) throws IOException, InterruptedException, ParserException, LexerException {
 		if(Config.profiling()) { Profile.TOPSPIN_START = System.currentTimeMillis(); }
 		ProgressPrinter.println("File: " + filename);
 		ProgressPrinter.println("Detect symmetry only");

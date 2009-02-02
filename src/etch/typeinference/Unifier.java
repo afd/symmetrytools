@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import src.etch.error.Error;
 import src.etch.error.IncompatibleTypesError;
 import src.etch.error.MismatchedArgumentsError;
@@ -16,7 +15,6 @@ import src.etch.types.BottomType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
 import src.etch.types.IntType;
-import src.etch.types.Minimiser;
 import src.etch.types.MtypeType;
 import src.etch.types.NumericType;
 import src.etch.types.ProductType;
@@ -50,7 +48,7 @@ public class Unifier {
 				 * should be a subtype of another concrete simple type.
 				 */
 				if(!sc.getLhs().isSubtype(sc.getRhs())) {
-					return new SubtypingError(sc.getLhs().name(),sc.getRhs().name());
+					return new SubtypingError(sc.getLhs(), sc.getRhs());
 				}
 				return null;
 			}
@@ -129,12 +127,12 @@ public class Unifier {
 			return new MismatchedArgumentsError(((ProductType) s).getArity(), ((ProductType) t).getArity());
 		}
 		
-		return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(), applySubstitutionsAndMinimise(t).name());
+		return new IncompatibleTypesError(s, t);
 	}
 
 	protected Error unifyArrayTypes(ArrayType s, ArrayType t) {
 		if(s.getLength()!=t.getLength()) {
-			return new IncompatibleTypesError(applySubstitutionsAndMinimise(s).name(),applySubstitutionsAndMinimise(t).name());
+			return new IncompatibleTypesError(s, t);
 		}
 		Error result = unifyConstraint(s.getElementType(), t.getElementType());
 		if (result == null) {
@@ -170,7 +168,7 @@ public class Unifier {
 			return null;
 		}
 
-		return new IncompatibleTypesError(s.name(), t.name());
+		return new IncompatibleTypesError(s, t);
 	
 	}
 
@@ -234,8 +232,7 @@ public class Unifier {
 		Type newLower = greatestLowerBound(s,t);
 		
 		if (!newLower.isSubtype(newUpper)) {
-			return new SubtypingError(applySubstitutionsAndMinimise(newLower)
-					.name(), applySubstitutionsAndMinimise(newUpper).name());
+			return new SubtypingError(newLower, newUpper);
 		}
 
 		s.setLower(newLower);
@@ -247,19 +244,15 @@ public class Unifier {
 	protected Error checkBounds(TypeVariableType s, Type t) {
 		
 		if (!s.getLower().isSubtype(t)) {
-			return new SubtypingError(s.getLower().name(), applySubstitutionsAndMinimise(t).name());
+			return new SubtypingError(s.getLower(), t);
 		} 
 		
 		if (!t.isSubtype(s.getUpper())) {
-			return new SubtypingError(applySubstitutionsAndMinimise(t).name(), s.getUpper().name());
+			return new SubtypingError(t, s.getUpper());
 		}
 		
 		return null;
 
-	}
-
-	private Type applySubstitutionsAndMinimise(Type t) {
-		return Minimiser.minimise(new Substituter(this).applySubstitutions(t));
 	}
 
 	protected Type greatestLowerBound(TypeVariableType s, TypeVariableType t) {

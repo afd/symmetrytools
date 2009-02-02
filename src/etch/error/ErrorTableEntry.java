@@ -1,5 +1,7 @@
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+
 
 
 class ErrorTableEntry {
@@ -15,6 +17,10 @@ class ErrorTableEntry {
 
 	public String output() {
 		return "Error" + " at line " + line + ": " + error.message();
+	}
+
+	public void applySubstitutions(Substituter substituter) {
+		error.applySubstitutions(substituter);
 	}
 
 }

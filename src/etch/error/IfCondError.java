@@ -19,17 +19,28 @@
 
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+import src.etch.types.Minimiser;
+import src.etch.types.Type;
+
 public class IfCondError extends Error {
 
-    public String type;
+    public Type type;
 
-    public IfCondError(String t) {
-	type = t;
+    public IfCondError(Type t) {
+    	type = t;
     }
 
+    @Override
     public String message() {
-	return "the condition of \"(if->then:else)\" should have type \"bool\"" +
-	    " but here it is \"" + type + "\"";
+		return "the condition of \"(if->then:else)\" should have type \"bool\"" +
+		    " but here it is \"" + Minimiser.minimise(type).name() + "\"";
     } 
+    
+    @Override
+	public void applySubstitutions(Substituter substituter) {
+		type = substituter.applySubstitutions(type);
+    }
+    
 
 }

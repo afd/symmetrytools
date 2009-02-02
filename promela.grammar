@@ -68,7 +68,6 @@ Tokens
     colon = ':';
     plus_plus = '++';
     minus_minus = '--';
-    rightarrow = '->';
 
     bang_bang = '!!';
 
@@ -156,8 +155,8 @@ Productions
     name templatetok colon sequence ;
 
   modules =
-   {one} module separator? |
-   {many} module separator? modules ;
+   {one} module separator* |
+   {many} module separator* modules ;
 
   module =
    {utype} utype |		/* user defined types */
@@ -200,12 +199,12 @@ Productions
    {many} name comma name_lst ;
 
   expr_lst =
-   {one} expr |
-   {many} expr comma expr_lst ;
+   {one} or_expr |
+   {many} or_expr comma expr_lst ;
 
   decl_lst =
-   {one} one_decl separator? |
-   {many} one_decl separator decl_lst;
+   {one} one_decl separator* |
+   {many} one_decl separator+ decl_lst;
 
   one_decl =
    visible? typename ivar_lst ;
@@ -237,15 +236,15 @@ Productions
    prioritytok const ;		/* simulation only */
 
   enabler =
-   provided l_parenthese expr r_parenthese ;	/* constraint */
+   provided l_parenthese or_expr r_parenthese ;	/* constraint */
 
   visible =
    {hidden} hidden |
    {show} show ;
 
   sequence =
-   {one} step separator? |
-   {many} step separator sequence ;
+   {one} step separator* |
+   {many} step separator+ sequence ;
 
   step =
    {unless} [main]:stmnt unless [escape]:stmnt |
@@ -276,8 +275,8 @@ Productions
    {goto} goto name |			/* anywhere */
    {print} print l_parenthese string r_parenthese |
    {printwithargs} print l_parenthese string comma arg_lst r_parenthese |
-   {assert} assert expr |
-   {expression} expr |			/* condition */
+   {assert} assert or_expr |
+   {expression} or_expr |			/* condition */
    {inline} name l_parenthese expr_lst? r_parenthese ;
 
   label = name colon ;
@@ -291,7 +290,7 @@ Productions
    {array} name l_bracket const r_bracket ivarassignment? ;
 
   ivarassignment =
-   {variable} assign expr |
+   {variable} assign or_expr |
    {channel} assign l_bracket const r_bracket of l_brace typenamelst r_brace;
 
   varref =
@@ -299,10 +298,7 @@ Productions
    {record} varref dot name arrayref? ;
 
   arrayref =
-   l_bracket expr r_bracket ;
-
-  recordref =
-   dot varref ;
+   l_bracket or_expr r_bracket ;
 
   send =
    {fifo} varref bang send_args |	/* fifo send */
@@ -320,11 +316,11 @@ Productions
 
   send_args =
    {list} arg_lst |
-   {headedlist} expr l_parenthese arg_lst r_parenthese ;
+   {headedlist} or_expr l_parenthese arg_lst r_parenthese ;
 
   arg_lst =
-   {one} expr |
-   {many} expr comma arg_lst ;
+   {one} or_expr |
+   {many} or_expr comma arg_lst ;
 
   recv_args =
    {one} recv_arg |
@@ -333,11 +329,11 @@ Productions
 
   recv_arg =
    {var} varref |
-   {eval} eval l_parenthese expr r_parenthese |
+   {eval} eval l_parenthese or_expr r_parenthese |
    {const} const ;
 
   assignment =
-   {assignment} varref assign expr |	/* assignment */
+   {assignment} varref assign or_expr |	/* assignment */
    {increment} varref plus_plus |		/* increment */
    {decrement} varref minus_minus ;		/* decrement */
 
@@ -346,16 +342,17 @@ Productions
    {template} colon_colon for [variable]:name over [proctype]:name l_brace sequence r_brace options? ;
 
   factor =
-   {parenthese} l_parenthese expr r_parenthese |
+   {conditional} l_parenthese [if]:or_expr separator [then]:or_expr colon [else]:or_expr r_parenthese |
+   {parenthese} l_parenthese or_expr r_parenthese |
    {length} len l_parenthese varref r_parenthese |	 /* nr of messages in chan */ 
    {recv_poll} recv_poll |
    {varref} varref |
    {const} const |
    {timeout} timeout |				 /* hang system state */ 
    {nonprogress} np |			 	 /* non-progress system state */ 
-   {enabled} enabled l_parenthese expr r_parenthese |
-   {pc_value} pc_value l_parenthese expr r_parenthese |
-   {remoteref} [process]:name l_bracket expr r_bracket at [label]:name |
+   {enabled} enabled l_parenthese or_expr r_parenthese |
+   {pc_value} pc_value l_parenthese or_expr r_parenthese |
+   {remoteref} [process]:name l_bracket or_expr r_bracket at [label]:name |
    {run} run name l_parenthese arg_lst? r_parenthese priority? |
    {chanop} chanop l_parenthese varref r_parenthese ;
 
@@ -406,10 +403,6 @@ Productions
   or_expr =
     {simple} and_expr |
     {compound} and_expr or or_expr ;
-
-  expr = /* This is a conditional */
-    {simple} or_expr |
-    {conditional} l_parenthese [if]:or_expr rightarrow [then]:or_expr colon [else]:or_expr r_parenthese ;
 
   const =
    {true} true |

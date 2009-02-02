@@ -3,6 +3,8 @@ package src.etch.error;
 import java.util.ArrayList;
 import java.util.List;
 
+import src.etch.typeinference.Substituter;
+
 public class ErrorTable {
 
 	private List<ErrorTableEntry> messages;
@@ -35,8 +37,8 @@ public class ErrorTable {
 		return result;
 	}
 
-	public void add(int line, List<String> callStack, Error e) {
-		messages.add(new ErrorTableInlineEntry(line, callStack, e));
+	public void add(int line, List<Integer> callStackLineNumbers, List<String> callStackNames, Error e) {
+		messages.add(new ErrorTableInlineEntry(line, callStackLineNumbers, callStackNames, e));
 	}
 
 	int noMessages() {
@@ -45,6 +47,12 @@ public class ErrorTable {
 
 	ErrorTableEntry getMessage(int i) {
 		return messages.get(i);
+	}
+
+	public void applySubstitutions(Substituter substituter) {
+		for(ErrorTableEntry e : messages) {
+			e.applySubstitutions(substituter);
+		}
 	}
 
 }

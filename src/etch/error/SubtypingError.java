@@ -20,19 +20,28 @@
 
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+import src.etch.types.Minimiser;
+import src.etch.types.Type;
+
 public class SubtypingError extends Error {
 
-    public String type1;
-    public String type2;
+    public Type type1;
+    public Type type2;
 
-    public SubtypingError(String t1, String t2) {
-	type1 = t1;
-	type2 = t2;
+    public SubtypingError(Type type1, Type type2) {
+		this.type1 = type1;
+		this.type2 = type2;
     }
 
     public String message() {
-	return "Type \"" + type1 + "\" occurs in a context where it is required to be a subtype of \"" + type2 + "\"";
-	
-    } 
+    	return "Type \"" + Minimiser.minimise(type1).name() + "\" occurs in a context where it is required to be a subtype of \"" + Minimiser.minimise(type2).name() + "\"";
+    }
+    
+    @Override
+	public void applySubstitutions(Substituter substituter) {
+		type1 = substituter.applySubstitutions(type1);
+		type2 = substituter.applySubstitutions(type2);
+    }
 
 }

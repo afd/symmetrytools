@@ -41,4 +41,12 @@ public class InlineEntry extends EnvEntry {
 		return "inline macro";
 	}
 	
+	public List<String> getArgNames() {
+		return argNames;
+	}
+	
+	public PSequence getCopyOfSequence() {
+		return (PSequence) sequence.clone();
+	}
+	
 }

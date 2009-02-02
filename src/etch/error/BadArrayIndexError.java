@@ -1,18 +1,30 @@
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+import src.etch.types.ByteType;
+import src.etch.types.Minimiser;
+import src.etch.types.Type;
+
 public class BadArrayIndexError extends Error {
 
-	private String actualType;
-	private String expectedType;
+	private Type actualType;
+	private ByteType expectedType;
 	
-	public BadArrayIndexError(String actualType, String expectedType) {
+	public BadArrayIndexError(Type actualType, ByteType expectedType) {
 		this.actualType = actualType;
 		this.expectedType = expectedType;
 	}
 
 	@Override
 	public String message() {
-		return "Type \"" + actualType + "\" cannot be used as an array index, it is not a subtype of \"" + expectedType + "\"";
+		return "Type \"" + Minimiser.minimise(actualType).name() + "\" cannot be used as an array index, it is not a subtype of \"" + expectedType.name() + "\"";
 	}
+	
+    @Override
+	public void applySubstitutions(Substituter substituter) {
+		actualType = substituter.applySubstitutions(actualType);
+		// No need to substitute expectedType, as it is ByteType
+    }
+	
 
 }

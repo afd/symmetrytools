@@ -19,16 +19,27 @@
 
 package src.etch.error;
 
+import src.etch.typeinference.Substituter;
+import src.etch.types.Type;
+
 public class VariableNotRecordError extends Error {
 
-    public String typeName;
-
-    public VariableNotRecordError(String t) {
-	typeName = t;
+    private Type type;
+   
+    private String reference;
+    
+    public VariableNotRecordError(String reference, Type type) {
+    	this.reference = reference;
+    	this.type = type;
     }
 
     public String message() {
-	return "a variable is used as a record type, but it has type \"" + typeName + "\".";
+    	return "variable \"" + reference + "\" is used as a record type, but it has type \"" + type.name() + "\"";
     } 
 
+    @Override
+	public void applySubstitutions(Substituter substituter) {
+		type = substituter.applySubstitutions(type);
+    }
+    
 }

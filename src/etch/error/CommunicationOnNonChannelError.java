@@ -20,5 +20,9 @@ public class CommunicationOnNonChannelError extends Error {
 	public String message() {
 		return "Operator " + operator.getText() + " cannot be applied to an expression with type " + type.name();
 	}
+	
+	/* Note: there is no need to apply substitutions to the type field of this error, as it cannot
+	 * be a channel.  Similarly, the type expression need not be minimized.
+	 */
 
 }

@@ -241,12 +241,12 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 		if (paramList != null) {
 			while (paramList instanceof AManyArgLst) {
 				parameterNames.add(StringHelper
-						.removeWhitespace(((AManyArgLst) paramList).getExpr()
+						.removeWhitespace(((AManyArgLst) paramList).getOrExpr()
 								.toString()));
 				paramList = ((AManyArgLst) paramList).getArgLst();
 			}
 			parameterNames.add(StringHelper
-					.removeWhitespace(((AOneArgLst) paramList).getExpr()
+					.removeWhitespace(((AOneArgLst) paramList).getOrExpr()
 							.toString()));
 		}
 		processEntries.add(new ProcessEntry(node.getName().getText(),

@@ -255,9 +255,9 @@ public class SymmetryChecker extends Checker {
 	
 	private Type getArrayIndexType(PVarref node) {
 		if(node instanceof ASingleVarref) {
-			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getExpr());
+			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getOrExpr());
 		}
-		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getExpr());
+		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getOrExpr());
 	}
 
 	protected void dealWithArrayIndex(PVarref node, VisibleType t) {

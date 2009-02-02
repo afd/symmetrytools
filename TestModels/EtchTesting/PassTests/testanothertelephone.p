@@ -3,7 +3,7 @@ mtype = {offhook, dialtone, number, ringing, busy, connected, hangup, hungup };
 chan line = [1] of {mtype,chan}
 
 active proctype pots() {
-  chan who = [1] of {mtype,mtype};
+  chan who = [1] of {mtype};
 idle:line?offhook,who;
   {
     who!dialtone;

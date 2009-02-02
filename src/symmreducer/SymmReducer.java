@@ -28,7 +28,7 @@ public class SymmReducer extends SymmExtractor {
 		return new StaticChannelDiagramExtractorForSymmetryReduction();
 	}
 	
-    public void reduce() throws IOException {
+    public void reduce() throws IOException, ParserException, LexerException {
     	
     	StaticChannelDiagramExtractor extractor;
 
@@ -152,7 +152,7 @@ public class SymmReducer extends SymmExtractor {
 		
     }
 
-	private StaticChannelDiagramExtractor parseUserSpecifiedSymmetry() throws FileNotFoundException, IOException {
+	private StaticChannelDiagramExtractor parseUserSpecifiedSymmetry() throws FileNotFoundException, IOException, ParserException, LexerException {
 		startGAP();
 		StaticChannelDiagramExtractor extractor;
 		assert(null != Config.getStringOption(StringOption.SYMMETRYFILE));
