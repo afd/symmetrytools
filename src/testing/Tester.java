@@ -18,6 +18,7 @@ public class Tester {
 		for(TestCase testCase : testCases) {
 
 			Config.resetConfiguration();
+			Config.initialiseCommandLineSwitches();
 			testCase.run();
 
 			if(testCase.isPass()) {

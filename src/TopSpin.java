@@ -30,16 +30,12 @@ public class TopSpin {
 			System.exit(0);
 		}
 
-		int currentArg = 0;
-		
-		while((currentArg < args.length) && processCommandLineSwitch(args[currentArg].toUpperCase())) {
-			currentArg++;
-		}
+		int currentArg = Config.processCommandLineSwitches(args);
 		
 		if(currentArg >= args.length) {
 			System.out.println("Error: no input file specified.\n");
 			System.out.println("To run TopSPIN on an input file:\n" +
-					           "    [check, detect] <inputfile>\n" +
+					           "    [command-line options] <inputfile>\n" +
 							   "For help on command-line or config file option:\n" +
 							   "    help <option>\n" +
 							   "For list of options:\n" +
@@ -86,34 +82,6 @@ public class TopSpin {
 		
 	}
 
-	private static boolean processCommandLineSwitch(String arg) {
-
-		if(processSwitchVariant(arg, CommandLineSwitch.CHECK, CommandLineSwitch.DETECT)) {
-			return true;
-		}
-
-		if(processSwitchVariant(arg, CommandLineSwitch.DETECT, CommandLineSwitch.CHECK)) {
-			return true;
-		}
-		
-		return false;
-
-	}
-
-	private static boolean processSwitchVariant(String arg, CommandLineSwitch commandLineSwitch, CommandLineSwitch otherSwitch) {
-		if(arg.equals(commandLineSwitch.toString())) {
-			if(Config.commandLineSwitchIsSet(commandLineSwitch)) {
-				System.out.println("Warning: duplicate command line switch " + commandLineSwitch + ".");
-			} else if(Config.commandLineSwitchIsSet(otherSwitch)) {
-				System.out.println("Warning: " + commandLineSwitch + " switch has been ignored as it is specified after " + otherSwitch + " switch.");
-			} else {
-				Config.setCommandLineSwitch(commandLineSwitch);
-			}
-			return true;
-		}
-		return false;
-	}
-
 	private static void processHelpArguments(String[] args) {
 		
 		assert(args.length>0);
@@ -128,7 +96,7 @@ public class TopSpin {
 			System.out.println("Command line switches");
 			System.out.println("=====================");
 			for(CommandLineSwitch option : CommandLineSwitch.values()) {
-				System.out.println("  " + option.toString().toLowerCase());
+				System.out.println("  -" + option.toString().toLowerCase());
 			}
 			System.out.println("\nBoolean config file");
 			System.out.println("===================");

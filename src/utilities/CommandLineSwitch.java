@@ -1,6 +1,6 @@
 package src.utilities;
 
 public enum CommandLineSwitch {
-	CHECK, DETECT
+	CHECK, DETECT, RELAXEDARRAYINDEXING, RELAXEDASSIGNMENT
 
 }

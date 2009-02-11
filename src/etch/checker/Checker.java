@@ -64,6 +64,8 @@ import src.etch.types.TypeVariableType;
 import src.etch.types.VisibleType;
 import src.promela.NodeHelper;
 import src.promela.node.*;
+import src.utilities.CommandLineSwitch;
+import src.utilities.Config;
 import src.utilities.StringHelper;
 
 public class Checker extends InlineProcessor {
@@ -225,15 +227,20 @@ public class Checker extends InlineProcessor {
 		VisibleType leftType = getOutVisibleType(node.getVarref());
 		VisibleType rightType = getOutVisibleType(node.getOrExpr());
 
-		if ((leftType != null) && (rightType != null)) {
+		if ( null == leftType || null == rightType ) {
+			return;
+		}
+		
+		if (isNumeric(leftType) && isNumeric(rightType) && Config.commandLineSwitchIsSet(CommandLineSwitch.RELAXEDASSIGNMENT)) {
+			return;
+		}
 
-			if (isChan(leftType) && isChan(rightType)) {
-				/* Can we optimise this so that we only post equality constraints between the field types of leftType and rightType? */
-				postEqualityConstraint(leftType, rightType,
-						node.getAssign());
-			} else if (!(rightType.isSubtype(leftType))) {
-				addError(node.getAssign(), new AssignmentMismatchError(leftType, rightType));
-			}
+		if (isChan(leftType) && isChan(rightType)) {
+			/* Can we optimise this so that we only post equality constraints between the field types of leftType and rightType? */
+			postEqualityConstraint(leftType, rightType,
+					node.getAssign());
+		} else if (!(rightType.isSubtype(leftType))) {
+			addError(node.getAssign(), new AssignmentMismatchError(leftType, rightType));
 		}
 	}
 
@@ -330,7 +337,7 @@ public class Checker extends InlineProcessor {
 	}
 
 	protected void dealWithArrayIndex(PVarref node, VisibleType t) {
-
+		// This method is overriddent to provide more specialised behaviour
 	}
 	
 	public void inALabel(ALabel node) {
@@ -359,15 +366,20 @@ public class Checker extends InlineProcessor {
 		gotoDestinations.put(name,destinations);
 	}
 	
+	
+	private NumericType maxArrayIndexType() {
+		return Config.commandLineSwitchIsSet(CommandLineSwitch.RELAXEDARRAYINDEXING) ? intType() : byteType();
+	}
+	
 	public void outAArrayref(AArrayref node) {
 		Type exprType = getOutType(node.getOrExpr());
 		if ((exprType != null) && !suitableTypeForArrayIndex(exprType)) {
-			addError(node.getLBracket(), new BadArrayIndexError(exprType, byteType()));
+			addError(node.getLBracket(), new BadArrayIndexError(exprType, maxArrayIndexType()));
 		}
 	}
 
 	protected boolean suitableTypeForArrayIndex(Type exprType) {
-		return exprType.isSubtype(byteType());
+		return exprType.isSubtype(maxArrayIndexType());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1235,6 +1247,10 @@ public class Checker extends InlineProcessor {
 		return Checker.theFactory.generateByteType();
 	}
 
+	private IntType intType() {
+		return new IntType();
+	}
+	
 	private BitType bitType() {
 		return Checker.theFactory.generateBitType();
 	}

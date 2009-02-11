@@ -1,16 +1,16 @@
 package src.etch.error;
 
 import src.etch.typeinference.Substituter;
-import src.etch.types.ByteType;
 import src.etch.types.Minimiser;
+import src.etch.types.NumericType;
 import src.etch.types.Type;
 
 public class BadArrayIndexError extends Error {
 
 	private Type actualType;
-	private ByteType expectedType;
+	private NumericType expectedType;
 	
-	public BadArrayIndexError(Type actualType, ByteType expectedType) {
+	public BadArrayIndexError(Type actualType, NumericType expectedType) {
 		this.actualType = actualType;
 		this.expectedType = expectedType;
 	}

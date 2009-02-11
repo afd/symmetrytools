@@ -108,7 +108,7 @@ public class SymmetryApplier {
 
 		for (int counter = 0; counter < lines.size(); counter++) {
 
-			if (lineInvolvesHashStore(lines, counter)) {
+			if (lineInvolvesHashStore(lines, counter) && !linePartOf_ONSTACK_PUT_method(lines, counter)) {
 				replaceWithRepresentativeStore(lines, counter);
 			}
 
@@ -181,6 +181,30 @@ public class SymmetryApplier {
 		out.close();
 	}
 	
+	private boolean linePartOf_ONSTACK_PUT_method(List<String> lines, int counter) {
+		
+		/* SPIN uses a method, onstack_put, to store states to the stack.  It's important
+		 * NOT to convert states to representatives when storing them to the stack.  This is
+		 * for a few reasons: 1. it stops bitstate hashing from working properly, as this method
+		 * has to "zap" the stack later, and representative computation messes up zapping.
+		 * 2. it is unnecessary and therefore inefficient to hash every state stored to
+		 * the stack.  3. better counter-examples are generated if the stack is "genuine".
+		 */
+		
+		/* This is a hacky way of finding out whether the line occurs in the onstack_put method.
+		 * It is very SPIN-version dependent!
+		 */
+		
+		for(int backCounter = counter; backCounter > counter - 10 && backCounter >= 0; backCounter--)
+		{
+			if(lines.get(backCounter).contains("onstack_put(void)")) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
 	protected void writeParallelIncludeLines(FileWriter out) throws IOException {
 		// Overridden by parallel symmetry applier
 	}

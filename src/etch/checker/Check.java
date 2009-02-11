@@ -29,6 +29,7 @@ import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
 import src.symmextractor.SymmetryChecker;
+import src.utilities.CommandLineSwitch;
 import src.utilities.Config;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
@@ -192,11 +193,17 @@ public class Check {
 			System.exit(1);
 		}
 
-		boolean isPidSensitive = (args.length > 1) && (args[1].equals("-symm"));
-
 		Config.resetConfiguration();
 		Config.setUnspecifiedOptionsToDefaultValues();
+		Config.initialiseCommandLineSwitches();
+
+		int currentArg = Config.processCommandLineSwitches(args);
 		
-		new Check(args[0]).typecheck(isPidSensitive);
-	}
+		if(currentArg >= args.length) {
+			System.out.println("Error: no input file specified.\n");
+			System.exit(1);
+		}
+				
+		new Check(args[currentArg]).typecheck(Config.commandLineSwitchIsSet(CommandLineSwitch.DETECT));
+	}	
 }

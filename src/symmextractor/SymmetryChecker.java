@@ -260,6 +260,7 @@ public class SymmetryChecker extends Checker {
 		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getOrExpr());
 	}
 
+	@Override
 	protected void dealWithArrayIndex(PVarref node, VisibleType t) {
 		if (getArrayIndexType(node) != null) {
 			if(getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(noProcesses+1) && ((ArrayType)t).getLength()!=0) {

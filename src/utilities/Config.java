@@ -21,7 +21,7 @@ import src.symmreducer.vectortargets.VectorTarget;
 
 public class Config {
 
-	public static final String VERSION = "2.1";
+	public static final String VERSION = "2.2";
 
 	public static VectorTarget vectorTarget;
 	public static ParallelTarget parallelTarget;
@@ -227,7 +227,7 @@ public class Config {
 	}
 
 	public static boolean commandLineSwitchIsSet(CommandLineSwitch flag) {
-		return commandLineSwitchesCurrentlySet.contains(flag);
+		return (null != flag) && commandLineSwitchesCurrentlySet.contains(flag);
 	}
 
 	private static void configurationError() {
@@ -451,6 +451,8 @@ public class Config {
 		
 		commandLineSwitchDescriptions.put(CommandLineSwitch.CHECK, "Command line switch: apply this switch to only type-check input specification.");
 		commandLineSwitchDescriptions.put(CommandLineSwitch.DETECT, "Command line switch: apply this switch to detect symmetry for input specification, but not apply symmetry reduction.");
+		commandLineSwitchDescriptions.put(CommandLineSwitch.RELAXEDARRAYINDEXING, "Command line switch: allow arrays to be indexed by expressions of any numeric type.  Without this option, TopSPIN will reject attempts to index arrays using 'short' or 'int' expressions.");
+		commandLineSwitchDescriptions.put(CommandLineSwitch.RELAXEDASSIGNMENT, "Command line switch: allow assignments from larger to smaller numeric types, even if such assignments may result in overflow.  Without this option, TopSPIN will not allow e.g. assignment of a 'int' variable to a 'byte' variable.");
 		
 	}
 
@@ -492,25 +494,66 @@ public class Config {
 	}
 
 
+	public static int processCommandLineSwitches(String[] args) {
+		int currentArg = 0;
+		
+		while((currentArg < args.length) && processCommandLineSwitch(args[currentArg].toUpperCase())) {
+			currentArg++;
+		}
+		return currentArg;
+	}
 
-	public static void showHelpForConfigurationOption(String string) {
+	private static boolean processCommandLineSwitch(String arg) {
+		
+		if(arg.length()<1 || arg.charAt(0) != '-') {
+			return false;
+		}
+		
+		String argName = arg.substring(1);
+		
+		return processSwitchVariant(argName, CommandLineSwitch.CHECK, CommandLineSwitch.DETECT)
+		|| processSwitchVariant(argName, CommandLineSwitch.DETECT, CommandLineSwitch.CHECK)
+		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDARRAYINDEXING, null)
+		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDASSIGNMENT, null);
+
+	}
+
+	private static boolean processSwitchVariant(String arg, CommandLineSwitch commandLineSwitch, CommandLineSwitch otherSwitch) {
+		if(arg.equals(commandLineSwitch.toString())) {
+			if(Config.commandLineSwitchIsSet(commandLineSwitch)) {
+				System.out.println("Warning: duplicate command line switch " + commandLineSwitch + ".");
+			} else if(Config.commandLineSwitchIsSet(otherSwitch)) {
+				System.out.println("Warning: " + commandLineSwitch + " switch has been ignored as it is specified after " + otherSwitch + " switch.");
+			} else {
+				Config.setCommandLineSwitch(commandLineSwitch);
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	
+
+	public static void showHelpForConfigurationOption(String option) {
+		
+		option = option.length() > 0 && option.charAt(0) == '-' ? option.substring(1) : option;
 
 		try {
-			System.out.println(booleanOptions.get(BooleanOption.valueOf(string.toUpperCase())).helpString(string, "boolean"));
+			System.out.println(booleanOptions.get(BooleanOption.valueOf(option.toUpperCase())).helpString(option, "boolean"));
 		} catch(IllegalArgumentException notBooleanOption) {
 			try {
-				System.out.println(stringOptions.get(StringOption.valueOf(string.toUpperCase())).helpString(string, "String"));
+				System.out.println(stringOptions.get(StringOption.valueOf(option.toUpperCase())).helpString(option, "String"));
 			} catch(IllegalArgumentException notStringOption) {
 				try {
-					System.out.println(integerOptions.get(IntegerOption.valueOf(string.toUpperCase())).helpString(string, "integer"));
+					System.out.println(integerOptions.get(IntegerOption.valueOf(option.toUpperCase())).helpString(option, "integer"));
 				} catch(IllegalArgumentException notIntegerOption) {
 					try {					
-						System.out.println(strategyOptions.get(StrategyOption.valueOf(string.toUpperCase())).helpString(string, "string"));
+						System.out.println(strategyOptions.get(StrategyOption.valueOf(option.toUpperCase())).helpString(option, "string"));
 					} catch(IllegalArgumentException notStrategyOption) {
 						try {
-							System.out.println(commandLineSwitchDescriptions.get(CommandLineSwitch.valueOf(string.toUpperCase())));
+							System.out.println(commandLineSwitchDescriptions.get(CommandLineSwitch.valueOf(option.toUpperCase())));
 						} catch(IllegalArgumentException notCommandLineSwitch) {
-							System.out.println("Error: Unknown config file option or command-line switch \"" + string + "\"");
+							System.out.println("Error: Unknown config file option or command-line switch \"" + option + "\"");
 						}
 					}
 				}
