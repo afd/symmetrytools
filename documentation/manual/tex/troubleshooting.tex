@@ -52,10 +52,10 @@ the graph automorphism program on which \topspin\ relies.}
 \exampleerrormessage
 
 \begin{lstlisting}
-Error launching saucy with command: C:\Program Files\TopSPIN_2.1\saucy\saucy.exe -d
-"C:\Program Files\TopSPIN_2.1\Common\graph.saucy"
-java.io.IOException: CreateProcess: C:\Program Files\TopSPIN_2.1\saucy\saucy.exe -d
-"C:\Program Files\TopSPIN_2.1\Common\graph.saucy" error=2
+Error launching saucy with command: C:\Program Files\TopSPIN\saucy\saucy.exe -d
+"C:\Program Files\TopSPIN\Common\graph.saucy"
+java.io.IOException: CreateProcess: C:\Program Files\TopSPIN\saucy\saucy.exe -d
+"C:\Program Files\TopSPIN\Common\graph.saucy" error=2
         at java.lang.ProcessImpl.create(Native Method)
         ... rest of Java stack trace
 \end{lstlisting}
@@ -79,10 +79,10 @@ mistyped the path to \saucy\ in \inline{config.txt}.}
 \exampleerrormessage
 
 \begin{lstlisting}
-Error launching saucy with command: C:\Program Files\TopSPIN_2.1\saucy\tsaucy.exe -d
-"C:\Program Files\TopSPIN_2.1\Common\graph.saucy"
-java.io.IOException: CreateProcess: C:\Program Files\TopSPIN_2.1\saucy\tsaucy.exe -d
-"C:\Program Files\TopSPIN_2.1\Common\graph.saucy" error=2
+Error launching saucy with command: C:\Program Files\TopSPIN\saucy\tsaucy.exe -d
+"C:\Program Files\TopSPIN\Common\graph.saucy"
+java.io.IOException: CreateProcess: C:\Program Files\TopSPIN\saucy\tsaucy.exe -d
+"C:\Program Files\TopSPIN\Common\graph.saucy" error=2
         at java.lang.ProcessImpl.create(Native Method)
         ... rest of Java stack trace
 \end{lstlisting}
@@ -107,10 +107,10 @@ computational group theory package on which \topspin\ relies.}
 
 \begin{lstlisting}
 Starting GAP with command: C:\gap4r4\bin\gap.bat -L
-"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q
+"C:\Program Files\TopSPIN\Common\gapworkspace" -q
 Exception in thread "main"
 java.io.IOException: CreateProcess: C:\gap4r4\bin\gap.bat -L
-"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q error=2
+"C:\Program Files\TopSPIN\Common\gapworkspace" -q error=2
         at java.lang.ProcessImpl.create(Native Method)
         ... rest of Java stack trace
 \end{lstlisting}
@@ -133,10 +133,10 @@ you may have correctly installed \gap, but mistyped the path to
 
 \begin{lstlisting}
 Starting GAP with command: C:\gap4r4\bin\tgap.bat -L
-"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q
+"C:\Program Files\TopSPIN\Common\gapworkspace" -q
 Exception in thread "main"
 java.io.IOException: CreateProcess: C:\gap4r4\bin\tgap.bat -L
-"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q error=2
+"C:\Program Files\TopSPIN\Common\gapworkspace" -q error=2
         at java.lang.ProcessImpl.create(Native Method)
         ... rest of Java stack trace
 \end{lstlisting}
@@ -159,8 +159,8 @@ been specified incorrectly in \inline{commmon.txt}.}
 \exampleerrormessage
 
 \begin{lstlisting}
-Error while trying to create file "C:\Program Files\TopSPIN_2.1\Common\graph.saucy".
-Make sure that the directory C:\Program Files\TopSPIN_2.1\Common\ exists,
+Error while trying to create file "C:\Program Files\TopSPIN\Common\graph.saucy".
+Make sure that the directory C:\Program Files\TopSPIN\Common\ exists,
 and that you have write permission.
 \end{lstlisting}
 
@@ -189,33 +189,6 @@ form \inline{common=}\emph{name}, where \emph{name} is the
 the \topspin\ distribution.  Make sure this path has not been
 mistyped, and that the path includes a terminating slash.}
 
-
-
-
-Launching saucy via the following command: C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\saucy -d "C:\Documents and Settings\Ally D\TopSPINSo
-urce\TopSpin\Commongraph.saucy"
-
-Error launching saucy with command: C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\saucy -d "C:\Documents and Settings\Ally D\TopSPINSource\To
-pSpin\Commongraph.saucy"
-java.io.IOException: CreateProcess: C:\Documents and Settings\Ally D\TopSPINSource\TopSpin\saucy -d "C:\Documents and Settings\Ally D\TopSPINSource\To
-pSpin\Commongraph.saucy" error=2
-        at java.lang.ProcessImpl.create(Native Method)
-        at java.lang.ProcessImpl.<init>(ProcessImpl.java:81)
-        at java.lang.ProcessImpl.start(ProcessImpl.java:30)
-        at java.lang.ProcessBuilder.start(ProcessBuilder.java:451)
-        at java.lang.Runtime.exec(Runtime.java:591)
-        at java.lang.Runtime.exec(Runtime.java:429)
-        at java.lang.Runtime.exec(Runtime.java:326)
-        at src.utilities.CommunicatingProcess.create(CommunicatingProcess.java:12)
-        at src.symmextractor.SymmExtractor.computeAutomorphismsOfDirectedGraph(SymmExtractor.java:395)
-        at src.symmextractor.SymmExtractor.computeStaticChannelDiagramAutomorphisms(SymmExtractor.java:375)
-        at src.symmextractor.SymmExtractor.extract(SymmExtractor.java:83)
-        at src.symmreducer.SymmReducer.reduce(SymmReducer.java:36)
-        at src.TopSpin.doAutomaticSymmetryReduction(TopSpin.java:70)
-        at src.TopSpin.main(TopSpin.java:63)
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Missing or corrupt \protect\gap\ workspace}
@@ -227,7 +200,7 @@ directory is either missing or corrupted.}
 
 \begin{lstlisting}
 Starting GAP with command: C:\gap4r4\bin\gap.bat -L
-"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q
+"C:\Program Files\TopSPIN\Common\gapworkspace" -q
 Error -- bad GAP workspace specified in configuration file.
 
 GAP produced errors:
@@ -319,6 +292,39 @@ src.promela.lexer.LexerException: [1,1] Unknown token: #
 Cygwin.  Make sure \inline{cpp} is in your path.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Typechecking error: problem with array index}
+
+\problem{By default, \topspin\ performs strict typechecking and only allows arrays to be accessed using \texttt{byte} or \texttt{pid} types.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Error at line 8: Type "int" cannot be used as an array index, it is not a subtype of "byte".
+\end{lstlisting}
+
+\solution{You can use the \texttt{-relaxedarrayindexing} option to make this error go away (see \secref{overview:commandline:relaxedarray}), or refactor your specification so
+that arrays are indeed only indexed by \texttt{byte} or \texttt{pid} expressions: this may make the associated state-vector smaller.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Typechecking error: problem with assignment to numeric variable}
+
+\problem{By default, \topspin\ performs strict typechecking and only allows a variable to be assigned a value of a ``smaller'' type, \eg assignment of
+\texttt{byte} to \texttt{short} is OK, but not the other way round.  Sometimes this is too restrictive.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+Error at line 8: invalid assignment -- Type "short" occurs in a context where it is required to be a subtype of "byte".
+\end{lstlisting}
+
+\solution{You can use the \texttt{-relaxedassignment} option to make this error go away (see \secref{overview:commandline:relaxedassign}),
+or refactor your specification so that assignments to numeric variables are always from expressions with a smaller type: this may make the
+associated state-vector more compact.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %\subsection{}
 %

@@ -95,6 +95,14 @@ Generating the parser.
 ..............................................................................
 \end{lstlisting}
 
+Due to a bug in SableCC, it is then necessary to apply a patch file to the generated parser.  Do this by executing
+the following command (you will need to have PERL installed: if you don't, you could easily re-write the
+PERL script in your favourite language!).
+
+\begin{lstlisting}
+C:\prog\TopSPINSource>perl apply_patch.pl
+\end{lstlisting}
+
 \section{Compiling and creating a jar}\label{sec:compilingfromsource:compiling}
 
 You have now downloaded and generated all the Java source code for

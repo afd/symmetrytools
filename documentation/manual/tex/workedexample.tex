@@ -31,9 +31,9 @@ Navigate to the \inline{examples} directory, and run the following
 commands:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>spin -a loadbalancer.p
-C:\Program Files\TopSPIN_2.1\examples>gcc -o pan -O2 -DSAFETY pan.c
-C:\Program Files\TopSPIN_2.1\examples>pan -m100000
+C:\Program Files\TopSPIN_2.2\examples>spin -a loadbalancer.p
+C:\Program Files\TopSPIN_2.2\examples>gcc -o pan -O2 -DSAFETY pan.c
+C:\Program Files\TopSPIN_2.2\examples>pan -m100000
 \end{lstlisting}
 %
 \spin\ should successfully verify that the model associated with the
@@ -106,16 +106,16 @@ Under Windows, \inline{config.txt} might look like this:
 %
 \begin{lstlisting}
 gap=C:\gap4r4\bin\gap.bat
-saucy=C:\Program Files\TopSPIN_2.1\saucy\saucy.exe
-common=C:\Program Files\TopSPIN_2.1\Common\
+saucy=C:\Program Files\TopSPIN_2.2\saucy\saucy.exe
+common=C:\Program Files\TopSPIN_2.2\Common\
 \end{lstlisting}
 %
 whereas a possible Linux version of \inline{config.txt} could be:
 %
 \begin{lstlisting}
 gap=/home/username/bin/gap
-saucy=/users/grad/ally/TopSPIN_2.1/saucy/saucy
-common=/users/grad/ally/TopSPIN_2.1/Common/
+saucy=/users/grad/ally/TopSPIN_2.2/saucy/saucy
+common=/users/grad/ally/TopSPIN_2.2/Common/
 \end{lstlisting}
 %
 Note that the \inline{gap} option should \emph{not} specify the
@@ -167,12 +167,12 @@ will vary slightly according to the paths you have specified in
 \inline{config.txt}.}
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>cp ../config.txt .
-C:\Program Files\TopSPIN_2.1\examples>java -jar
-"C:\Program Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
-
+C:\Program Files\TopSPIN_2.2\examples>cp ../config.txt .
+C:\Program Files\TopSPIN_2.2\examples>java -jar
+          "C:\Program Files\TopSPIN_2.2\TopSPIN.jar" loadbalancer.p
+File: loadbalancer.p
 --------------------------------------
-TopSPIN version 2.1
+TopSPIN version 2.2
 --------------------------------------
 Configuration settings:
     Symmetry detection method: static channel diagram analysis
@@ -188,15 +188,15 @@ Typechecking input specification...
 
 Specification is well typed!
 
-Launching saucy via the following command: C:\Program Files\TopSPIN_2.1\saucy\saucy.exe -d
-"C:\Program Files\TopSPIN_2.1\Common\graph.saucy"
+Launching saucy via the following command: C:\Program Files\TopSPIN_2.2\saucy\saucy.exe -d
+   "C:\Program Files\TopSPIN_2.2\Common\graph.saucy"
 
 Starting GAP with command: C:\gap4r4\bin\gap.bat -L
-"C:\Program Files\TopSPIN_2.1\Common\gapworkspace" -q
+   "C:\Program Files\TopSPIN_2.2\Common\gapworkspace" -q
 
 The group:
-   G = <(3 2)(clients0 clients1),(5 4)(clients2 clients3),(servers1 servers0)(7 6),
-        (3 4)(clients2 clients1)>
+   G = <(3 4)(clients2 clients1),(3 2)(clients0 clients1),(servers1 servers0)(7 6),
+        (5 4)(clients2 clients3)>
 is a valid group for symmetry reduction.
 
 Generating symmetry reduction algorithms
@@ -267,8 +267,8 @@ Compile and execute this verifier using commands analogous to those
 shown in \secref{example:applyingspin}:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY sympan.c group.c
-C:\Program Files\TopSPIN_2.1\examples>sympan -m100000
+C:\Program Files\TopSPIN_2.2\examples>gcc -o sympan -O2 -DSAFETY sympan.c group.c
+C:\Program Files\TopSPIN_2.2\examples>sympan -m100000
 
 (Spin Version 5.1.6 -- 9 May 2008)
         + Partial Order Reduction
@@ -335,13 +335,13 @@ Now apply \topspin\ to the loadbalancer specification, and compile
 and run the generated verifier:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1\examples>java -jar
-"C:\Program Files\TopSPIN_2.1\TopSPIN.jar" loadbalancer.p
+C:\Program Files\TopSPIN_2.2\examples>java -jar
+"C:\Program Files\TopSPIN_2.2\TopSPIN.jar" loadbalancer.p
 
    ... TopSPIN output ...
 
-C:\Program Files\TopSPIN_2.1\examples>gcc -o sympan -O2 -DSAFETY sympan.c group.c
-C:\Program Files\TopSPIN_2.1\examples>sympan -m100000
+C:\Program Files\TopSPIN_2.2\examples>gcc -o sympan -O2 -DSAFETY sympan.c group.c
+C:\Program Files\TopSPIN_2.2\examples>sympan -m100000
 
 (Spin Version 5.1.6 -- 9 May 2008)
         + Partial Order Reduction

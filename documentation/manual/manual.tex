@@ -93,7 +93,7 @@ belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
 %%%%%%%%%%%%%%%%%%
 
 \newcommand{\sableccversion}{3.2}
-\newcommand{\topspinversion}{2.1}
+\newcommand{\topspinversion}{2.2}
 \newcommand{\jreversion}{1.5.0\_06}
 \newcommand{\gccversion}{3.4.4}
 \newcommand{\gapversion}{4.4.6}
@@ -106,6 +106,20 @@ belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
 \newcommand{\buildingfromsource}{Compiling From Source}
 \newcommand{\troubleshooting}{Troubleshooting and Bug Reporting}
 
+%----------------------------------------------------------
+% useful commands for abbreviations
+%----------------------------------------------------------
+\usepackage{xspace}
+
+\newcommand{\etal}[0]{\emph{et al.}\xspace} % 'et al. '
+\newcommand{\eg}[0]{\emph{e.g.}\xspace}    % 'e.g. '
+\newcommand{\ie}[0]{\emph{i.e.}\xspace}    % 'i.e. '
+\newcommand{\vs}[0]{\emph{vs.}\xspace}     % 'vs. '
+\newcommand{\cf}[0]{\emph{cf.}\xspace}     % 'cf. '
+\newcommand{\etc}[0]{\emph{etc.}\xspace}   % 'etc. '
+\newcommand{\wrt}[0]{\emph{w.r.t.}\xspace} % 'w.r.t. '
+
+
 \title{\protect\topspin\ User Manual}
 
 \author{Alastair F. Donaldson}
@@ -117,6 +131,8 @@ belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
 \maketitle
 
 \input{tex/beforeyoubegin}
+
+\tableofcontents
 
 \input{tex/downloadandinstall}
 

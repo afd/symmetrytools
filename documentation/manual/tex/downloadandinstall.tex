@@ -72,14 +72,14 @@ http://www.allydonaldson.co.uk/topspin/
 and download the following file:
 %
 \begin{lstlisting}
-TopSPIN_2.1.tgz
+TopSPIN_2.2.tgz
 \end{lstlisting}
 %
 Use the \inline{tar} utility, the \emph{WinRAR}
 tool,\footnote{\texttt{\winrarwebsite}} or another suitable program
 to extract this archive to an appropriate location, e.g.
-\inline{C:\\Program Files\\TopSPIN_2.1} under Windows, or
-\inline{/usr/local/TopSPIN_2.1} under Linux.  This location is
+\inline{C:\\Program Files\\TopSPIN_2.2} under Windows, or
+\inline{/usr/local/TopSPIN_2.2} under Linux.  This location is
 referred to as the \topspin\ \emph{root directory}.
 
 The archive should contain the following:
@@ -114,8 +114,8 @@ To do this, navigate to the \inline{saucy} folder, which is inside
 the \topspin\ root directory, and type \inline{make}:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1>cd saucy
-C:\Program Files\TopSPIN_2.1\saucy>make
+C:\Program Files\TopSPIN_2.2>cd saucy
+C:\Program Files\TopSPIN_2.2\saucy>make
 gcc -ansi -pedantic -Wall -O3   -c -o main.o main.c
 gcc -ansi -pedantic -Wall -O3   -c -o saucy.o saucy.c
 gcc -ansi -pedantic -Wall -O3   -c -o saucyio.o saucyio.c
@@ -151,13 +151,13 @@ or
 You should see something like this:
 %
 \begin{lstlisting}
-C:\Program Files\TopSPIN_2.1>cd Common
+C:\Program Files\TopSPIN_2.2>cd Common
 
-C:\Program Files\TopSPIN_2.1\Common>gap
+C:\Program Files\TopSPIN_2.2\Common>gap
 
-C:\Program Files\TopSPIN_2.1\Common>rem sample batch file for GAP
+C:\Program Files\TopSPIN_2.2\Common>rem sample batch file for GAP
 
-C:\Program Files\TopSPIN_2.1\Common>C:\GAP4R4\bin\gapw95.exe -m 14m
+C:\Program Files\TopSPIN_2.2\Common>C:\GAP4R4\bin\gapw95.exe -m 14m
 -l C:\GAP4R4\
 
             #########           ######         ###########           ###
@@ -207,19 +207,19 @@ It should now be possible to run the \topspin\ jar file on no input
 to display a list of \topspin\ options:
 %
 \begin{lstlisting}
-C:\>java -jar "C:\Program Files\TopSPIN_2.1\TopSPIN_2.1.jar"
+C:\>java -jar "C:\Program Files\TopSPIN_2.2\TopSPIN_2.2.jar"
 
-Usage: topspin [check,detect] <filename>
+Error: no input file specified.
 
-Configuration file options:
-
- OPTION           PURPOSE           DEFAULT
- ------           -------           -------
-  ...              ...               ...
+To run TopSPIN on an input file:
+    [command-line options] <inputfile>
+For help on command-line or config file option:
+    help <option>
+For list of options:
+    help
 \end{lstlisting}
 %
-The options displayed by the tool are described fully in
-\chapref{overview}.  For now, successfully displaying these options
+Successfully displaying this message
 confirms that the Java runtime environment is correctly installed on
 your system, and that the \topspin\ jar file you have obtained is in
 working order.  If \topspin\ does \emph{not} correctly display its
