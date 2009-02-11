@@ -6,9 +6,9 @@ init {
 
      unless
 
-hello:     {
+hello: {
      y==5;
 
-     y=6
+   y=6
 }
      }
