@@ -1,6 +1,6 @@
 echo off
 
-set VERSION=2.2
+set VERSION=2.2.2
 
 set RELEASE=TopSPIN_%VERSION%
 
