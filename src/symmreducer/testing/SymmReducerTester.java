@@ -108,7 +108,36 @@ public class SymmReducerTester {
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/misc/nestedarraywithambiguousindex/", "test.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2, false), 8, 10), 100));
 
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/soil/", "soil.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+
+
+		/* Tests for COLLAPSE and MA compression */
 		
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 12, 47), "-DCOLLAPSE"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 12, 47), "-DMA=37"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex5.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 120, false), 12, 47), "-DCOLLAPSE -DMA=16"));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex10.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 3628800, false), 22, 167), "-DCOLLAPSE"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex10.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 3628800, false), 22, 167), "-DMA=65"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex10.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 3628800, false), 22, 167), "-DCOLLAPSE -DMA=28"));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex15.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 1307674368000L, false), 32, 362), "-DCOLLAPSE"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex15.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 1307674368000L, false), 32, 362), "-DMA=89"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex15.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 1307674368000L, false), 32, 362), "-DCOLLAPSE -DMA=53"));
+
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex20.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2432902008176640000L, false), 42, 632), "-DCOLLAPSE"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex20.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2432902008176640000L, false), 42, 632), "-DMA=113"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/mutex/fast_basic_swaps/", "mutex20.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 2432902008176640000L, false), 42, 632), "-DCOLLAPSE -DMA=69"));
+		
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DCOLLAPSE"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DMA=73"));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_nopar/", "email3.p", new SymmReducerTestOutcome(new SymmExtractorRunTestOutcome(true, 6, false), 3902, 11951), "-DCOLLAPSE -DMA=55"));
+		
+
+		
+		// Tests for unsupported SPIN compile directives: these should result in a failure when GCC is invoked.
+		
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/email3/trans_stab_novec_nopar/", "email3.p", SymmReducerFailTestOutcome.GCCCompilationFailure, "-DBFS"));
+
 		
 		return testCases;
 	}

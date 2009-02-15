@@ -104,12 +104,34 @@ public class SymmetryApplier {
 
 		List<String> lines = FileManager.readFile("sympan.c");
 		FileWriter out = new FileWriter("sympan.c");
-
+		
+		writeLinesForIncompatibleFeatures(out);
 
 		for (int counter = 0; counter < lines.size(); counter++) {
+			
+			if(nextFewLinesDoMinimisedAutomatonStoreIn_NOREDUCE_Define(lines, counter)) {
+				applyStateBackupToMinimisedAutomatonStoreInNOREDUCEDefine(lines, counter);
+				writeln(out, lines.get(counter));
+				writeln(out, lines.get(counter+1));
+				writeln(out, lines.get(counter+2));
+				writeln(out, lines.get(counter+3));
+				writeln(out, lines.get(counter+4));
+				counter += 4;
+				continue;
+			}
 
 			if (lineInvolvesHashStore(lines, counter) && !linePartOf_ONSTACK_PUT_method(lines, counter)) {
-				replaceWithRepresentativeStore(lines, counter);
+
+				if(lineIsDefinitionOf_onstack_zap_ForMinimisedAutomaton(lines, counter)) {
+					replaceLineWithCompressionAwareDefinitionOf_onstack_zap(lines, counter);
+				} else if(lineIsMainHashTable_hstore(lines, counter)) {
+					replaceLineWithCompressionAwareRepresentativeStore(lines, counter, 'h');
+				}
+				else if(lineIsMainHashTable_gstore(lines, counter)) {
+					replaceLineWithCompressionAwareRepresentativeStore(lines, counter, 'g'); 
+				} else {					
+					replaceWithRepresentativeStore(lines, counter);
+				}
 			}
 
 			/* #include "pan.h" becomes #include "sympan.h" */
@@ -181,6 +203,116 @@ public class SymmetryApplier {
 		out.close();
 	}
 	
+	private void writeLinesForIncompatibleFeatures(FileWriter out) throws IOException {
+		writeln(out, 
+				"#ifdef BFS\n" +
+				"#error Symmetry reduction had not been tested with BFS.  Feel free to try it by removing this #error line.  If you are keen to use BFS with symmetry reduction please contact the authors of TopSPIN and we will test the combination fully.\n" +
+				"#endif\n\n");
+		
+	}
+
+	private void replaceLineWithCompressionAwareDefinitionOf_onstack_zap(List<String> lines, int counter) {
+		lines.set(counter,
+				"#ifdef COLLAPSE\n" +
+				lines.get(counter) +
+				"\n#else\n" +
+				lines.get(counter).replace("&now", "rep(&now)") +
+				"\n#endif\n");
+	}
+
+	private boolean lineIsDefinitionOf_onstack_zap_ForMinimisedAutomaton(List<String> lines, int counter) {
+		return lines.get(counter).contains("#define onstack_zap()")
+		&& lines.get(counter).contains("gstore((char *) &now, vsize, 4)");
+	}
+
+	private boolean nextFewLinesDoMinimisedAutomatonStoreIn_NOREDUCE_Define(List<String> lines, int counter) {
+
+		/* We need to look at the next few lines, so check that they exist */
+		return (counter < lines.size() - 5) &&
+		/* This is the form we are looking for.  Obviously this is very SPIN-dependent,
+		 * and may need to be changed as new versions of SPIN are released.
+		 */
+		lines.get(counter).contains("onstack_zap();") &&
+		lines.get(counter+1).contains("#ifndef NOREDUCE") &&
+		lines.get(counter+2).contains("if (trpt->proviso)") &&
+		lines.get(counter+3).contains("gstore((char *) &now, vsize, 1);") &&
+		lines.get(counter+4).contains("#endif");
+	}
+
+	private void applyStateBackupToMinimisedAutomatonStoreInNOREDUCEDefine(List<String> lines, int counter) {
+		lines.set(counter,
+				"#ifdef COLLAPSE\n" +
+				"\t\t\trep(&now);\n" +
+				"\t\t\tmemcpy(&backup, &now, vsize);\n" +
+				"\t\t\tmemcpy(&now, &min_now, vsize);\n" +
+				"#endif\n" +
+                lines.get(counter));
+		
+		lines.set(counter+3,
+				"#ifdef COLLAPSE\n" +
+				lines.get(counter+3) +
+				"\n#else\n" +
+				lines.get(counter+3).replace("&now", "rep(&now)") +
+				"\n#endif\n");
+
+				
+		lines.set(counter+4, 
+				lines.get(counter+4) +
+				"\n#ifdef COLLAPSE\n" +
+				"\t\t\tmemcpy(&now, &backup, vsize);\n" +
+				"#endif\n");
+	}
+	
+	private void replaceLineWithCompressionAwareRepresentativeStore(List<String> lines, int counter, char typeOfStore) {
+		
+		String newLine = "";
+		
+		// Collapse compression calls a chain of functions which refer explicitly to global varialbe
+		// "now".  This messes up symmetry reduction, as we've got a different global, min_now, which
+		// stores the minimised state.
+		
+		// If collapse compression is on:
+		newLine += "#ifdef COLLAPSE\n";
+		// Minimise the current state
+		newLine += "\t\t\trep(&now);\n";
+		// Backup the current state
+		newLine += "\t\t\tmemcpy(&backup, &now, vsize);\n";
+		// Replace current state with "min_now"
+		newLine += "\t\t\tmemcpy(&now, &min_now, vsize);\n";
+		// Do hash table store as usual
+		newLine += "\t\t\t" + textForMainHashTableStore(typeOfStore) + "\n";
+		// Restore current state
+		newLine += "\t\t\tmemcpy(&now, &backup, vsize);\n";
+
+		// Otherwise
+		newLine += "#else\n";
+		// Don't bother backing the state up - there's no need.		
+		newLine += "\t\t\t" + textForMainHashTableStore(typeOfStore).replace("&now", "rep(&now)") + "\n";
+		
+		newLine += "#endif\n";
+		
+		lines.set(counter, newLine);
+		
+	}
+
+	private boolean lineIsMainHashTable_hstore(List<String> lines, int counter) {
+		// Determine whether this line is the main line used to store states to
+		// the hashtable, not using bitstate hashing or minimised automaton
+		return lines.get(counter).contains(textForMainHashTableStore('h'));
+	}
+
+	private boolean lineIsMainHashTable_gstore(List<String> lines, int counter) {
+		// Determine whether this line is the main line used to store states to
+		// the hashtable, not using bitstate hashing or minimised automaton
+		return lines.get(counter).contains(textForMainHashTableStore('g'));
+	}
+	
+	
+	private String textForMainHashTableStore(char typeOfStore) {
+		return "II = " + typeOfStore + "store((char *)&now, vsize"
+		+ ('g' == typeOfStore ? ", 0" : "") + ");";
+	}
+
 	private boolean linePartOf_ONSTACK_PUT_method(List<String> lines, int counter) {
 		
 		/* SPIN uses a method, onstack_put, to store states to the stack.  It's important
@@ -211,6 +343,13 @@ public class SymmetryApplier {
 
 	private void writeMinNow(FileWriter out) throws IOException {
 		out.write(stateType + " min_now;\n\n");
+		
+		/* Potential problem: vectorization will cause min_now to be an AugmentedState, which
+		 * won't work with COLLAPSE compression.
+		 */
+		out.write("#ifdef COLLAPSE\n");
+		out.write("State backup;\n");
+		out.write("#endif\n");
 	}
 
 	protected void dealWithMainMethod(List<String> groupInfo, FileWriter out) throws IOException {

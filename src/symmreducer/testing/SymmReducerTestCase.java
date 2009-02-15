@@ -50,6 +50,12 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 		this(foldername, modelFilename, expectedOutcome, compilerDirectives, 10000);
 	}
 
+	public SymmReducerTestCase(String foldername, String modelFilename, SymmReducerFailTestOutcome expectedOutcome, String compilerDirectives) {
+		super(foldername, modelFilename, expectedOutcome);
+		this.compilerDirectives = compilerDirectives;
+		this.searchDepth = -1;
+	}
+
 	@Override
 	public void run() {
 
@@ -138,6 +144,10 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 		try
 		{
 			while((line = br.readLine())!=null) {
+				
+				// Uncomment to get the SPIN output for test cases
+				//System.out.println(line);
+				
 				if(line.contains(" states, stored")) {
 					numberOfStates = Integer.parseInt(new StringTokenizer(line, " ").nextToken());
 				} else if(line.contains(" transitions (= stored+matched)")) {
@@ -172,9 +182,12 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 		
 		Process gcc;
 		try {
-			gcc = Runtime.getRuntime().exec("gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
+			String gccCommand = "gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
 					(Config.getBooleanOption(BooleanOption.PARALLELISE) ? "parallel_symmetry_pthreads.c " : "")
-					+ "-DSAFETY -DNOREDUCE " + compilerDirectives);
+					+ "-DSAFETY -DNOREDUCE " + compilerDirectives;
+			
+			System.err.println(gccCommand);
+			gcc = Runtime.getRuntime().exec(gccCommand);
 		} catch (IOException e1) {
 			return SymmReducerFailTestOutcome.GCCCompilationIOError;
 		}

@@ -10,6 +10,7 @@ import src.promela.parser.ParserException;
 import src.symmextractor.SymmExtractor;
 import src.testing.SystemErrorTestOutcome;
 import src.testing.TestCase;
+import src.testing.TestOutcome;
 import src.utilities.AbsentConfigurationFileException;
 import src.utilities.BadConfigurationFileException;
 import src.utilities.Config;
@@ -18,7 +19,7 @@ public class SymmExtractorTestCase extends TestCase {
 
 	protected String foldername;
 
-	public SymmExtractorTestCase(String foldername, String modelFilename, SymmExtractorTestOutcome expectedOutcome) {
+	public SymmExtractorTestCase(String foldername, String modelFilename, TestOutcome expectedOutcome) {
 
 		super(foldername + modelFilename, expectedOutcome);
 		this.foldername = foldername;
