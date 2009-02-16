@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import src.testing.Tester;
 import src.testing.TestCase;
+import src.testing.Tester;
 
 public class SymmExtractorTester {
 
@@ -66,6 +66,18 @@ public class SymmExtractorTester {
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/misc/", "testmultidimensionalarray2.p", new SymmExtractorRunTestOutcome(true, 2, false)));
 
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/soil/", "soil.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+	
+
+
+		/* These are fail tests for TopSPIN, as they involve never claims, etc., but they should work just with symmetry detection */
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_never.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_trace.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_notrace.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_accept.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_accept2.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_progress.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmReducerTests/FailTests/", "fail_progress2.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+
 		
 		
 		missingFeatureTestCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/MissingFeatures/loadbalancer/", "loadbalancer.p", new SymmExtractorRunTestOutcome(true, 432, false)));

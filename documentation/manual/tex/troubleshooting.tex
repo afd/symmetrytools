@@ -1,9 +1,7 @@
 \chapter{\troubleshooting}\label{chapter:troubleshooting}
 
-This section will be expanded to include a list of common problems
-with the use of \topspin.  In the mean time, please email the author
-with any queries.
-
+This section includes a list of common problems with the use of \topspin.
+Please also refer to current limitations of \topspin, in \chapref{limitations}.
 
 \section{Common problems}\label{sec:troubleshooting:common}
 
@@ -325,6 +323,24 @@ associated state-vector more compact.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsection{Error during verification: ``bad proctype''}\label{sec:troubleshooting:common:termination}
+
+\problem{Verification quits with a ``bad proctype'' error message.}
+
+\exampleerrormessage
+
+\begin{lstlisting}
+pan: bad proctype - collapse (at depth 1023)
+\end{lstlisting}
+
+\solution{This error can occur if your specification involves proctypes which terminate.  See \secref{limitations:termination} for details of this, and for a technique
+to prevent \spin\ processes from terminating by providing an inescapable final state.  This error message will only be generated if
+\texttt{COLLAPSE} compression is used.  Nevertheless, for reasons explained in \secref{limitations:termination} it is best to apply \topspin\ to systems of non-terminating
+processes.}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %\subsection{}
 %
@@ -337,12 +353,6 @@ associated state-vector more compact.}
 %
 %\solution{}
 
-\section{Limitations of \protect\topspin}
-%
-\topspin\ currently supports the verification of \emph{safety}
-properties, expressed using assertions or monitor processes.  The
-tool does not yet support symmetry-reduced \ltl\ model checking
-using never claims.
 %
 \section{Reporting bugs in \protect\topspin}\label{sec:troubleshooting:reportingbugs}
 %

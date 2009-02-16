@@ -120,5 +120,18 @@ public class StringHelper {
 			out.write("   ");
 		}
 	}
+	
+	public static boolean isProgressLabelName(String text) {
+		return startsWithPrefix("progress", text);
+	}
+
+	public static boolean isAcceptLabelName(String text) {
+		return startsWithPrefix("accept", text);
+	}
+
+	private static boolean startsWithPrefix(String prefix, String text) {
+		return text.length() >= prefix.length() && text.substring(0, prefix.length()).equals(prefix);
+	}
+	
 
 }

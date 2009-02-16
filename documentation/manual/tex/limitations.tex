@@ -1,0 +1,316 @@
+\chapter{\limitations}\label{chapter:limitations}
+
+Before using \topspin\ for advanced verification it is important to understand
+what can and cannot be done with the tool.
+\topspin\ places various restrictions on the form a Promela specification may have.
+Also, certain \spin\ options are not (yet) compatible with symmetry reduction.
+
+This section briefly described the limitations of \topspin.  Limitations marked
+with an asterisk could be removed with relative ease: they just haven't been dealt
+with yet.  If you're working with \spin\ and \topspin\ and are being hindered by
+these restrictions then please get in tough (\seesec{troubleshooting:gettingintouch}) and efforts will be made
+to add appropriate features to \topspin.
+
+\section{Process instantiation and dynamic process creation}
+
+\topspin\ requires all processes to be instantiated using
+\inline{run} statements within an \inline{init} process.  The form of the \inline{init}
+process must be:
+
+\begin{lstlisting}
+init {
+  atomic {
+     run ...;
+     run ...;
+     ...
+     run ...;
+     <other statements>
+  }
+}
+\end{lstlisting}
+
+\noindent \ie all process must be started atomically, and must come before any other statements in the \inline{init}
+process (\eg initialisation code), which must also appear within the \inline{atomic} block.
+
+In particular, \topspin\ does \emph{not} support process instantiation using the \inline{active} keyword,
+or via \inline{run} statements outside the \inline{init} process.
+
+
+%
+\begin{figure}
+\begin{scriptsize}
+\begin{verbatim}
+proctype P() {
+
+  /* body */
+
+}
+
+proctype Q() {
+   ...
+
+   run P();
+
+   ...
+}
+\end{verbatim}
+\end{scriptsize}
+\caption{Skeleton Promela specification with dynamic process
+creation.}\label{fig:limitations:originaldynamic}
+\end{figure}
+%
+\begin{figure}[t]
+\begin{scriptsize}
+\begin{verbatim}
+chan wakeup_P_1 = [0] of {bit};
+chan wakeup_P_2 = [0] of {bit};
+chan wakeup_P_3 = [0] of {bit}
+
+proctype P(chan start) {
+
+sleep:
+   start?1;
+
+   /* body */
+
+   goto sleep
+}
+
+proctype Q() {
+   ...
+
+   if :: wakeup_P_1!1
+      :: wakeup_P_2!1
+      :: wakeup_P_3!1
+   fi;
+
+   ...
+}
+
+init {
+   atomic {
+      /* original `run' statements */
+
+      run P(wakeup_P_1);
+      run P(wakeup_P_2);
+      run P(wakeup_P_3)
+   }
+}
+\end{verbatim}
+\end{scriptsize}
+\caption{Re-modelled Promela specification without dynamic process
+creation.}\label{fig:limitations:remodelleddynamic}
+\end{figure}
+
+
+If a specification relies on dynamic process
+creation then it may be possible to re-model the processes as shown
+in Figures~\ref{fig:limitations:originaldynamic}
+and~\ref{fig:limitations:remodelleddynamic}.
+\figref{limitations:originaldynamic} shows a
+specification which instantiates copies of proctype $P$ dynamically.
+Assuming that 3 is an upper bound for the number of instances of $P$
+which should be running at any time,
+\figref{limitations:remodelleddynamic} shows an
+alternative way of expressing the specification.  The proctype $P$
+now includes a channel parameter, and an instance of $P$ waits until
+it can receive on this channel before executing its body.  Its body
+is identical to the original, except that it includes a final
+\inline{goto} statement after which it returns to its initial
+configuration.\footnote{This \inline{goto} statement should really
+be part of an atomic block which also resets any local variables of
+the proctype to their initial values.}  The \inline{init} process
+instantiates three copies of $P$, each with a distinct synchronous
+channel.  Instead of instantiating a copy of $P$, the proctype $Q$
+now offers the literal value 1 to all channels on which instances of
+$P$ may be listening.  The example of
+Figures~\ref{fig:limitations:originaldynamic}
+and~\ref{fig:limitations:remodelleddynamic} can be
+adapted to handle multiple process types, with any fixed upper bound
+for each process type.
+
+
+
+\section{Process termination}\label{sec:limitations:termination}
+
+Technically, process termination destroys symmetry in a Promela specification.  \spin\ only allows processes
+to terminate in \emph{reverse} order.  So, if five identical, terminating \texttt{client} proctypes are launched simultaneously
+with process identifiers in the range $\{1,2,3,4,5\}$, the processes will terminate one-by-one in a fixed order: 5, 4, 3, 2, 1.
+This ordering on process identifiers breaks symmetry between the processes.
+
+Furthermore, the way symmetry reduction is implemented in \topspin\ is not strictly compatible with process termination.  After the
+initial state, \topspin\ assumes a fixed set of running processes.  If a process dies, \topspin\ may try to exchange this
+processes's state with that of another process when computing symmetry representatives, and this can (very occasionally) lead
+to verification-time errors (\seesec{troubleshooting:common:termination}).
+
+If you want to work with terminating processes, you can insert a dummy termination state at the end of each proctype using
+a line like the following:
+
+\begin{lstlisting}
+end_ok: false
+\end{lstlisting}
+
+The \inline{end} label ensures that \spin\ will not complain about instances of the proctype blocking at this label,
+and the \inline{false} statement ensures that proctype instances will never truly terminate.
+
+\section{The \protect\inline{_pid} variable should be used}
+
+For symmetry to be detected, it is important for proctypes to use
+their built-in \inline{_pid} variable rather than a user-defined
+process identifier.  This is illustrated in
+Figures~\ref{fig:limitations:originalpid}
+and~\ref{fig:limitations:remodelledpid}. Processes in
+\figref{limitations:originalpid} are parameterised by a
+{\it byte} identifier, which they use to index the \texttt{st}
+array. SymmExtractor is not yet sophisticated enough to work out the
+correspondence between the \texttt{id} parameter and the built-in
+identifier for each process.  However, the specification can be
+converted into a form which SymmExtractor can handle, as shown in
+\figref{limitations:remodelledpid}. The disadvantage
+here is that position 0 of the array \texttt{st} is un-used, meaning
+that an array of size three rather than two is required, increasing
+the state-vector size by one byte. On the other hand, eliminating
+the \texttt{id} variables reduces the state-vector by two bytes, so
+the re-modelling works well for this example.
+
+\section{Restrictions on channels$^\ast$}
+For simplicity, \topspin\ does not allow channel initialisers to be associated
+with channels which are declared locally to a proctype, and does not currently
+support arrays of channels.
+
+\begin{figure}
+\begin{scriptsize}
+\begin{verbatim}
+mtype = {N,T,C}
+mtype st[2]=N
+
+proctype user(byte id) {
+  do
+    :: d_step { st[id]==N -> st[id]=T }
+    :: d_step { st[id]==T && st[0]!=C && st[1]!=C -> st[id]=C }
+    :: d_step { st[id]==C -> st[id]=N }
+  od
+}
+
+init {
+  atomic {
+    run user(0);
+    run user(1);
+  }
+}
+\end{verbatim}
+\end{scriptsize}
+\caption{Promela specification which uses user-defined process
+identifiers.}\label{fig:limitations:originalpid}
+\end{figure}
+
+\begin{figure}
+\begin{scriptsize}
+\begin{verbatim}
+mtype = {N,T,C} mtype st[3]=N;
+
+proctype user() {
+  do
+    :: d_step { st[_pid]==N -> st[_pid]=T }
+    :: d_step { st[_pid]==T && st[1]!=C && st[2]!=C -> st[_pid]=C }
+    :: d_step { st[_pid]==C -> st[_pid]=N }
+  od
+}
+
+init {
+  atomic {
+    run user();
+    run user();
+  }
+}
+\end{verbatim}
+\end{scriptsize}
+\caption{Re-modelled specification which uses the \protect\inline{_pid}
+variable.}\label{fig:limitations:remodelledpid}
+\end{figure}
+
+\section{Never claims, trace/notrace constructs, \protect\inline{accept} and \protect\inline{progress} labels}
+
+These are method for specifying liveness properties in a Promela model.  \topspin\ is not
+yet compatible with verification of liveness properties, so you will get an error if you try
+to apply \topspin\ to a specification containing one of these constructs.
+
+Symmetry \emph{detection} is still possible with liveness verification constructs.  It is OK
+to apply \topspin to a specification containing a liveness construct with the \texttt{-detect}
+option (\seesec{troubleshooting:gettingintouch}).  The tool will tell you any symmetries it detects; it's just not yet
+possible to exploit these symmetries when model checking.
+
+\section{Exclusive send/recieve (\protect\inline{xs}/\protect\inline{xr}) channel assertions}
+
+This is not actually a restriction, rather a warning for users wishing to use these keywords.
+
+Promela includes keywords
+\inline{xr} and \inline{xs},
+which stand for {\it exclusive receive} and {\it exclusive send}
+respectively. A process can include a declaration `\inline{xr}
+\emph{name}', where `\emph{name}' is the name of a previously declared
+channel, to indicate that only this process can receive messages on
+the channel. The \inline{xs} keyword is used similarly.  Providing
+\spin\ with this information can lead to more efficient
+partial-order reduction. It is not
+possible to check, statically, whether \inline{xs} and \inline{xr}
+are used correctly, but incorrect uses are flagged by \spin\ during
+verification.  These keywords do not affect the presence of symmetry
+in the model associated with a specification, so are no problem for
+symmetry detection.
+
+However, there is a potential problem with exploiting
+\inline{xs}/\inline{xr} information in conjunction with symmetry
+reduction, described in Appendix C.1.1 of Donaldson's thesis.  In practice, the
+problem with these keywords is unlikely to cause problems: there
+is a slim chance that if the keywords are used incorrectly, symmetry reduction
+will prevent this from being flagged up during verification.  Therefore, \topspin\
+\emph{does} allow these features to be used, but it is the user's responsibility to
+use them with care.
+
+
+
+\section{Unsigned data type$^\ast$}
+
+Promela supports an \inline{unsigned}
+numeric type. A declaration of the form \inline{unsigned} $x$ : $y$
+declares an integer variable $x$ which takes non-negative values
+which can be represented using $y$ bits.  Clearly the use of this
+data type will have no effect on our symmetry detection/reduction
+techniques. However, \topspin\ is integrated with an enhanced
+Promela type checker which does not currently support the \inline{unsigned}
+data type.  A temporary fix for this omission is to replace each occurrence of the
+\inline{unsigned} keyword with one of the other numeric types during
+symmetry detection.
+
+\section{Sorted send, random receive (\protect\inline{!!} and \protect\inline{??} operators)}
+
+Promela provides alternative channel operators: \inline{!!} (sorted
+send) and \inline{??} (random receive).
+Sending data on a buffered channel using \inline{!!} causes messages to be queued on the
+channel in sorted order. Messages can be retrieved from the buffer
+in a random order using \inline{??}. These operators provide a
+useful alternative to FIFO channel semantics. They also aid
+state-space reduction: storing channel contents in a sorted manner
+can be seen as a form of state canonicalisation. However, storing
+\inline{pid} messages in a sorted queue imposes an ordering on the set
+of process identifiers.  It is not immediately clear whether this
+ordering has an effect on symmetry.
+
+For the time being, \topspin\ allows the \inline{!!} and \inline{??} operators to be
+used, but they should be used with care.  If you get weird symmetry reduction
+results using these operators then please get in touch (\secref{troubleshooting:gettingintouch}).
+
+\section{Embedded C code}
+
+Recent versions of \spin\ allow C code to be embedded in a Promela
+specification, and certain variables from the C part of the
+specification to be included in the \spin\ state-vector.  Automatic
+symmetry detection for this mix of C and Promela is beyond the scope
+of \topspin\ at present.
+
+
+\section{Breadth-first search$^\ast$}
+
+\topspin\ has not been tested with breadth-first search, and will give an
+error message if \texttt{sympan.c} is compiled with \texttt{-DBFS}.

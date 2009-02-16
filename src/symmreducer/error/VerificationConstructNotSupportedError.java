@@ -1,7 +1,9 @@
 package src.symmreducer.error;
 
 import src.etch.error.Error;
+import src.promela.node.TName;
 import src.promela.node.Token;
+import src.utilities.StringHelper;
 
 public class VerificationConstructNotSupportedError extends Error {
 
@@ -13,7 +15,20 @@ public class VerificationConstructNotSupportedError extends Error {
 
 	@Override
 	public String message() {
-		return "'" + kindOfConstruct.getText() + "' constructs are not yet supported by TopSPIN for symmetry reduction";
+		return "'" + textForConstruct() + "' constructs are not yet supported by TopSPIN for symmetry reduction";
+	}
+
+	private String textForConstruct() {
+		if(kindOfConstruct instanceof TName) {
+			if(StringHelper.isAcceptLabelName(kindOfConstruct.getText())) {
+				return "accept";
+			}
+
+			assert (StringHelper.isProgressLabelName(kindOfConstruct.getText()));
+			return "progress";
+		}
+		
+		return kindOfConstruct.getText();
 	}
 
 }

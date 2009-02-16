@@ -109,6 +109,17 @@ public class SymmReducerTester {
 
 		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/soil/", "soil.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
 
+	
+		/* Fail tests to check that things like never claims are not supported */
+		
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_never.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_trace.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_notrace.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_accept.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_accept2.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_progress.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		testCases.add(new SymmReducerTestCase("TestModels/SymmReducerTests/FailTests/", "fail_progress2.p", SymmExtractorFailTestOutcome.BreaksRestrictions));
+		
 
 		/* Tests for COLLAPSE and MA compression */
 		

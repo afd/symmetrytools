@@ -82,6 +82,8 @@ belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
 \newcommand{\chapsref}[2]{Chapters~\ref{chapter:#1} and~\ref{chapter:#2}}
 \newcommand{\secref}[1]{\S\ref{sec:#1}}
 
+\newcommand{\seesec}[1]{see \secref{#1}}
+
 \newcommand{\problem}[1]{\noindent{\bf Problem:} #1}
 \newcommand{\solution}[1]{\noindent{\bf Solution:} #1}
 \newcommand{\exampleerrormessage}{\vspace{1mm}\noindent{\bf Example error message:}}
@@ -97,12 +99,13 @@ belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
 \newcommand{\jreversion}{1.5.0\_06}
 \newcommand{\gccversion}{3.4.4}
 \newcommand{\gapversion}{4.4.6}
-\newcommand{\spinversion}{5.1.6}
+\newcommand{\spinversion}{5.1.7}
 
 
 \newcommand{\downloadingandinstalling}{Downloading and Installing}
 \newcommand{\workedexample}{Worked Example}
 \newcommand{\overviewofoptions}{Overview of Options}
+\newcommand{\limitations}{Limitations}
 \newcommand{\buildingfromsource}{Compiling From Source}
 \newcommand{\troubleshooting}{Troubleshooting and Bug Reporting}
 
@@ -139,6 +142,8 @@ belowskip=\medskipamount, xleftmargin=0pt, captionpos=b}
 \input{tex/workedexample}
 
 \input{tex/options}
+
+\input{tex/limitations}
 
 \input{tex/compiling}
 
