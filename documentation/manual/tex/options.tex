@@ -94,6 +94,87 @@ String option specifying path to the \gap\ program.  This option must be set by 
 
 \section{Configuration file options for symmetry detection}
 
+
+\subsection{\texttt{explain}}
+
+\topspin\ detects symmetry by finding the \emph{static channel diagram} for the input specification, computing its symmetries, and checking these
+symmetries for validity against the Promela specification.  Some symmetries may not be valid: \topspin\ will try to compute the largest valid set
+of static channel diagram symmetries.
+
+If you have written a specification which you expect to be symmetric, but for which \topspin\ reports invalid symmetries, it may be interesting
+to inspect the reason for this invalidity: it could indicate a typo in the specification, a misunderstanding on the part of the user, or a limitation
+of \topspin.
+
+Setting \texttt{explain} to a positive integer $n$ tells \topspin\ to output explanations for the first $n$ invalid symmetries.  An ``explanation''
+for an invalid symmetry $\alpha$ consists of a pair of text files, one called \texttt{$m$\_original.txt}, the
+other \texttt{$m$\_permuted.txt} (where $m<n$).  The \emph{original}
+file shows the input specification before $\alpha$ is applied, then shows the specification after \emph{normalization} has taken place.  The
+\emph{permuted} file shows the input specification after $\alpha$ has been applied, then shows the permuted specification after normalization.
+\topspin\ regards a symmetry as valid if these normalized specifications are the same, so obviously they will not be identical for $\alpha$.
+
+The two text files can be compared with a diff tool (\eg\ the excellent WinMerge\footnote{http://www.winmerge.org/}).  Looking at the differences
+in the normalized parts should be instructive as to why the given symmetry is not valid.
+
+By way of example, here is a mutual exclusion specification with five processes:
+
+\begin{lstlisting}
+mtype = {N,T,C}
+mtype st[6]=N
+
+proctype user() {
+  do
+    :: d_step { st[_pid]==N -> st[_pid]=T }
+    :: d_step { st[_pid]==T &&
+        (st[1]!=C && st[2]!=C && st[1]!=C && st[4]!=C && st[5]!=C)
+    -> st[_pid]=C
+       }
+    :: d_step { st[_pid]==C -> st[_pid]=N }
+  od
+}
+
+init {
+  atomic {
+    run user();
+    run user();
+    run user();
+    run user();
+    run user();
+  }
+}
+\end{lstlisting}
+
+Running \topspin\ on this example, in verbose mode and with \texttt{explain=1}, produces output including the following:
+
+\begin{lstlisting}
+Saucy computed the following generators for Aut(SCD(P)):
+   Aut(SCD(P)) = <(3 2),(2 1),(3 4),(5 4)>
+--------------------------------------
+Computing valid generators:
+    (3 2) : not valid
+        generating explanation in files 0_original.txt and 0_permuted.txt
+    (2 1) : not valid
+    (3 4) : not valid
+    (5 4) : valid
+--------------------------------------
+\end{lstlisting}
+
+The tool has determined that the symmetry $(3\;2)$ which swaps \texttt{user} processes 3 and 2 is not valid, and has written an explanation to the files
+\inline{0_original.txt} and \inline{0_permuted.txt}.
+
+\begin{figure}
+\center
+\includegraphics[scale=0.46]{explain.jpg}\caption{Comparing text files output by the \texttt{explain} option to see why symmetry $(3\;2)$ is not valid.}\label{fig:explain}
+\end{figure}
+
+
+\figref{explain} shows the results of comparing these files with WinMerge.  This should alert the user to the fact that the operand \inline{st[1] != C} appears
+twice in the highlighted boolean expression: this is clearly a mistake -- one of these operands should be changed to \inline{st[2] != C} to restore full
+symmetry and presumably correct the model.
+
+This illustrates the idea that presence of symmetry can actually be a correctness requirement in its own right.
+
+\noindent\textbf{Default value: } 0, \ie no explanations will be given.
+
 \subsection{\texttt{timebound}}
 
 When detecting symmetry, \topspin\ may use a coset search to try to improve upon the initially computed group of symmetries.  This search

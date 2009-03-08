@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-
 import src.promela.node.Node;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.StringHelper;
@@ -197,7 +196,7 @@ public class Permutation {
 	public boolean isSafeFor(Node theAST, StaticChannelDiagramExtractor typeInfo) {
 		// Clone the original AST.
 		Node originalAST = (Node) theAST.clone();
-
+		
 		originalAST.apply(new Normaliser(typeInfo.getNoProcesses()));
 		
 		theAST.apply(new Permuter(this, typeInfo));
@@ -210,5 +209,6 @@ public class Permutation {
 		
 		return new NodeComparator().compare(originalAST, permutedAST) == 0;
 	}
+
 
 }

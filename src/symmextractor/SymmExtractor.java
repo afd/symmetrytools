@@ -11,6 +11,7 @@ import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
+import src.advice.InvalidSymmetryAdviser;
 import src.etch.checker.Check;
 import src.etch.checker.Checker;
 import src.etch.typeinference.Substituter;
@@ -162,6 +163,9 @@ public class SymmExtractor extends Check {
 				if(Config.inVerboseMode()) {
 					ProgressPrinter.println("    " + alpha + " : not valid");
 				}
+				
+				InvalidSymmetryAdviser.explainWyNotSafeFor(alpha, theAST, extractor);
+				
 				someGeneratorsInvalid = true;
 			}
 		}
@@ -235,13 +239,42 @@ public class SymmExtractor extends Check {
 				gapWriter.flush();
 				sizeOfLargestValidSubgroup  = Long.parseLong(gapReader.readLine());
 			}
-	
+
+			gapWriter.write("Size(H);\n");
+			gapWriter.flush();
+			int sizeOfLargestValidSubgroup = Integer.parseInt(gapReader.readLine());
+			
 			if(Config.profiling()) {
 				Profile.LARGEST_VALID_END = System.currentTimeMillis();
-				gapWriter.write("Size(H);\n");
-				gapWriter.flush();
-				ProgressPrinter.println("Size of largest valid subgroup: " + gapReader.readLine());
 			}
+			
+			if(Config.inVerboseMode()) {
+				ProgressPrinter.println("Size of largest valid subgroup: " + sizeOfLargestValidSubgroup);
+			}
+			
+			/* The symmetry group is trivial, so don't continue */
+			if(1 == sizeOfLargestValidSubgroup) {
+				gapWriter.write("Size(G);\n");
+				gapWriter.flush();
+				int sizeOfAutSCD = Integer.parseInt(gapReader.readLine());
+				
+				System.out.println("\nThe static channel diagram for the input specification has " + sizeOfAutSCD + " automorphisms, " +
+						"but none of these are valid with respect to the specification.  A coset search has not yielded any valid " +
+						"automorphisms.");
+				
+				gap.destroy();
+				
+				try {
+					gap.waitFor();
+				} catch(InterruptedException e) {
+					// We're quitting anyway, so don't do anything.
+				}
+				
+				System.exit(0);
+				
+			}
+			
+			
 		} else {
 			largestValidSubgroup = baseGroup;
 

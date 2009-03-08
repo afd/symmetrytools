@@ -42,9 +42,9 @@ public class ErrorStreamHandler extends Thread {
 					}
 					
 					while(br.ready()) {
-						line = br.readLine();
+						int ch = br.read();
 						if(!quietMode) {
-							System.out.println(line);
+							System.out.print((char)ch);
 						}
 					}
 					

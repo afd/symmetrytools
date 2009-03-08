@@ -446,6 +446,7 @@ public class Config {
 		newIntegerOption(IntegerOption.TIMEBOUND, 0, "Config file option - specify time bound, in seconds, on coset search for largest valid subgroup.  Value of 0 means no bound.");
 		newIntegerOption(IntegerOption.CONJUGATES, 0, "Config file optoin - number of random conjugates to use when finding largest valid subgroup.");
 		newIntegerOption(IntegerOption.CORES, 1, "Config file option - number of cores available for parallel symmetry reduction.");
+		newIntegerOption(IntegerOption.EXPLAIN, 0, "Config file option - number of invalid symmetries for which explanations should be produced.");
 
 		newStrategyOption(StrategyOption.STRATEGY, Strategy.FAST, "Config file option - strategy to use for symmetry reduction.  Options are: " + strategyNames() + ".");
 		
