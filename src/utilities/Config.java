@@ -21,7 +21,7 @@ import src.symmreducer.vectortargets.VectorTarget;
 
 public class Config {
 
-	public static final String VERSION = "2.2.3";
+	public static final String VERSION = "2.2.4";
 
 	public static VectorTarget vectorTarget;
 	public static ParallelTarget parallelTarget;
