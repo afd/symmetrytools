@@ -66,6 +66,9 @@ public class SymmExtractorTester {
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/misc/", "testmultidimensionalarray2.p", new SymmExtractorRunTestOutcome(true, 2, false)));
 
 		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/soil/", "soil.p", new SymmExtractorRunTestOutcome(true, 2, false)));
+
+		
+		testCases.add(new SymmExtractorTestCase("TestModels/SymmExtractorTests/soil/", "soil3.p", new SymmExtractorRunTestOutcome(true, 6, false)));
 	
 
 
