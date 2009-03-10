@@ -1,0 +1,291 @@
+/* Symmetric PRISM grammar */
+
+Package src.symmetricprism;
+
+Helpers
+
+  alpha = [['a' .. 'z'] + ['A' .. 'Z']];
+  digit = ['0' .. '9'] ;
+  unicode_input_character = [0..0xffff];
+  ht  = 0x0009;
+  lf  = 0x000a;
+  ff  = 0x000c;
+  cr  = 0x000d;
+  sp  = ' ';
+  line_terminator = lf | cr | cr lf;
+  input_character = [unicode_input_character - [cr + lf]];
+  apostrophe = 0x0027;
+  any_ascii_char = [[0 .. 0xffff] - '"']; /* THIS IS ACTUALLY ANY UNICODE CHARACTER */
+
+Tokens
+
+  white_space = (sp | ht | ff | line_terminator)*;
+  end_of_line_comment = '//' input_character* line_terminator?;
+
+  number = digit+;
+  
+  probabilistic = 'probabilistic';
+
+  nondeterministic = 'nondeterministic';
+
+  stochastic = 'stochastic';
+  
+  mdp = 'mdp';
+  
+  dtmc = 'dtmc';
+  
+  ctmc = 'ctmc';
+
+  moduletok = 'module';
+
+  endmodule = 'endmodule';
+
+  colon = ':';
+
+  semicolon = ';';
+
+  l_bracket = '[';
+
+  r_bracket = ']';
+
+  l_parenthese = '(';
+
+  r_parenthese = ')';
+
+  assign = apostrophe '=';
+
+  dot_dot = '..';
+
+  dot = '.';
+
+  slash = 0x002f;
+
+  not = '!';
+
+  nequals = '!=';
+
+  or = '|';
+
+  init = 'init';
+
+  global = 'global';
+
+  equals = '=';
+
+  gt = '>';
+ 
+  lt = '<';
+
+  gte = '>=';
+
+  lte = '<=';
+
+  implies = '=>';
+
+  comma = ',';
+
+  plus = '+';
+
+  times = '*';
+
+  div = '/';
+
+  minus = '-';
+
+  min = 'min';
+
+  max = 'max';
+
+  and = '&';
+
+  rightarrow = '->';
+
+  true = 'true';
+  
+  false = 'false';
+
+  prob = 'P' | 'Pmin' | 'Pmax';
+  
+  steady = 'S';
+  
+  next = 'X';
+  
+  until = 'U';
+
+  query = '?';
+
+  const = 'const';
+  
+  basic_type = 'int' | 'double';
+  
+  name = (alpha | '_')+ digit*;
+  
+  string = '"' any_ascii_char* '"';
+
+Ignored Tokens
+
+  white_space,
+
+  end_of_line_comment;
+
+Productions
+
+  spec = 
+    {spec} type global_variable* module+ renaming+ |
+    {properties} constant_declaration* pctl+ ;
+
+  type =
+    {nondeterministic} nondeterministic |
+    {probabilistic} probabilistic |
+    {stochastic} stochastic |
+    {mdp} mdp |
+    {dtmc} dtmc |
+    {ctmc} ctmc ;
+
+  global_variable =
+    global variable ;
+
+  module =
+    moduletok name variable* statement+ endmodule ;
+
+  variable =
+    name colon l_bracket [low]:number dot_dot [high]:number r_bracket initialisation? semicolon ;
+
+  initialisation =
+    init number ;
+
+  statement =
+    l_bracket name? r_bracket or_expr rightarrow stochastic_update semicolon ;
+
+  range =
+    range_prefix+ number ;
+
+  range_prefix =
+    {sequence} number comma |
+    {list} number dot_dot ;
+
+  or_expr =
+    {simple} and_expr |
+    {compound} and_expr or or_expr ;
+
+  and_expr =
+    {simple} not_expr |
+    {compound} not_expr and and_expr ;
+
+  not_expr =
+    {simple} factor |
+    {compound} not factor ;
+
+  factor =
+    {atomic} atomic_factor |
+    {parenthesis} l_parenthese or_expr r_parenthese ;
+
+  atomic_factor =
+    {equals} [left]:arithmetic_expr equals [right]:arithmetic_expr |
+    {nequals} [left]:arithmetic_expr nequals [right]:arithmetic_expr |
+    {equals_range} arithmetic_expr equals range |
+    {nequals_range} arithmetic_expr nequals range |
+    {gt} [left]:arithmetic_expr gt [right]:arithmetic_expr |
+    {lt} [left]:arithmetic_expr lt [right]:arithmetic_expr |
+    {gte} [left]:arithmetic_expr gte [right]:arithmetic_expr |
+    {lte} [left]:arithmetic_expr lte [right]:arithmetic_expr |
+    {true} true |
+    {false} false ;
+
+  arithmetic_expr =
+    {simple} mult_div_expr |
+    {plus} arithmetic_expr plus mult_div_expr |
+    {minus} arithmetic_expr minus mult_div_expr ;
+
+  mult_div_expr =
+    {simple} arithmetic_factor |
+    {mult} mult_div_expr times arithmetic_factor |
+    {div} mult_div_expr div arithmetic_factor ;
+
+  arithmetic_factor =
+    {name} name |
+    {number} number |
+    {parenthese} l_parenthese arithmetic_expr r_parenthese |
+    {min} min l_parenthese arithmetic_expr comma_arithmetic_expr+ r_parenthese |
+    {max} max l_parenthese arithmetic_expr comma_arithmetic_expr+ r_parenthese ;
+
+  comma_arithmetic_expr =
+    comma arithmetic_expr ;
+
+  stochastic_update = 
+    {one} update |
+    {many} update plus stochastic_update;
+
+  update = 
+    associated_probability? assignment ;
+
+  assignment =
+    {one} l_parenthese atomic_assignment r_parenthese |
+    {many} l_parenthese atomic_assignment r_parenthese and assignment ;
+
+  atomic_assignment =
+    name assign arithmetic_expr ;
+
+  associated_probability = probability colon ;
+
+  probability =
+    {decimal} decimal |
+    {expression} arithmetic_expr ;
+
+  decimal =
+    [before]:number dot [after]:number ;
+
+  renaming =
+     moduletok [processi]:name equals [process1]:name l_bracket identifier_renamings r_bracket endmodule ;
+
+  identifier_renamings =
+     {one} identifier_renaming |
+     {many} identifier_renaming comma identifier_renamings ;
+
+  identifier_renaming =
+     [left]:name equals [right]:name ;
+
+ /* PCTL Stuff */
+
+  constant_declaration = const basic_type name initialisation? semicolon ;
+
+  initialialisation = 
+      {int} equals number |
+      {double} equals decimal ;
+       
+  pctl = leading_implication? pctl_body ;
+  
+  leading_implication = string implies ;
+  
+  pctl_body =  
+     {expr} or_expr |
+     {implies} or_expr implies pctl_body |
+     {probabilistic} prob boundop pctl_prob_expr l_bracket pathprop r_bracket |
+     {steady_state} steady boundop pctl_prob_expr l_bracket pctl_body r_bracket ;
+
+  pctl_prob_expr =
+     {decimal} decimal |
+     {query} query ;
+     
+  boundop =
+     {eq} equals |
+     {neq} nequals |
+     {lte} lte | 
+     {gte} gte | 
+     {gt} gt | 
+     {lt} lt ;
+
+  pathprop =
+     {next} next pctl_body |
+     {until} [left]:pctl_body until [right]:pctl_body |
+     {boundeduntil} [left]:pctl_body until time [right]:pctl_body ;
+     
+  time =
+     {gte} gte timeunit |
+     {lte} lte timeunit |
+     {region} l_bracket [left]:timeunit comma [right]:timeunit r_bracket ;
+     
+  timeunit =
+     {integer} number |
+     {decimal} decimal |
+     {identifier} name ;
