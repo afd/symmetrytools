@@ -1,0 +1,37 @@
+ctmc 
+
+global fgf : [0..4] init 4;
+global src : [0..4] init 4;
+global grb : [0..4] init 4;
+
+module FGFR1
+
+	deg_fgfr1 : [0..1];
+	fgfr_src1 : [0..1];
+	fgfr_grb1 : [0..1];
+	fgfr_phb1 : [0..1];
+	fgfr_pha1 : [0..1];
+	fgfr_fgf1 : [0..1];
+	
+	[] (deg_fgfr1=0 & fgfr_fgf1=0) & (fgf>0) -> 1250*fgf : (fgfr_fgf1'=1) & (fgf'=fgf-1);
+	[] (deg_fgfr1=0 & fgfr_fgf1=1) & fgf<4 -> 0.002 : (fgfr_fgf1'=0) & (fgf'=fgf+1);
+	
+	[] (deg_fgfr1=0 & fgfr_fgf1=1 & fgfr_pha1=0) -> 0.1 : (fgfr_pha1'=1);
+	[] (deg_fgfr1=0 & fgfr_fgf1=1 & fgfr_phb1=0) -> 0.1 : (fgfr_phb1'=1);
+	[] (deg_fgfr1=0 & fgfr_pha1=1 & fgfr_src1=0) -> 0.1 : (fgfr_pha1'=0);
+	[] (deg_fgfr1=0 & fgfr_phb1=1 & fgfr_grb1=0) -> 0.1 : (fgfr_phb1'=0);
+	[] (deg_fgfr1=0 & fgfr_pha1=1 & fgfr_src1=1) & src<4 -> 0.1 : (fgfr_pha1'=0) & (fgfr_src1'=0) & (src'=src+1);
+	[] (deg_fgfr1=0 & fgfr_phb1=1 & fgfr_grb1=1) & grb<4 -> 0.1 : (fgfr_phb1'=0) & (fgfr_grb1'=0) & (grb'=grb+1);
+
+	[] (deg_fgfr1=0 & fgfr_pha1=1 & fgfr_src1=0) & src>0 -> 2*src : (fgfr_src1'=1) & (src'=src-1);
+	[] (deg_fgfr1=0 & fgfr_phb1=1 & fgfr_grb1=0) & grb>0 -> 2*grb : (fgfr_grb1'=1) & (grb'=grb-1);
+	[] (deg_fgfr1=0 & fgfr_src1=1) & src<4 -> 0.02 : (fgfr_src1'=0) & (src'=src+1);
+	[] (deg_fgfr1=0 & fgfr_grb1=1) & grb<4 -> 0.02 : (fgfr_grb1'=0) & (grb'=grb+1);
+	
+	[] (deg_fgfr1=0 & fgfr_src1=1) -> 0.0011111111111111111 : (deg_fgfr1'=1) & (fgfr_src1'=0) & (fgfr_grb1'=0) & (fgfr_pha1'=0) & (fgfr_phb1'=0) & (fgfr_fgf1'=0);
+
+endmodule
+
+module FGFR2 =FGFR1[deg_fgfr1=deg_fgfr2,deg_fgfr2=deg_fgfr1,fgfr_src1=fgfr_src2,fgfr_src2=fgfr_src1,fgfr_grb1=fgfr_grb2,fgfr_grb2=fgfr_grb1,fgfr_phb1=fgfr_phb2,fgfr_phb2=fgfr_phb1,fgfr_pha1=fgfr_pha2,fgfr_pha2=fgfr_pha1,fgfr_fgf1=fgfr_fgf2,fgfr_fgf2=fgfr_fgf1] endmodule
+module FGFR3 =FGFR1[deg_fgfr1=deg_fgfr3,deg_fgfr3=deg_fgfr1,fgfr_src1=fgfr_src3,fgfr_src3=fgfr_src1,fgfr_grb1=fgfr_grb3,fgfr_grb3=fgfr_grb1,fgfr_phb1=fgfr_phb3,fgfr_phb3=fgfr_phb1,fgfr_pha1=fgfr_pha3,fgfr_pha3=fgfr_pha1,fgfr_fgf1=fgfr_fgf3,fgfr_fgf3=fgfr_fgf1] endmodule
+module FGFR4 =FGFR1[deg_fgfr1=deg_fgfr4,deg_fgfr4=deg_fgfr1,fgfr_src1=fgfr_src4,fgfr_src4=fgfr_src1,fgfr_grb1=fgfr_grb4,fgfr_grb4=fgfr_grb1,fgfr_phb1=fgfr_phb4,fgfr_phb4=fgfr_phb1,fgfr_pha1=fgfr_pha4,fgfr_pha4=fgfr_pha1,fgfr_fgf1=fgfr_fgf4,fgfr_fgf4=fgfr_fgf1] endmodule

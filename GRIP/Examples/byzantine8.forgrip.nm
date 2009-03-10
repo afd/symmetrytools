@@ -1,0 +1,78 @@
+mdp
+
+global nzero :  [0..5];
+
+global mainone_zero : [0..1]; // vote for 0
+global mainone_one : [0..1]; // vote for 1
+global mainone_abs : [0..1]; // vote for 1
+
+global preone_zero : [0..8]; // number for 0
+global preone_one : [0..8]; // number for 1
+
+global pretwo_zero : [0..1]; // vote for 0
+global pretwo_one : [0..1]; // vote for 1
+
+module adversary 
+
+	mainzero_zero : [0..1]; // vote for 0
+	mainzero_one : [0..1]; // vote for 1
+
+	[] (mainzero_zero=0) & (mainzero_one=0) -> (mainzero_zero'=1);  
+	[] (mainzero_zero=0) & (mainzero_one=0) -> (mainzero_one'=1); 
+	
+endmodule 
+
+module coinone
+
+	fone : [0..1];
+	coinone : [0..1];
+	
+	[] (coinone=0) & (nzero>=5) -> 0.5 : (fone'=0) & (coinone'=1) + 0.5 : (fone'=1) & (coinone'=1);
+	
+endmodule
+
+module cointwo
+
+	ftwo : [0..1];
+	cointwo : [0..1];
+
+	[] (cointwo=0) & (nzero>=5) -> 0.5 : (ftwo'=0) & (cointwo'=1) + 0.5 : (ftwo'=1) & (cointwo'=1);
+
+endmodule
+
+module party1
+
+	s1 : [0..9];
+
+	[] (s1=0) & (mainzero_zero=1) -> (s1'=1) & (nzero'=min(5,nzero+1)); // pre vote for 0
+	[] (s1=0) & (mainzero_one=1) -> (s1'=2) & (nzero'=min(5,nzero+1)); // pre vote for 1
+	[] (s1=0)               -> (s1'=3) & (nzero'=min(5,nzero+1)); // pre vote for coin
+	
+	[] (s1=1) & (coinone=1)          -> (s1'=4) & (preone_zero'=min(8,preone_zero+1));
+	[] (s1=2) & (coinone=1)          -> (s1'=4) & (preone_one'=min(8,preone_one+1));
+	[] (s1=3) & (coinone=1) & (fone=0) -> (s1'=4) & (preone_zero'=min(8,preone_zero+1));
+	[] (s1=3) & (coinone=1) & (fone=1) -> (s1'=4) & (preone_one'=min(8,preone_one+1));
+	
+	[] (s1=4) & (preone_zero+preone_one>=5) & ((preone_zero>0) | (fone=0) | (mainzero_zero=1)) & ((preone_one>0) | (fone=1) | (mainzero_one=1)) 
+							-> (s1'=5)  & (mainone_abs'=1);
+	[] (s1=4) & (preone_zero+preone_one>=5) & (preone_zero>=5) -> (s1'=5) & (mainone_zero'=1);
+	[] (s1=4) & (preone_zero+preone_one>=5) & (preone_one>=5) -> (s1'=5) & (mainone_one'=1);
+	
+	[] (s1=5) & (mainone_abs=1) -> (s1'=6); 
+	[] (s1=5) & ((mainone_zero=1) | (preone_zero>=5))	-> (s1'=7); 
+	[] (s1=5) & ((mainone_one=1) | (preone_one>=5))	-> (s1'=8); 
+	
+	[] (s1=6) & (cointwo=1) & (ftwo=0) -> (s1'=9) & (pretwo_zero'=1);
+	[] (s1=6) & (cointwo=1) & (ftwo=1) -> (s1'=9) & (pretwo_one'=1);
+	[] (s1=7) & (cointwo=1)          -> (s1'=9) & (pretwo_zero'=1);
+	[] (s1=8) & (cointwo=1)          -> (s1'=9) & (pretwo_one'=1);
+	
+endmodule
+
+module party2=party1[s1=s2,s2=s1] endmodule
+module party3=party1[s1=s3,s3=s1] endmodule
+module party4=party1[s1=s4,s4=s1] endmodule
+module party5=party1[s1=s5,s5=s1] endmodule
+module party6=party1[s1=s6,s6=s1] endmodule
+module party7=party1[s1=s7,s7=s1] endmodule
+module party8=party1[s1=s8,s8=s1] endmodule

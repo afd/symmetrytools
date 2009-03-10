@@ -1,0 +1,27 @@
+// N=#N# clients, K=#K# blocks to be downloaded
+// Actually there are N+1=#N+1# clients, one of which has all blocks initially
+ctmc
+
+// One client
+module process1
+	
+	// bij - has client i downloaded block j yet?
+	b_a_1 : [0..1];
+	b_b_1 : [0..1];
+	b_c_1 : [0..1];
+	b_d_1 : [0..1];
+	b_e_1 : [0..1];
+	
+	// Downloading of each block (see rate computations above)
+	[] b_a_1=0 -> 2*(1+min(3,b_a_1+b_a_2+b_a_3+b_a_4)) : (b_a_1'=1);
+	[] b_b_1=0 -> 2*(1+min(3,b_b_1+b_b_2+b_b_3+b_b_4)) : (b_b_1'=1);
+	[] b_c_1=0 -> 2*(1+min(3,b_c_1+b_c_2+b_c_3+b_c_4)) : (b_c_1'=1);
+	[] b_d_1=0 -> 2*(1+min(3,b_d_1+b_d_2+b_d_3+b_d_4)) : (b_d_1'=1);
+	[] b_e_1=0 -> 2*(1+min(3,b_e_1+b_e_2+b_e_3+b_e_4)) : (b_e_1'=1);
+	
+endmodule
+
+// N-1 identical clients
+module process2=process1[b_a_1=b_a_2,b_a_2=b_a_1,b_b_1=b_b_2,b_b_2=b_b_1,b_c_1=b_c_2,b_c_2=b_c_1,b_d_1=b_d_2,b_d_2=b_d_1,b_e_1=b_e_2,b_e_2=b_e_1] endmodule
+module process3=process1[b_a_1=b_a_3,b_a_3=b_a_1,b_b_1=b_b_3,b_b_3=b_b_1,b_c_1=b_c_3,b_c_3=b_c_1,b_d_1=b_d_3,b_d_3=b_d_1,b_e_1=b_e_3,b_e_3=b_e_1] endmodule
+module process4=process1[b_a_1=b_a_4,b_a_4=b_a_1,b_b_1=b_b_4,b_b_4=b_b_1,b_c_1=b_c_4,b_c_4=b_c_1,b_d_1=b_d_4,b_d_4=b_d_1,b_e_1=b_e_4,b_e_4=b_e_1] endmodule

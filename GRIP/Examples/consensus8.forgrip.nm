@@ -1,0 +1,48 @@
+mdp
+
+// CONSTANTS
+// counter : [0..2*(K+1)*N) ] = [0..2*17*8] = [0..272]
+// init (K+1)*N 17*8 = 136
+// counter<= N =8
+// counter>= 2*(K+1)*N -N = 272-8=264
+
+// shared coin
+global counter : [0..48] init 24;
+
+module process1
+	
+	// program counter
+	pc1 : [0..3];
+	// 0 - flip
+	// 1 - write 
+	// 2 - check
+	// 3 - finished
+	
+	// local coin
+	coin1 : [0..1];	
+
+	// flip coin
+	[] (pc1=0)  -> 0.5 : (coin1'=0) & (pc1'=1) + 0.5 : (coin1'=1) & (pc1'=1);
+	// write tails -1  (reset coin to add regularity)
+	[] ((pc1=1) & (coin1=0)) -> (counter'=counter-1) & (pc1'=2) & (coin1'=0);
+	// write heads +1 (reset coin to add regularity)
+	[] ((pc1=1) & (coin1=1)) & (counter<48) -> (counter'=counter+1) & (pc1'=2) & (coin1'=0);
+	// check
+	// decide tails
+	[] (pc1=2) & (counter<=8) -> (pc1'=3) & (coin1'=0);
+	//decide heads
+	[] (pc1=2) & (counter>=40) -> (pc1'=3) & (coin1'=1);
+	// flip again
+	[] (pc1=2) & ((counter>8) & (counter<40)) -> (pc1'=0);
+	// loop
+	[] (pc1=3) -> (pc1'=3);
+
+endmodule
+
+module process2 = process1[pc1=pc2,pc2=pc1,coin1=coin2,coin2=coin1] endmodule
+module process3 = process1[pc1=pc3,pc3=pc1,coin1=coin3,coin3=coin1] endmodule
+module process4 = process1[pc1=pc4,pc4=pc1,coin1=coin4,coin4=coin1] endmodule
+module process5 = process1[pc1=pc5,pc5=pc1,coin1=coin5,coin5=coin1] endmodule
+module process6 = process1[pc1=pc6,pc6=pc1,coin1=coin6,coin6=coin1] endmodule
+module process7 = process1[pc1=pc7,pc7=pc1,coin1=coin7,coin7=coin1] endmodule
+module process8 = process1[pc1=pc8,pc8=pc1,coin1=coin8,coin8=coin1] endmodule
