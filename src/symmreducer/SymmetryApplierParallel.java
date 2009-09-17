@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 
+import src.TopSpin;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.utilities.BooleanOption;
 import src.utilities.Config;
@@ -22,7 +23,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 	@Override
 	protected void dealWithMainMethod(List<String> groupInfo, FileWriter out) throws IOException {
 		super.dealWithMainMethod(groupInfo, out);
-		out.write("   " + Config.parallelTarget.getstartThreadsMethodName() + "();\n\n");
+		out.write("   " + TopSpin.parallelTarget.getstartThreadsMethodName() + "();\n\n");
 	}
 	
 	@Override
@@ -39,7 +40,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 
 	@Override
 	protected void writeParallelIncludeLines(FileWriter out) throws IOException {
-		Config.parallelTarget.writeParallelIncludeLines(out);
+		TopSpin.parallelTarget.writeParallelIncludeLines(out);
 	}
 	
 	
@@ -48,7 +49,7 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Copying files for multi-threaded symmetry reduction:");
 
-			Config.parallelTarget.copyFilesForMultiThreadedSymmetryReduction();
+			TopSpin.parallelTarget.copyFilesForMultiThreadedSymmetryReduction();
 		}
 	}
 
@@ -75,9 +76,9 @@ public class SymmetryApplierParallel extends SymmetryApplier {
 		out.write("   int id, start, end, i;\n");
 	
 		if(Config.getBooleanOption(BooleanOption.STABILISERCHAIN)) {
-			Config.parallelTarget.writeThreadBodyStabiliserChain(out, groupInfo);
+			TopSpin.parallelTarget.writeThreadBodyStabiliserChain(out, groupInfo);
 		} else {
-			Config.parallelTarget.writeThreadBodyBasic(out, Integer.parseInt(StringHelper.trimWhitespace(groupInfo.get(1))));
+			TopSpin.parallelTarget.writeThreadBodyBasic(out, Integer.parseInt(StringHelper.trimWhitespace(groupInfo.get(1))));
 		}
 
 		out.write("   return 0;\n\n");

@@ -11,23 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import src.symmreducer.paralleltargets.CellParallelTarget;
-import src.symmreducer.paralleltargets.ParallelTarget;
-import src.symmreducer.paralleltargets.PthreadsParallelTarget;
-import src.symmreducer.vectortargets.CellSPUVectorTarget;
-import src.symmreducer.vectortargets.DummyVectorTarget;
-import src.symmreducer.vectortargets.PowerPCVectorTarget;
-import src.symmreducer.vectortargets.VectorTarget;
-
 public class Config {
 
-	public static final String VERSION = "2.2.4";
-
-	public static VectorTarget vectorTarget;
-	public static ParallelTarget parallelTarget;
-	
-	
-	
 	public static boolean isOSWindows() {
 		return System.getProperty("os.name").length()>="Windows".length() && System.getProperty("os.name").substring(0,7).equals("Windows");
 	}
@@ -62,9 +47,7 @@ public class Config {
 				if(null == getStringOption(StringOption.COMMON)) {
 					System.out.println("No common directory specified.");
 				}
-	
-				dealWithVectorAndParallelSettings();
-				
+					
 				if(mandatoryOptionNotSet()) {
 					if(TESTING_IN_PROGRESS) {
 						throw new BadConfigurationFileException();
@@ -135,45 +118,6 @@ public class Config {
 			if(null == strategyOptions.get(option).getValue()) {
 				strategyOptions.get(option).setToDefaultValue();
 			}
-		}
-		
-	}
-
-
-
-	private static void dealWithVectorAndParallelSettings() {
-		if(getBooleanOption(BooleanOption.VECTORISE)) {
-			if(!getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
-				ProgressPrinter.println("Vectorisation can only be applied when transpositions are used.  Vectorisation has been turned off.");
-				setBooleanOption(BooleanOption.VECTORISE, false);
-			}
-			if(strategy()==Strategy.FLATTEN) {
-				ProgressPrinter.println("Vectorisation is not compatible with the FLATTEN strategy.  Vectorisation has been turned off.");
-				setBooleanOption(BooleanOption.VECTORISE, false);
-			}
-		}
-
-		String target = getStringOption(StringOption.TARGET);
-
-		if(null != target) {
-
-			target = target.toUpperCase();
-			
-			if(target.equals("PC")) {
-				vectorTarget = new DummyVectorTarget();
-				parallelTarget = new PthreadsParallelTarget();
-			} else if(target.equals("POWERPC")) {
-				vectorTarget = new PowerPCVectorTarget();
-				parallelTarget = new PthreadsParallelTarget();
-			} else if(target.equals("CELL")) {
-				vectorTarget = new CellSPUVectorTarget();
-				parallelTarget = new CellParallelTarget();
-			} else {
-				System.out.println("Unknown target '" + target + "' specified in config.txt.  Defaulting to PC target.");
-				vectorTarget = new DummyVectorTarget();
-				parallelTarget = new PthreadsParallelTarget();
-			}
-			
 		}
 		
 	}
@@ -449,11 +393,12 @@ public class Config {
 		newIntegerOption(IntegerOption.EXPLAIN, 0, "Config file option - number of invalid symmetries for which explanations should be produced.");
 
 		newStrategyOption(StrategyOption.STRATEGY, Strategy.FAST, "Config file option - strategy to use for symmetry reduction.  Options are: " + strategyNames() + ".");
-		
+
 		commandLineSwitchDescriptions.put(CommandLineSwitch.CHECK, "Command line switch: apply this switch to only type-check input specification.");
 		commandLineSwitchDescriptions.put(CommandLineSwitch.DETECT, "Command line switch: apply this switch to detect symmetry for input specification, but not apply symmetry reduction.");
 		commandLineSwitchDescriptions.put(CommandLineSwitch.RELAXEDARRAYINDEXING, "Command line switch: allow arrays to be indexed by expressions of any numeric type.  Without this option, TopSPIN will reject attempts to index arrays using 'short' or 'int' expressions.");
 		commandLineSwitchDescriptions.put(CommandLineSwitch.RELAXEDASSIGNMENT, "Command line switch: allow assignments from larger to smaller numeric types, even if such assignments may result in overflow.  Without this option, TopSPIN will not allow e.g. assignment of a 'int' variable to a 'byte' variable.");
+		commandLineSwitchDescriptions.put(CommandLineSwitch.CHANNELREDUNDANCY, "Command line switch: use Etch to erase user-specified channel initialisers, and compute potentially more efficient types for channels.");
 		
 	}
 
@@ -515,7 +460,8 @@ public class Config {
 		return processSwitchVariant(argName, CommandLineSwitch.CHECK, CommandLineSwitch.DETECT)
 		|| processSwitchVariant(argName, CommandLineSwitch.DETECT, CommandLineSwitch.CHECK)
 		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDARRAYINDEXING, null)
-		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDASSIGNMENT, null);
+		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDASSIGNMENT, null)
+		|| processSwitchVariant(argName, CommandLineSwitch.CHANNELREDUNDANCY, null);
 
 	}
 
@@ -534,8 +480,8 @@ public class Config {
 	}
 	
 	
-
-	public static void showHelpForConfigurationOption(String option) {
+	/* Including 'etchMode' as a parameter is not a great way to handle this. */
+	public static void showHelpForConfigurationOption(String option, boolean etchMode) {
 		
 		option = option.length() > 0 && option.charAt(0) == '-' ? option.substring(1) : option;
 
@@ -552,7 +498,13 @@ public class Config {
 						System.out.println(strategyOptions.get(StrategyOption.valueOf(option.toUpperCase())).helpString(option, "string"));
 					} catch(IllegalArgumentException notStrategyOption) {
 						try {
-							System.out.println(commandLineSwitchDescriptions.get(CommandLineSwitch.valueOf(option.toUpperCase())));
+							CommandLineSwitch commandLineSwitch = CommandLineSwitch.valueOf(option.toUpperCase());
+							if((etchMode && ((CommandLineSwitch.CHECK == commandLineSwitch) || (CommandLineSwitch.DETECT == commandLineSwitch)))
+									||
+							   (!etchMode && (CommandLineSwitch.CHANNELREDUNDANCY == commandLineSwitch))) {
+								throw new IllegalArgumentException();
+							}
+							System.out.println(commandLineSwitchDescriptions.get(commandLineSwitch));
 						} catch(IllegalArgumentException notCommandLineSwitch) {
 							System.out.println("Error: Unknown config file option or command-line switch \"" + option + "\"");
 						}

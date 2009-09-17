@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import src.TopSpin;
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
@@ -15,7 +16,6 @@ import src.etch.types.ChanType;
 import src.etch.types.VisibleType;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.types.PidType;
-import src.utilities.Config;
 
 public class SwapVectorizer {
 
@@ -208,8 +208,8 @@ public class SwapVectorizer {
 			}
 		}
 
-		numberOfPidReferencesToSwap = roundUp(numberOfPidReferencesToSwap, Config.vectorTarget.alignmentValue());
-		numberOfChannelReferencesToSwap = roundUp(numberOfChannelReferencesToSwap, Config.vectorTarget.alignmentValue());
+		numberOfPidReferencesToSwap = roundUp(numberOfPidReferencesToSwap, TopSpin.vectorTarget.alignmentValue());
+		numberOfChannelReferencesToSwap = roundUp(numberOfChannelReferencesToSwap, TopSpin.vectorTarget.alignmentValue());
 		
 		extractIdentifierVariablesFunctionBody += "}\n\n";
 		replaceIdentifierVariablesFunction += "}\n\n";
@@ -233,7 +233,7 @@ public class SwapVectorizer {
 
 		out.write("} AugmentedState;\n\n");
 
-		out.write(Config.vectorTarget.getVectorUnsignedCharDefinition());
+		out.write(TopSpin.vectorTarget.getVectorUnsignedCharDefinition());
 		
 		writeAugmentedMemcpy(out);
 
@@ -287,8 +287,8 @@ public class SwapVectorizer {
 	}
 	
 	private String alignmentSpecifier() {
-		if(Config.vectorTarget.alignmentValue() > 1) {
-			return " __attribute__((aligned(" + Config.vectorTarget.alignmentValue() + ")))";
+		if(TopSpin.vectorTarget.alignmentValue() > 1) {
+			return " __attribute__((aligned(" + TopSpin.vectorTarget.alignmentValue() + ")))";
 		}
 		return "";
 	}
@@ -329,31 +329,31 @@ public class SwapVectorizer {
 
 		if(numberOfPidReferencesToSwap > 0) {
 		
-			out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
-		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_a;\n");
-		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_b;\n");
-			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
-			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
+			out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
+		    out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " vec_a;\n");
+		    out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " vec_b;\n");
+			out.write("   " + TopSpin.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
+			out.write("   " + TopSpin.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write(Config.vectorTarget.getSplatsInstruction("vec_a", "a"));
+			out.write(TopSpin.vectorTarget.getSplatsInstruction("vec_a", "a"));
 			
-		    out.write(Config.vectorTarget.getSplatsInstruction("vec_b", "b"));
+		    out.write(TopSpin.vectorTarget.getSplatsInstruction("vec_b", "b"));
 	
 			for(int i=0; i<numberOfPidReferencesToSwap; i+=16) {
 	
 				out.write("   {\n");
 		
-				out.write("      x = *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
+				out.write("      x = *(" + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "]));\n");
 				    
-				out.write(Config.vectorTarget.getCompareEqualInstruction("is_a", "x", "vec_a"));
+				out.write(TopSpin.vectorTarget.getCompareEqualInstruction("is_a", "x", "vec_a"));
 		
-				out.write(Config.vectorTarget.getCompareEqualInstruction("is_b", "x", "vec_b"));
+				out.write(TopSpin.vectorTarget.getCompareEqualInstruction("is_b", "x", "vec_b"));
 		
-				out.write(Config.vectorTarget.getSelectInstruction("x", "is_a", "vec_b", "x"));
+				out.write(TopSpin.vectorTarget.getSelectInstruction("x", "is_a", "vec_b", "x"));
 				
-				out.write(Config.vectorTarget.getSelectInstruction("x", "is_b", "vec_a", "x"));
+				out.write(TopSpin.vectorTarget.getSelectInstruction("x", "is_b", "vec_a", "x"));
 		
-				out.write("      *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "])) = x;\n");
+				out.write("      *(" + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->process_ids[" + i + "])) = x;\n");
 			
 				out.write("   }\n");
 			}			
@@ -364,31 +364,31 @@ public class SwapVectorizer {
 	public void writeChannelSwaps(FileWriter out) throws IOException {
 
 		if(numberOfChannelReferencesToSwap > 0) {
-			out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
-		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_a;\n");
-		    out.write("   " + Config.vectorTarget.getVectorUnsignedCharTypename() + " vec_b;\n");
-			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
-			out.write("   " + Config.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
+			out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
+		    out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " vec_a;\n");
+		    out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " vec_b;\n");
+			out.write("   " + TopSpin.vectorTarget.getVectorBoolCharTypename() + " is_a;\n");
+			out.write("   " + TopSpin.vectorTarget.getVectorBoolCharTypename() + " is_b;\n\n");
 	
-			out.write(Config.vectorTarget.getSplatsInstruction("vec_a", "(a+1)"));
+			out.write(TopSpin.vectorTarget.getSplatsInstruction("vec_a", "(a+1)"));
 			
-		    out.write(Config.vectorTarget.getSplatsInstruction("vec_b", "(b+1)"));
+		    out.write(TopSpin.vectorTarget.getSplatsInstruction("vec_b", "(b+1)"));
 	
 			for(int i=0; i<numberOfChannelReferencesToSwap; i+=16) {
 	
 				out.write("   {\n");
 		
-				out.write("      x = *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
+				out.write("      x = *(" + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "]));\n");
 				    
-				out.write(Config.vectorTarget.getCompareEqualInstruction("is_a", "x", "vec_a"));
+				out.write(TopSpin.vectorTarget.getCompareEqualInstruction("is_a", "x", "vec_a"));
 		
-				out.write(Config.vectorTarget.getCompareEqualInstruction("is_b", "x", "vec_b"));
+				out.write(TopSpin.vectorTarget.getCompareEqualInstruction("is_b", "x", "vec_b"));
 		
-				out.write(Config.vectorTarget.getSelectInstruction("x", "is_a", "vec_b", "x"));
+				out.write(TopSpin.vectorTarget.getSelectInstruction("x", "is_a", "vec_b", "x"));
 				
-				out.write(Config.vectorTarget.getSelectInstruction("x", "is_b", "vec_a", "x"));
+				out.write(TopSpin.vectorTarget.getSelectInstruction("x", "is_b", "vec_a", "x"));
 		
-				out.write("      *(" + Config.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
+				out.write("      *(" + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + "*)(&(s->channel_ids[" + i + "])) = x;\n");
 			
 				out.write("   }\n");
 			}			

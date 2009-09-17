@@ -8,6 +8,13 @@ import src.promela.lexer.LexerException;
 import src.promela.parser.ParserException;
 import src.symmextractor.SymmExtractor;
 import src.symmreducer.SymmReducer;
+import src.symmreducer.paralleltargets.CellParallelTarget;
+import src.symmreducer.paralleltargets.ParallelTarget;
+import src.symmreducer.paralleltargets.PthreadsParallelTarget;
+import src.symmreducer.vectortargets.CellSPUVectorTarget;
+import src.symmreducer.vectortargets.DummyVectorTarget;
+import src.symmreducer.vectortargets.PowerPCVectorTarget;
+import src.symmreducer.vectortargets.VectorTarget;
 import src.utilities.AbsentConfigurationFileException;
 import src.utilities.BadConfigurationFileException;
 import src.utilities.BooleanOption;
@@ -16,11 +23,17 @@ import src.utilities.Config;
 import src.utilities.IntegerOption;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
+import src.utilities.Strategy;
 import src.utilities.StrategyOption;
 import src.utilities.StringOption;
 
 public class TopSpin {
+	
+	public static VectorTarget vectorTarget;
+	public static ParallelTarget parallelTarget;
 
+	public static final String VERSION = "2.2.4";
+	
 	public static void main(String args[]) throws IOException, InterruptedException, BadConfigurationFileException, AbsentConfigurationFileException, ParserException, LexerException {
 
 		Config.initialiseCommandLineSwitches();
@@ -55,18 +68,19 @@ public class TopSpin {
 			Config.resetConfiguration();
 			Config.setUnspecifiedOptionsToDefaultValues();
 			System.out.println("Type-check only");
-			new Check(specificationFile).typecheck(true);
+			new Check(specificationFile).typecheck();
 			System.exit(0);
 		}
 
 		Config.readConfigFile("config.txt", true, true);
+		dealWithVectorAndParallelSettings();
 		
 		if(Config.commandLineSwitchIsSet(CommandLineSwitch.DETECT)) {
 			SymmExtractor extractor = new SymmExtractor(specificationFile);
 			doAutomaticSymmetryDetection(specificationFile, extractor);
 		} else {
 			ProgressPrinter.printSeparator();
-			ProgressPrinter.println("TopSPIN version " + Config.VERSION);
+			ProgressPrinter.println("TopSPIN version " + VERSION);
 			ProgressPrinter.printSeparator();
 			Config.printConfiguration();
 			ProgressPrinter.printSeparator();
@@ -125,7 +139,7 @@ public class TopSpin {
 			}
 			
 		} else {
-			Config.showHelpForConfigurationOption(args[1]);
+			Config.showHelpForConfigurationOption(args[1], false);
 		}
 	}
 
@@ -145,4 +159,42 @@ public class TopSpin {
 		if(Config.profiling()) { Profile.TOPSPIN_END = System.currentTimeMillis(); Profile.show(); }
 	}
 
+	
+	private static void dealWithVectorAndParallelSettings() {
+		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
+			if(!Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
+				ProgressPrinter.println("Vectorisation can only be applied when transpositions are used.  Vectorisation has been turned off.");
+				Config.setBooleanOption(BooleanOption.VECTORISE, false);
+			}
+			if(Config.strategy()==Strategy.FLATTEN) {
+				ProgressPrinter.println("Vectorisation is not compatible with the FLATTEN strategy.  Vectorisation has been turned off.");
+				Config.setBooleanOption(BooleanOption.VECTORISE, false);
+			}
+		}
+
+		String target = Config.getStringOption(StringOption.TARGET);
+
+		if(null != target) {
+
+			target = target.toUpperCase();
+			
+			if(target.equals("PC")) {
+				vectorTarget = new DummyVectorTarget();
+				parallelTarget = new PthreadsParallelTarget();
+			} else if(target.equals("POWERPC")) {
+				vectorTarget = new PowerPCVectorTarget();
+				parallelTarget = new PthreadsParallelTarget();
+			} else if(target.equals("CELL")) {
+				vectorTarget = new CellSPUVectorTarget();
+				parallelTarget = new CellParallelTarget();
+			} else {
+				System.out.println("Unknown target '" + target + "' specified in config.txt.  Defaulting to PC target.");
+				vectorTarget = new DummyVectorTarget();
+				parallelTarget = new PthreadsParallelTarget();
+			}
+			
+		}
+		
+	}
+	
 }

@@ -28,7 +28,7 @@ import src.promela.lexer.LexerException;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
-import src.symmextractor.SymmetryChecker;
+import src.utilities.BooleanOption;
 import src.utilities.CommandLineSwitch;
 import src.utilities.Config;
 import src.utilities.Profile;
@@ -153,13 +153,13 @@ public class Check {
 		return br;
 	}
 
-	public boolean typecheck(boolean isPidSensitive) {
+	public boolean typecheck() {
 		ProgressPrinter.println("\nTypechecking input specification...\n");
 
 		LineCounter lineCounter = new LineCounter();
 		theAST.apply(lineCounter);
 		
-		Checker chk = (isPidSensitive ? new SymmetryChecker(lineCounter.numberOfLines()) : new Checker());
+		Checker chk = getChecker(lineCounter);
 		theAST.apply(chk);
 		Substituter substituter = chk.unify();
 	
@@ -186,24 +186,61 @@ public class Check {
 		return true;
 	}
 
+	protected Checker getChecker(LineCounter lineCounter) {
+		return new Checker();
+	}
+
+	
+	private static void processHelpArguments(String[] args) {
+		
+		final String ETCH_VERSION = "1.0";
+		
+		assert(args.length>0);
+
+		System.out.println("\nEtch version " + ETCH_VERSION);
+		if(args.length==1) {
+			System.out.println("\nUse 'help' followed by name of command-line option for summary of what the option does.\n");
+
+			System.out.println("Available options:\n");
+
+			for(CommandLineSwitch option : CommandLineSwitch.values()) {
+				if((CommandLineSwitch.CHECK) != option && (CommandLineSwitch.DETECT != option)) {
+					System.out.println("  -" + option.toString().toLowerCase());
+				}
+			}
+			
+		} else {
+			Config.showHelpForConfigurationOption(args[1], true);
+		}
+	}
+	
+	
 	public static void main(String[] args) throws ParserException, IOException, LexerException {
 
-		if (args.length < 1) {
-			System.out.println("Usage: check filename");
-			System.exit(1);
+		Config.resetConfiguration();
+		
+		if((args.length > 0) && (args[0].toUpperCase().equals("HELP"))) {
+			processHelpArguments(args);
+			System.exit(0);
 		}
 
-		Config.resetConfiguration();
 		Config.setUnspecifiedOptionsToDefaultValues();
 		Config.initialiseCommandLineSwitches();
+		Config.setBooleanOption(BooleanOption.VERBOSE, true);
 
 		int currentArg = Config.processCommandLineSwitches(args);
-		
+				
 		if(currentArg >= args.length) {
 			System.out.println("Error: no input file specified.\n");
+			System.out.println("To run Etch on an input file:\n" +
+					           "    [command-line options] <inputfile>\n" +
+							   "For help on command-line option:\n" +
+							   "    help <option>\n" +
+							   "For list of options:\n" +
+							   "    help\n");
 			System.exit(1);
 		}
 				
-		new Check(args[currentArg]).typecheck(Config.commandLineSwitchIsSet(CommandLineSwitch.DETECT));
+		new Check(args[currentArg]).typecheck();
 	}	
 }

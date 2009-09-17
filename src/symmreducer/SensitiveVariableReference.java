@@ -3,7 +3,6 @@ package src.symmreducer;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ChanType;

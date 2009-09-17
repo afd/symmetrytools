@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import src.advice.InvalidSymmetryAdviser;
-import src.etch.checker.Check;
 import src.etch.checker.Checker;
 import src.etch.typeinference.Substituter;
 import src.group.Group;
@@ -31,7 +30,7 @@ import src.utilities.ProgressPrinter;
 import src.utilities.StringOption;
 
 
-public class SymmExtractor extends Check {
+public class SymmExtractor extends SymmCheck {
 
 	protected Process gap;
 	protected BufferedReader gapReader;
@@ -59,7 +58,7 @@ public class SymmExtractor extends Check {
 
 		if(Config.profiling()) { Profile.EXTRACT_START = System.currentTimeMillis(); }
 		
-		isWellTyped = typecheck(true);
+		isWellTyped = typecheck();
 		
 		if(isWellTyped) {
 			if(Config.inVerboseMode()) {

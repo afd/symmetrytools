@@ -21,10 +21,20 @@ public class TypeVariableType extends SimpleType implements InternalType {
 	}
 
 	public String name() {
-		if(prettyPrint && guid < prettyVariables.length) {
-			return "" + prettyVariables[guid];
+		
+		if(lower.equal(upper))
+		{
+			return lower.name();
 		}
-		return String.valueOf(letter) + guid;
+		
+		String result = (lower.equal(BottomType.uniqueInstance)) ? "" : lower.name() + " <: ";
+		if(prettyPrint && guid < prettyVariables.length) {
+			result += "" + prettyVariables[guid];
+		} else {
+			result += String.valueOf(letter) + guid;
+		}
+		
+		return result + ((upper.equal(TopType.uniqueInstance)) ? "" : " <: " + upper.name());
 	}
 
 	public void setLower(Type lower) {

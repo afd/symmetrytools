@@ -157,7 +157,7 @@ public class SymmReducer extends SymmExtractor {
 		StaticChannelDiagramExtractor extractor;
 		assert(null != Config.getStringOption(StringOption.SYMMETRYFILE));
 		extractor = makeStaticChannelDiagramExtractor();
-		if(typecheck(true)) {
+		if(typecheck()) {
 			System.out.println("Reparsing source without inlines");
 			reparseSourceWithoutInlines();
 			theAST.apply(extractor);

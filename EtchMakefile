@@ -1,0 +1,28 @@
+#################################################
+JAVA_FILES = $(shell /usr/bin/find src/etch src/promela src/utilities -name *.java)
+
+CLASS_FILES = $(JAVA_FILES:%.java=%.class)
+
+DATA_FILES = $(shell /usr/bin/find src/promela -name *.dat)
+
+COMPILED_CLASS_FILES = $(shell /usr/bin/find src/etch src/promela src/utilities -name *.class | sed s/\\$$/\*/)
+
+# 
+
+default:
+	echo "Please specify 'classes' or 'jars'"
+
+classes: $(CLASS_FILES)
+
+jars: Etch.jar
+
+Etch.jar: $(CLASS_FILES)
+	jar cmf etch_manifest.txt $@ $(COMPILED_CLASS_FILES) $(DATA_FILES) && echo "Etch.jar built successfully."
+
+%.class: %.java
+	javac $<
+
+clean:
+	@rm -f $(COMPILED_CLASS_FILES) Etch.jar
+
+#################################################

@@ -1175,9 +1175,13 @@ public class Checker extends InlineProcessor {
 	private void checkChannelInitialisation(AChannelIvarassignment assignment, VisibleType type) {
 		if (getChannelAssignmentTypeList(assignment) != null) {
 			if (isChan(type)) {
-				postEqualityConstraint(type, getChannelAssignmentType(assignment), assignment.getAssign());
+				if(!Config.commandLineSwitchIsSet(CommandLineSwitch.CHANNELREDUNDANCY)) {
+					postEqualityConstraint(type, getChannelAssignmentType(assignment), assignment.getAssign());
+				}
 			} else if(isArray(type) && isChan(((ArrayType)type).getElementType())) {
-				postEqualityConstraint(((ArrayType)type).getElementType(), getChannelAssignmentType(assignment), assignment.getAssign());
+				if(!Config.commandLineSwitchIsSet(CommandLineSwitch.CHANNELREDUNDANCY)) {
+					postEqualityConstraint(((ArrayType)type).getElementType(), getChannelAssignmentType(assignment), assignment.getAssign());
+				}
 			} else {
 				addError(assignment.getAssign(),new AssignmentMismatchError(
 						type, getChannelAssignmentType(assignment)));

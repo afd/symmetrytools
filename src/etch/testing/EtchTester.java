@@ -252,6 +252,8 @@ public class EtchTester {
 				
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_misc.p", EtchTestOutcome.WellTyped));
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_funny_semi_colons.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_redundant_channels.p", EtchTestOutcome.WellTyped));
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelbeforeunless.p", EtchTestOutcome.BadlyTyped));
