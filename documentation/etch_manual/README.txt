@@ -45,18 +45,27 @@ active proctype P()
 Etch will report that A could have been declared with field type {byte}, which would be more efficient.
 
 
--relaxedarrayindexing
+-strictarrayindexing
 
-   java -jar Etch.jar -relaxedarrayindexing model.p
+   java -jar Etch.jar -strictarrayindexing model.p
 
-With this option Etch will not report errors if an array is indexed with type short or byte (by default this will be flagged up as an error).
+With this option Etch will report errors if an array is indexed with type short or byte (by default this will not be flagged up as an error).
 
 
--relaxedassignment
+-strictassignment
 
-   java -jar Etch.jar -relaxedassignment model.p
+   java -jar Etch.jar -strictassignment model.p
 
-With this option Etch will not report errors if a variable is assigned an expression of too large a type, e.g. if a byte variable is assigned an int variable's value (by default this will be flagged up as an error).
+With this option Etch will report errors if a variable is assigned an expression of too large a type, e.g. if a byte variable is assigned an int variable's value (by default this will not be flagged up as an error).
+
+
+-cpp <path to cpp utility>
+
+   java -jar Etch.jar -cpp <path to cpp utility> model.p
+
+Etch requires the C preprocessor, cpp.  If you are using Cygwin under Windows, then cpp.exe may be a symbolic link.  If this is the case then you need to run Etch with the option: -cpp <link target>, where <link target> is the target for the symbolic link, given in Windows form.  So, for example, if cpp.exe is a link to /etc/alternatives/cpp.exe, you should use the option -cpp C:\\cygwin\\etc\\alternatives\\cpp.exe.  This is a limitation of Etch which the designers hope to fix in a future release.
+
+
 
 Source code
 -----------
