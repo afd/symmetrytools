@@ -113,9 +113,6 @@ public class Check {
 			}
 			
 			Process cpp = Runtime.getRuntime().exec(cppCommand);
-
-/*			ErrorStreamHandler errorHandler = new ErrorStreamHandler(cpp, "\ncpp produced errors:\n======================",  "End of cpp errors", true);
-			errorHandler.start();*/
 			
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(cpp.getInputStream()));
 			String programForParsing = "";
@@ -137,14 +134,13 @@ public class Check {
 			br = new BufferedReader(new StringReader(programForParsing));
 			
 			cpp.waitFor();
-			
-/*			if(0 != cpp.exitValue()) {
-				System.out.println("C preprocessor (cpp) exited with error code " + cpp.exitValue() + ".  TopSPIN will run on un-preprocessed file, and will not work correctly on files which use #define or #include.");
-				br = new BufferedReader(new FileReader(sourceName));
-			}*/
-			
+						
 		} catch (IOException e) {
-			System.out.println("C preprocessor (cpp) not available - TopSPIN will not work correctly on files which use #define or #include.");
+			System.out.println("C preprocessor (cpp) not available - " + Config.TOOL_NAME + " will not work correctly on files which use #define or #include.");
+			if(Config.isOSWindows()) {
+				System.out.println("If you are using Cygwin under Windows, then perhaps cpp.exe is a symbolic link.  If this is the case then you need to run " + Config.TOOL_NAME + " with the option: -cpp <link target>, where <link target> is the target for the symbolic link, given" +
+						" in Windows form.  So, for example, if cpp.exe is a link to /etc/alternatives/cpp.exe, you should use the option -cpp C:\\\\cygwin\\\\etc\\\\alternatives\\\\cpp.exe.  This is a limitation of Etch which the designers hope to fix in a future release.");
+			}
 			br = new BufferedReader(new FileReader(sourceName));
 		} catch (InterruptedException e) {
 			System.out.println("C preprocessor (cpp) was interrupted.  TopSPIN will run on un-preprocessed file, and will not work correctly on files which use #define or #include.");
@@ -217,6 +213,8 @@ public class Check {
 	
 	public static void main(String[] args) throws ParserException, IOException, LexerException {
 
+		Config.TOOL_NAME = "Etch";
+		
 		Config.resetConfiguration();
 		
 		if((args.length > 0) && (args[0].toUpperCase().equals("HELP"))) {

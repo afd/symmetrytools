@@ -372,6 +372,7 @@ public class Config {
 	private static Map<CommandLineSwitch, String> commandLineSwitchDescriptions;
 	
 	private static Map<CommandLineSwitch, String> commandLineSwitchesCurrentlySet;
+	public static String TOOL_NAME = "TopSPIN";
 	
 	public static void resetConfiguration() {
 
@@ -404,9 +405,10 @@ public class Config {
 
 		commandLineSwitchDescriptions.put(CommandLineSwitch.CHECK, "Command line switch: apply this switch to only type-check input specification.");
 		commandLineSwitchDescriptions.put(CommandLineSwitch.DETECT, "Command line switch: apply this switch to detect symmetry for input specification, but not apply symmetry reduction.");
-		commandLineSwitchDescriptions.put(CommandLineSwitch.RELAXEDARRAYINDEXING, "Command line switch: allow arrays to be indexed by expressions of any numeric type.  Without this option, TopSPIN will reject attempts to index arrays using 'short' or 'int' expressions.");
-		commandLineSwitchDescriptions.put(CommandLineSwitch.RELAXEDASSIGNMENT, "Command line switch: allow assignments from larger to smaller numeric types, even if such assignments may result in overflow.  Without this option, TopSPIN will not allow e.g. assignment of a 'int' variable to a 'byte' variable.");
+		commandLineSwitchDescriptions.put(CommandLineSwitch.STRICTARRAYINDEXING, "Command line switch: disallow arrays to be indexed by expressions of numeric types larger than 'byte'.  With this option, attempts to index arrays using 'short' or 'int' expressions will be disallowed.");
+		commandLineSwitchDescriptions.put(CommandLineSwitch.STRICTASSIGNMENT, "Command line switch: disallow assignments from larger to smaller numeric types, since such assignments may result in overflow.  With this option, e.g. assignment of an 'int' variable to a 'byte' variable will be disallowed.");
 		commandLineSwitchDescriptions.put(CommandLineSwitch.CHANNELREDUNDANCY, "Command line switch: use Etch to erase user-specified channel initialisers, and compute potentially more efficient types for channels.");
+		commandLineSwitchDescriptions.put(CommandLineSwitch.CPP, "Specify path to C preprocessor utility.  This can be necessary e.g. if you are using Windows with Cygwin, and cpp.exe is a symbolic link - currently it is necessary to supply the full path to the symbolic link target, in Windows form.");
 		
 	}
 
@@ -501,8 +503,8 @@ public class Config {
 		
 		return processSwitchVariant(argName, CommandLineSwitch.CHECK, CommandLineSwitch.DETECT)
 		|| processSwitchVariant(argName, CommandLineSwitch.DETECT, CommandLineSwitch.CHECK)
-		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDARRAYINDEXING, null)
-		|| processSwitchVariant(argName, CommandLineSwitch.RELAXEDASSIGNMENT, null)
+		|| processSwitchVariant(argName, CommandLineSwitch.STRICTARRAYINDEXING, null)
+		|| processSwitchVariant(argName, CommandLineSwitch.STRICTASSIGNMENT, null)
 		|| processSwitchVariant(argName, CommandLineSwitch.CHANNELREDUNDANCY, null);
 
 	}

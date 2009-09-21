@@ -231,7 +231,7 @@ public class Checker extends InlineProcessor {
 			return;
 		}
 		
-		if (isNumeric(leftType) && isNumeric(rightType) && Config.commandLineSwitchIsSet(CommandLineSwitch.RELAXEDASSIGNMENT)) {
+		if (isNumeric(leftType) && isNumeric(rightType) && !Config.commandLineSwitchIsSet(CommandLineSwitch.STRICTASSIGNMENT)) {
 			return;
 		}
 
@@ -368,7 +368,7 @@ public class Checker extends InlineProcessor {
 	
 	
 	private NumericType maxArrayIndexType() {
-		return Config.commandLineSwitchIsSet(CommandLineSwitch.RELAXEDARRAYINDEXING) ? intType() : byteType();
+		return !Config.commandLineSwitchIsSet(CommandLineSwitch.STRICTARRAYINDEXING) ? intType() : byteType();
 	}
 	
 	public void outAArrayref(AArrayref node) {
