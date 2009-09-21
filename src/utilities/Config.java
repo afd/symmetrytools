@@ -6,9 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 
 public class Config {
@@ -151,9 +149,15 @@ public class Config {
 	}
 
 	public static void setCommandLineSwitch(CommandLineSwitch flag) {
-		commandLineSwitchesCurrentlySet.add(flag);
+		// Set boolean switch - it is on or off, there is no data value.
+		commandLineSwitchesCurrentlySet.put(flag, null);
 	}
 
+	private static void setCommandLineSwitchWithValue(CommandLineSwitch sw,
+			String value) {
+		commandLineSwitchesCurrentlySet.put(sw, value);
+	}
+	
 	public static int getIntegerOption(IntegerOption key) {
 		return integerOptions.get(key).getValue();
 	}
@@ -171,9 +175,13 @@ public class Config {
 	}
 
 	public static boolean commandLineSwitchIsSet(CommandLineSwitch flag) {
-		return (null != flag) && commandLineSwitchesCurrentlySet.contains(flag);
+		return (null != flag) && commandLineSwitchesCurrentlySet.containsKey(flag);
 	}
 
+	public static String getCommandLineSwitchValue(CommandLineSwitch sw) {
+		return commandLineSwitchesCurrentlySet.get(sw);
+	}	
+	
 	private static void configurationError() {
 		System.out.println("Error opening configuration file \"config.txt\", which should be located in the directory from which you run TopSPIN.");
 		System.exit(0);
@@ -363,7 +371,7 @@ public class Config {
 	private static Map<StrategyOption, ConfigurationOptionEntry<Strategy>> strategyOptions;
 	private static Map<CommandLineSwitch, String> commandLineSwitchDescriptions;
 	
-	private static Set<CommandLineSwitch> commandLineSwitchesCurrentlySet;
+	private static Map<CommandLineSwitch, String> commandLineSwitchesCurrentlySet;
 	
 	public static void resetConfiguration() {
 
@@ -436,18 +444,52 @@ public class Config {
 	}
 
 	public static void initialiseCommandLineSwitches() {
-		commandLineSwitchesCurrentlySet = new HashSet<CommandLineSwitch>();
+		commandLineSwitchesCurrentlySet = new HashMap<CommandLineSwitch, String>();
 	}
 
 
 	public static int processCommandLineSwitches(String[] args) {
 		int currentArg = 0;
 		
-		while((currentArg < args.length) && processCommandLineSwitch(args[currentArg].toUpperCase())) {
-			currentArg++;
+		while(currentArg < args.length) {
+			if(processCommandLineSwitch(args[currentArg].toUpperCase())) {
+				currentArg++;
+			} else if((currentArg < args.length - 1) && processCommandLineSwitchWithValue(args[currentArg].toUpperCase(), args[currentArg+1])) {
+				currentArg += 2;
+			} else {
+				break;
+			}
 		}
+
 		return currentArg;
 	}
+
+
+	private static boolean processCommandLineSwitchWithValue(String arg,
+			String value) {
+
+		if(arg.length()<1 || arg.charAt(0) != '-') {
+			return false;
+		}
+
+		String argName = arg.substring(1);
+
+		if(argName.equals(CommandLineSwitch.CPP.toString())) {
+			if(Config.commandLineSwitchIsSet(CommandLineSwitch.CPP)) {
+				System.out.println("Warning: duplicate command line switch " + CommandLineSwitch.CPP + ".");
+			} else {
+				Config.setCommandLineSwitchWithValue(CommandLineSwitch.CPP, value);
+			}
+			return true;
+		}
+		return false;
+		
+		
+		
+	}
+
+
+
 
 	private static boolean processCommandLineSwitch(String arg) {
 		

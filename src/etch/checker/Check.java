@@ -99,8 +99,8 @@ public class Check {
 
 		BufferedReader br = null;
 		try {
-
-			String cppCommand = "cpp ";
+			
+			String cppCommand = (Config.commandLineSwitchIsSet(CommandLineSwitch.CPP) ? Config.getCommandLineSwitchValue(CommandLineSwitch.CPP) : "cpp") + " ";
 			
 			if(Config.isOSWindows()) {
 				cppCommand += "\"";
