@@ -53,4 +53,10 @@ public class ProductType extends ConstructedType implements InternalType {
 		
 	}
 
+	@Override
+	public String spinRepresentation() {
+		assert(false);
+		return null;
+	}
+
 }

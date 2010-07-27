@@ -18,4 +18,9 @@ public class ShortType extends NumericType {
 		return super.isSubtype(t) || t instanceof ShortType || t instanceof IntType;
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return name();
+	}
+
 }

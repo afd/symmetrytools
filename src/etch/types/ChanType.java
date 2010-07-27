@@ -64,4 +64,9 @@ public class ChanType extends ConstructedType implements VisibleType {
 		}
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return "uchar";
+	}
+
 }

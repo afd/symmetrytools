@@ -76,6 +76,8 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 
 				Config.readConfigFile(foldername + "config.txt", false, true);
 
+				TopSpin.dealWithVectorAndParallelSettings();
+				
 				SymmReducer reducer = new SymmReducer(filename);
 
 				TopSpin.doAutomaticSymmetryReduction(reducer);

@@ -18,4 +18,9 @@ public class IntType extends NumericType {
 		return equal(t) || super.isSubtype(t);
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return name();
+	}
+
 }

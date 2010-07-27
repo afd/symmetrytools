@@ -6,4 +6,9 @@ public class BoolType extends SimpleType implements VisibleType {
 		return "bool";
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return "uchar";
+	}
+
 }

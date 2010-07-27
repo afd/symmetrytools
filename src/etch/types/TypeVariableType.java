@@ -58,4 +58,10 @@ public class TypeVariableType extends SimpleType implements InternalType {
 		return false;
 	}
 
+	@Override
+	public String spinRepresentation() {
+		assert(false);
+		return null;
+	}
+
 }

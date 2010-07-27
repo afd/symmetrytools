@@ -21,4 +21,10 @@ public final class BottomType extends SimpleType implements VisibleType {
 		return true;
 	}
 
+	@Override
+	public String spinRepresentation() {
+		assert(false);
+		return null;
+	}
+
 }

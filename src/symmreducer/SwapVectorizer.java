@@ -207,7 +207,7 @@ public class SwapVectorizer {
 				numberOfChannelVariablesForChannel[i] += numberOfChanTypes*channelEntry.getLength();
 			}
 		}
-
+		
 		numberOfPidReferencesToSwap = roundUp(numberOfPidReferencesToSwap, TopSpin.vectorTarget.alignmentValue());
 		numberOfChannelReferencesToSwap = roundUp(numberOfChannelReferencesToSwap, TopSpin.vectorTarget.alignmentValue());
 		

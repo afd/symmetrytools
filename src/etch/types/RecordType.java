@@ -16,5 +16,10 @@ public class RecordType extends SimpleType implements VisibleType {
 		return t instanceof RecordType;
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return "struct " + name();
+	}
+
 	
 }

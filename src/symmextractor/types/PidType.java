@@ -33,6 +33,11 @@ public class PidType extends SimpleType implements VisibleType {
 		}
 		return result;
 	}
+
+	@Override
+	public String spinRepresentation() {
+		return "uchar";
+	}
 	
 	
 }

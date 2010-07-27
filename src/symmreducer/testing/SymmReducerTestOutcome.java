@@ -16,10 +16,10 @@ public class SymmReducerTestOutcome extends SymmExtractorRunTestOutcome {
 
 	public boolean matches(TestOutcome actualOutcome) {
 						
-		return (actualOutcome instanceof SymmReducerTestOutcome) &&
+		return actualOutcome instanceof SymmReducerTestOutcome &&
 			super.matches(actualOutcome) && 
-			(((SymmReducerTestOutcome)actualOutcome).numberOfStates==numberOfStates) &&
-			(((SymmReducerTestOutcome)actualOutcome).numberOfTransitions==numberOfTransitions);
+			((SymmReducerTestOutcome)actualOutcome).numberOfStates==numberOfStates &&
+			((SymmReducerTestOutcome)actualOutcome).numberOfTransitions==numberOfTransitions;
 	}
 
 	public String toString()

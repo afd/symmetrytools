@@ -6,4 +6,9 @@ public class MtypeType extends SimpleType implements VisibleType {
 		return "mtype";
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return "uchar";
+	}
+
 }

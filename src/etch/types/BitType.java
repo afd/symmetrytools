@@ -21,4 +21,9 @@ public class BitType extends NumericType {
 
 	}
 
+	@Override
+	public String spinRepresentation() {
+		return "uchar";
+	}
+
 }

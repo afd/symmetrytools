@@ -191,23 +191,28 @@ public class Permutation {
 	}
 
 	// Returns true if the permutation can be safely applied
-	// to the abstract syntax tree, which is assumed to be
-	// normalised already.
+	// to the abstract syntax tree.
 	public boolean isSafeFor(Node theAST, StaticChannelDiagramExtractor typeInfo) {
-		// Clone the original AST.
-		Node originalAST = (Node) theAST.clone();
 		
-		originalAST.apply(new Normaliser(typeInfo.getNoProcesses()));
+		/* If you find yourself debugging this code, make sure you have executed
+		 * apply_patch.pl, which fixes cloning in SableCC
+		 */
 		
-		theAST.apply(new Permuter(this, typeInfo));
-		
-		Node permutedAST = (Node) theAST.clone();
+		// Clone and normalise the original AST.
+		Node normalizedAST = (Node) theAST.clone();
+		normalizedAST.apply(new Normaliser(typeInfo.getNoProcesses()));
 
+		// Apply the permutation to the original AST, and normalize the result
+		theAST.apply(new Permuter(this, typeInfo));
+		Node permutedAST = (Node) theAST.clone();
 		permutedAST.apply(new Normaliser(typeInfo.getNoProcesses()));
 
+		// Reverse the permutation to the original AST
 		theAST.apply(new Permuter(this.inverse(), typeInfo));
-		
-		return new NodeComparator().compare(originalAST, permutedAST) == 0;
+
+		// Now check whether the normalized AST is the same as the permuted,
+		// normalized AST.
+		return new NodeComparator().compare(normalizedAST, permutedAST) == 0;
 	}
 
 

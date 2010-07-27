@@ -665,10 +665,7 @@ public class SymmetryApplier {
 					assert(((ArrayType) reference.getType()).getIndexType() instanceof VisibleType);
 					assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 							.getIndexType()));
-					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
-					fw.write("       uchar swapper["
-							+ reference.getArrayLength() + "];\n");
 					fw.write("       for(j=0; j<" + reference.getArrayLength()
 							+ "; j++) {\n");
 					fw.write("          temp." + reference
@@ -711,9 +708,8 @@ public class SymmetryApplier {
 						.getIndexType() instanceof VisibleType);
 				assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 						.getIndexType()));
-				/* uchar must be changed to appropriate type */
 				fw.write("   {\n");
-				fw.write("       uchar swapper[" + reference.getArrayLength()
+				fw.write("       " + ((ArrayType) reference.getType()).getElementType().spinRepresentation() + " swapper[" + reference.getArrayLength()
 						+ "];\n");
 				fw.write("       for(j=0; j<" + reference.getArrayLength()
 						+ "; j++) {\n");
@@ -722,7 +718,7 @@ public class SymmetryApplier {
 				fw.write("       }");
 				fw.write("       memcpy(" + reference
 						+ ",swapper," + reference.getArrayLength()
-						+ "*sizeof(uchar));\n");
+						+ "*sizeof(" + ((ArrayType) reference.getType()).getElementType().spinRepresentation() + "));\n");
 				fw.write("   }\n");
 
 			}
@@ -888,9 +884,8 @@ public class SymmetryApplier {
 							.getIndexType() instanceof VisibleType);
 					assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 							.getIndexType()));
-					/* uchar must be changed to appropriate type */
 					fw.write("   {\n");
-					fw.write("       uchar temp;\n");
+					fw.write("       " + ((ArrayType) reference.getType()).getElementType().spinRepresentation() + " temp;\n");
 					fw.write("       temp = " + reference
 							+ "[" + one + "];\n");
 					fw.write("       " + reference + "[" + one + "] = "
@@ -921,9 +916,8 @@ public class SymmetryApplier {
 						.getIndexType() instanceof VisibleType);
 				assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
 						.getIndexType()));
-				/* uchar must be changed to appropriate type */
 				fw.write("   {\n");
-				fw.write("       uchar temp;\n");
+				fw.write("       " + ((ArrayType) reference.getType()).getElementType().spinRepresentation() + " temp;\n");
 				fw
 						.write("       temp = " + reference
 								+ "[" + one + "];\n");

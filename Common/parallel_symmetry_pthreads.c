@@ -58,8 +58,8 @@ void start_threads() {
 	for(i=0; i<NUM_THREADS; i++) {
 		contexts[i].id = i;
 		contexts[i].state = SLEEP;
-		contexts[i].mutex = PTHREAD_MUTEX_INITIALIZER;
-		contexts[i].cond = PTHREAD_COND_INITIALIZER;
+		contexts[i].mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+		contexts[i].cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 		pthread_create(&(ids[i]), NULL, thread_body, &(contexts[i].id));
 	}
 }

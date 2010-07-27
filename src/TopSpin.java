@@ -160,7 +160,7 @@ public class TopSpin {
 	}
 
 	
-	private static void dealWithVectorAndParallelSettings() {
+	public static void dealWithVectorAndParallelSettings() {
 		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
 			if(!Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 				ProgressPrinter.println("Vectorisation can only be applied when transpositions are used.  Vectorisation has been turned off.");

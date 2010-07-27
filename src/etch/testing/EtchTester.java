@@ -135,7 +135,7 @@ public class EtchTester {
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_type_does_not_exist.p", EtchTestOutcome.BadlyTyped));
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_1.p", EtchTestOutcome.BadlyTyped));
-		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_2.p", EtchTestOutcome.BadlyTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_2.p", EtchTestOutcome.BadlyTyped, "-strictarrayindexing"));
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_3.p", EtchTestOutcome.BadlyTyped));
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_array_index_4.p", EtchTestOutcome.BadlyTyped));
 		

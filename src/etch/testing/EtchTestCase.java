@@ -16,18 +16,31 @@ import src.promela.parser.ParserException;
 import src.testing.SystemErrorTestOutcome;
 import src.testing.TestCase;
 import src.testing.TestOutcome;
+import src.utilities.Config;
 
 public class EtchTestCase extends TestCase {
 
+	private String[] commandLineArgs;
+	
 	public EtchTestCase(String filename, EtchTestOutcome outcome) {
 		super(filename, outcome);
+		commandLineArgs = new String[0];
 	}
 
+	public EtchTestCase(String filename, EtchTestOutcome outcome, String args) {
+		super(filename, outcome);
+		commandLineArgs = args.split(" ");
+	}
+	
 	@Override
 	public void run() {
 
 		BufferedReader br = null;
 		try {
+
+			Config.initialiseCommandLineSwitches();
+			Config.processCommandLineSwitches(commandLineArgs);
+			
 			br = Check.getBufferForInputSpecification(filename);
 			Node theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
 			Checker checker = new Checker();

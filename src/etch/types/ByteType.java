@@ -18,6 +18,11 @@ public class ByteType extends NumericType {
 	public boolean isSubtype(Type t) {
 		return (t instanceof NumericType && !(t instanceof BitType)) || super.isSubtype(t);
 	}
+
+	@Override
+	public String spinRepresentation() {
+		return "uchar";
+	}
 	
 
 }

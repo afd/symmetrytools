@@ -1,5 +1,4 @@
-gap=C:\GAP4R4\bin\gap.bat
-saucy=saucy\saucy.exe
-common=Common\
+gap=/home/scratch/gap/gap4r4/bin/gap.sh
+saucy=/home/scratch/TopSPIN_2.2.4/TopSPIN_2.2.4/saucy/saucy
+common=/home/scratch/prog/TopSPIN/Common/
 quiet=true
-

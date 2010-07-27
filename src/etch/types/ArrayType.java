@@ -62,5 +62,13 @@ public class ArrayType extends ConstructedType implements VisibleType {
 	protected String indexToString() {
 		return "size " + length;
 	}
+
+	@Override
+	public String spinRepresentation() {
+		// We cannot directly output the SPIN representation for an array,
+		// since C array types are tangled up with variable names.
+		assert(false);
+		return null;
+	}
 	
 }

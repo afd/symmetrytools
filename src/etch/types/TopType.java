@@ -21,4 +21,10 @@ public class TopType extends SimpleType {
 		return t instanceof TopType;
 	}
 
+	@Override
+	public String spinRepresentation() {
+		assert(false);
+		return null;
+	}
+
 }
