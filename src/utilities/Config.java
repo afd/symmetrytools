@@ -11,6 +11,8 @@ import java.util.StringTokenizer;
 
 public class Config {
 
+	public static Map<Integer, Location> locations = new HashMap<Integer, Location>();
+	
 	public static boolean isOSWindows() {
 		return System.getProperty("os.name").length()>="Windows".length() && System.getProperty("os.name").substring(0,7).equals("Windows");
 	}

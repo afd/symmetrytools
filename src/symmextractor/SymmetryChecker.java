@@ -66,8 +66,7 @@ public class SymmetryChecker extends Checker {
 	private static int noProcesses;
 
 	public SymmetryChecker(int numberOfLinesInSourceFile) {
-		Checker.theFactory = new SymmExtractorTypeFactory();
-		constraintSet = new ConstraintSet(new PidSensitiveUnifier());
+		super(new SymmExtractorTypeFactory(), new ConstraintSet(new PidSensitiveUnifier()));
 		this.numberOfLinesInSourceFile = numberOfLinesInSourceFile;
 	}
 	

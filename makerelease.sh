@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-export VERSION=2.2.5
+export VERSION=2.2.6
 
 export RELEASE=TopSPIN_$VERSION
 

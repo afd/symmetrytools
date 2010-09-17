@@ -7,7 +7,10 @@ import java.io.PushbackReader;
 
 import src.etch.checker.Check;
 import src.etch.checker.Checker;
+import src.etch.typeinference.ConstraintSet;
 import src.etch.typeinference.Substituter;
+import src.etch.typeinference.Unifier;
+import src.etch.types.EtchTypeFactory;
 import src.promela.lexer.Lexer;
 import src.promela.lexer.LexerException;
 import src.promela.node.Node;
@@ -43,13 +46,13 @@ public class EtchTestCase extends TestCase {
 			
 			br = Check.getBufferForInputSpecification(filename);
 			Node theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
-			Checker checker = new Checker();
+			Checker checker = new Checker(new EtchTypeFactory(), new ConstraintSet(new Unifier()));
 			theAST.apply(checker);
 			Substituter substituter = checker.unify();
 			
 			if(checker.getErrorTable().hasErrors()) {				
 
-				System.err.println(checker.getErrorTable().output("while processing " + filename));
+				System.err.println(checker.getErrorTable().output("while processing " + filename, filename));
 				
 				actualOutcome = EtchTestOutcome.BadlyTyped;
 			} else {

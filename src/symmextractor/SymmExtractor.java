@@ -122,7 +122,7 @@ public class SymmExtractor extends SymmCheck {
 	private boolean checkSymmetryResrictionsAreObeyed(StaticChannelDiagramExtractor extractor) {
 		if(extractor.getErrorTable().hasErrors()) {
 			if(!Config.inQuietMode()) {
-				System.out.println(extractor.getErrorTable().output("while processing " + sourceName));
+				System.out.println(extractor.getErrorTable().output("while processing " + sourceName, sourceName));
 			}
 			return false;
 		}

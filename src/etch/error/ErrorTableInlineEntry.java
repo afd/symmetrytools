@@ -1,8 +1,9 @@
 package src.etch.error;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import src.utilities.Config;
 
 public class ErrorTableInlineEntry extends ErrorTableEntry {
 
@@ -14,13 +15,10 @@ public class ErrorTableInlineEntry extends ErrorTableEntry {
 		this.callStackLineNumbers = new ArrayList<Integer>(callStackLineNumbers);
 		this.callStackNames = new ArrayList<String>(callStackNames);
 	}
-	
-	public void output(PrintStream out) {
-		out.print(output());
-	}
 
-	public String output() {
-		String result = super.output();
+	@Override
+	public String output(String sourceName) {
+		String result = super.output(sourceName);
 		for(int i=callStackLineNumbers.size()-1; i>=0; i--) {
 			result += "\n   called from ";
 			if(i>0) {
@@ -28,7 +26,21 @@ public class ErrorTableInlineEntry extends ErrorTableEntry {
 			} else {
 				result += "main specification";
 			}
-			result += " at line " + callStackLineNumbers.get(i);
+			result += " at ";
+			
+			String file;
+			int actualLine;
+			
+			if(null == Config.locations.get(callStackLineNumbers.get(i)))
+			{
+				file = "\"" + sourceName + "\"";
+				actualLine = callStackLineNumbers.get(i);
+			} else {
+				file = Config.locations.get(callStackLineNumbers.get(i)).getFile();
+				actualLine = Config.locations.get(callStackLineNumbers.get(i)).getLine();
+			}
+			
+			result += file + ", line " + actualLine;
 		}
 		return result;
 	}

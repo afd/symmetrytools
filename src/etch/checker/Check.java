@@ -21,8 +21,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.io.StringReader;
+import java.util.StringTokenizer;
 
+import src.etch.typeinference.ConstraintSet;
 import src.etch.typeinference.Substituter;
+import src.etch.typeinference.Unifier;
+import src.etch.types.EtchTypeFactory;
 import src.promela.lexer.Lexer;
 import src.promela.lexer.LexerException;
 import src.promela.node.Node;
@@ -31,6 +35,7 @@ import src.promela.parser.ParserException;
 import src.utilities.BooleanOption;
 import src.utilities.CommandLineSwitch;
 import src.utilities.Config;
+import src.utilities.Location;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
 
@@ -59,13 +64,17 @@ public class Check {
 			}
 		}
 		
+		Lexer lexer = new Lexer(new PushbackReader(br, 1024));
+		Parser parser = new Parser(lexer);
 		try {
-			theAST = new Parser(new Lexer(new PushbackReader(br, 1024))).parse();
+			ProgressPrinter.println("\nParsing input specification...\n");
+			
+			theAST = parser.parse();
 		} catch (ParserException e) {
 			if(Config.TESTING_IN_PROGRESS) {
 				throw e;
 			} else {
-				e.printStackTrace();
+				displayParserException(e);
 				System.exit(1);
 			}
 		} catch (LexerException e) {
@@ -88,7 +97,53 @@ public class Check {
 
 	}
 
+	private void displayParserException(ParserException e) {
+		int line;
+		int column;
+		
+		StringTokenizer strTok = new StringTokenizer(e.getMessage(), "[,] ");
+		line = Integer.parseInt(strTok.nextToken());
+		column = Integer.parseInt(strTok.nextToken());
+		
+		String actualFile;
+		int actualLine;
+		
+		Location location = Config.locations.get(line);
+		if(null == location)
+		{
+			actualFile = "\"" + sourceName + "\"";
+			actualLine = line;
+		} else {
+			actualFile = location.getFile();
+			actualLine = location.getLine();
+		}
+		
+		System.out.println("Error at " + actualFile + ", line " + actualLine + ", column " + column + ":");
+			
+		System.out.print("   next token(s) expected:");
+		
+		StringTokenizer strTok2 = new StringTokenizer(e.getMessage(), " ");
+		boolean outputting = false;
+		while(strTok2.hasMoreTokens())
+		{
+			String tok = strTok2.nextToken();
+			if(tok.equals("expecting:"))
+			{
+				outputting = true;
+			} else if(outputting) {
+				System.out.print(" " + tok);
+			}
+		}
+		assert(outputting);
+		System.out.println("");
+
+		System.out.println("   token found: " + e.getToken() + "\n");
+		
+	}
+
 	public static BufferedReader getBufferForInputSpecification(String sourceName) throws FileNotFoundException {
+		
+		Config.locations.clear();
 		
 		// Check that the source really exists!
 		try {
@@ -117,17 +172,21 @@ public class Check {
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(cpp.getInputStream()));
 			String programForParsing = "";
 			String line;
-			int currentLine = 1;
+			int lineNumber = -1;
+			int absoluteLineNumber = 1;
+			String filename = null;
 			while((line=cppReader.readLine())!=null) {
 				if(line.length() > 0 && line.charAt(0)=='#') {
-					String[] splitOnSpace = line.split(" ");
-					int nextLine = Integer.parseInt(splitOnSpace[1]);
-					for(;currentLine<nextLine; currentLine++) {
-						programForParsing += "\n";
-					}
+					StringTokenizer strTok = new StringTokenizer(line, "# ");
+					lineNumber = Integer.parseInt(strTok.nextToken());
+					filename = strTok.nextToken();
 				} else {
+					assert(-1 != lineNumber);
+					assert(null != filename);
 					programForParsing += line + "\n";
-					currentLine++;
+					Config.locations.put(absoluteLineNumber, new Location(filename, lineNumber));
+					absoluteLineNumber++;
+					lineNumber++;
 				}
 				
 			}
@@ -163,7 +222,7 @@ public class Check {
 
 			if(Config.TESTING_IN_PROGRESS || !Config.inQuietMode()) {
 				chk.getErrorTable().applySubstitutions(substituter);
-				System.err.println(chk.getErrorTable().output("while processing " + sourceName));
+				System.err.println(chk.getErrorTable().output("while processing " + sourceName, sourceName));
 			}
 
 			return false;
@@ -181,7 +240,7 @@ public class Check {
 	}
 
 	protected Checker getChecker(LineCounter lineCounter) {
-		return new Checker();
+		return new Checker(new EtchTypeFactory(), new ConstraintSet(new Unifier()));
 	}
 
 	
@@ -210,7 +269,6 @@ public class Check {
 	
 	
 	public static void main(String[] args) throws ParserException, IOException, LexerException {
-
 		Config.TOOL_NAME = "Etch";
 		
 		Config.resetConfiguration();

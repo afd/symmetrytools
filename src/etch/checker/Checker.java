@@ -42,7 +42,6 @@ import src.etch.typeinference.ConstraintSet;
 import src.etch.typeinference.EqualityConstraint;
 import src.etch.typeinference.Substituter;
 import src.etch.typeinference.SubtypingConstraint;
-import src.etch.typeinference.Unifier;
 import src.etch.types.AnyType;
 import src.etch.types.ArrayType;
 import src.etch.types.BitType;
@@ -50,7 +49,6 @@ import src.etch.types.BoolType;
 import src.etch.types.BottomType;
 import src.etch.types.ByteType;
 import src.etch.types.ChanType;
-import src.etch.types.EtchTypeFactory;
 import src.etch.types.IntType;
 import src.etch.types.Minimiser;
 import src.etch.types.MtypeType;
@@ -100,10 +98,10 @@ public class Checker extends InlineProcessor {
 	 * to get a line number from an AST node (e.g. for an expression)
 	 */
 	private Token lastIdentifierToken = null;
-
-	public Checker() {
-		Checker.theFactory = new EtchTypeFactory();
-		constraintSet = new ConstraintSet(new Unifier());
+	
+	public Checker(TypeFactory factory, ConstraintSet constraintSet) {
+		Checker.theFactory = factory;
+		this.constraintSet = constraintSet; 
 	}
 	
 	public ErrorTable getErrorTable() {
@@ -306,7 +304,7 @@ public class Checker extends InlineProcessor {
 		}
 		
 		if (!(t instanceof RecordType)) {
-			addError(node.getDot(), new VariableNotRecordError(StringHelper.removeWhitespace(node.toString()), t));
+			addError(node.getDot(), new VariableNotRecordError(StringHelper.removeWhitespace(node.getVarref().toString()), t));
 			return;
 		} 
 		

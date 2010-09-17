@@ -23,7 +23,7 @@ public class ErrorTable {
 		return !messages.isEmpty();
 	}
 
-	public String output(String header) {
+	public String output(String header, String sourceName) {
 		String result = noMessages() + " error";
 		if(noMessages()==1) {
 			result += " was";
@@ -32,7 +32,7 @@ public class ErrorTable {
 		}
 		result += " found " + header + ":\n\n";
 		for(int i=0; i<noMessages(); i++) {
-			result = result + getMessage(i).output() + ".\n\n";
+			result = result + getMessage(i).output(sourceName) + ".\n\n";
 		}
 		return result;
 	}

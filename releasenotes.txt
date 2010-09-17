@@ -1,12 +1,14 @@
 ---------------------------------
-Version         2.2
-Release Date    
+Version         2.2.6
+Release Date    17th September 2010
 SVN Revision    
 ---------------------------------
 Changes since last release
 
 
 ---------------------------------
+
+Forgot to write release notes for versions 2.2.1-2.2.5
 
 
 
