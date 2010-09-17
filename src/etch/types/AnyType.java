@@ -66,5 +66,8 @@ public abstract class AnyType implements Type {
 	public boolean isSubtype(Type t) {
 		return equal(t) || t instanceof TopType;
 	}
+
+	abstract public String spinRepresentation();
+	
 	
 }

@@ -104,6 +104,7 @@ Tokens
     nevertok = 'never';
     notrace = 'notrace';
     np = 'np_';
+    nr_pr = '_nr_pr';
     od = 'od';
     of = 'of';
     pc_value = 'pc_value';
@@ -130,7 +131,7 @@ Tokens
     for = 'for';
     over = 'over';
 
-    name = alpha (alpha | digit | '_')*;
+    name = (alpha | '_') (alpha | digit | '_')*;
     string = '"' any_ascii_char* '"';
 
 /*******************************************************************
@@ -410,4 +411,5 @@ Productions
    {skip} skip |
    {number} minus? number |
    {pid} processid |
+   {nr_pr} nr_pr |
    {underscore} underscore ;

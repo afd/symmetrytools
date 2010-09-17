@@ -254,6 +254,15 @@ public class EtchTester {
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_funny_semi_colons.p", EtchTestOutcome.WellTyped));
 
 		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_redundant_channels.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_nr_pr.p", EtchTestOutcome.WellTyped));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/PassTests/test_underscore.p", EtchTestOutcome.WellTyped));
+
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_write_to_nr_pr.p", EtchTestOutcome.ParserError));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_write_to_pid.p", EtchTestOutcome.ParserError));
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_write_to_scratch.p", EtchTestOutcome.ParserError));
+		
+		testCases.add(new EtchTestCase("TestModels/EtchTesting/FailTests/fail_bad_assign_from_nr_pr.p", EtchTestOutcome.BadlyTyped));
 		
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/sharing.p", EtchTestOutcome.WellTyped));
 		missingFeatureTestCases.add(new EtchTestCase("TestModels/EtchTesting/MissingFeatures/faillabelbeforeunless.p", EtchTestOutcome.BadlyTyped));

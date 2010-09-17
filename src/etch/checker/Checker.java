@@ -642,6 +642,10 @@ public class Checker extends InlineProcessor {
 		setOut(node, Checker.theFactory.generateByteType());
 	}
 
+	public void outANrPrConst(ANrPrConst node) {
+		setOut(node, Checker.theFactory.generateByteType());
+	}
+
 	public void outAUnderscoreConst(AUnderscoreConst node) {
 		setOut(node, BottomType.uniqueInstance);
 	}
