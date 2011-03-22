@@ -1,16 +1,17 @@
 ---------------------------------
 Version         2.2.6
 Release Date    17th September 2010
-SVN Revision    
+SVN Revision    125
 ---------------------------------
 Changes since last release
 
+- Fixed issues in typechecker related to _nr_pr 
+- Fixed display of error messages so that file names and line numbers
+  are properly shown
 
 ---------------------------------
 
 Forgot to write release notes for versions 2.2.1-2.2.5
-
-
 
 ---------------------------------
 Version         2.1
