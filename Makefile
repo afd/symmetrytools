@@ -12,13 +12,16 @@ default:
 
 classes: $(CLASS_FILES)
 
-jars: TopSPIN.jar TopSPINTests.jar
+jars: TopSPIN.jar TopSPINTests.jar LazySpinAnalysis.jar
 
 TopSPIN.jar: $(CLASS_FILES)
 	jar cmf manifest.txt $@ $(COMPILED_CLASS_FILES) $(DATA_FILES) && echo "TopSPIN.jar built successfully."
 
 TopSPINTests.jar: $(CLASS_FILES)
 	jar cmf tests_manifest.txt $@ $(COMPILED_CLASS_FILES) $(DATA_FILES) && echo "TopSPINTests.jar built successfully."
+
+LazySpinAnalysis.jar: $(CLASS_FILES)
+	jar cmf lazyspin_manifest.txt $@ $(COMPILED_CLASS_FILES) $(DATA_FILES) && echo "LazySpinAnalysis.jar built successfully."
 
 %.class: %.java
 	javac $<

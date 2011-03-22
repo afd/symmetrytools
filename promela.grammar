@@ -125,6 +125,10 @@ Tokens
     unless = 'unless';
     xr = 'xr';
     xs = 'xs';
+    
+    /* Lazy-spin */
+    preservestok = 'preserves';
+    dotdot = '..';
 
     /* New tokens for template approach */
     templatetok = 'template';
@@ -256,7 +260,8 @@ Productions
    {compound_unseparated} label? compound_stmnt step ;
 
   stmnt =
-   {simple} simple_stmnt |
+   {label} label stmnt |
+   {simple} simple_stmnt preserves? |  /* preserves is a lazy-spin extention */
    {compound} compound_stmnt ;
    
   compound_stmnt =
@@ -265,7 +270,6 @@ Productions
    {braces} l_brace sequence r_brace ;
       
   simple_stmnt =
-   {label} label stmnt |
    {if} if options fi |			/* selection */
    {do} do options od |			/* iteration */
    {send} send |
@@ -413,3 +417,15 @@ Productions
    {pid} processid |
    {nr_pr} nr_pr |
    {underscore} underscore ;
+
+  /* Lazy-spin extensions */
+  
+  preserves =
+    preservestok l_bracket preserves_item+ r_bracket ;
+    
+  preserves_item =
+    {number} number |
+    {name} name |
+    {bar} bitor |
+    {dotdot} dotdot;
+    
