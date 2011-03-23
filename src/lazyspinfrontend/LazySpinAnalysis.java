@@ -135,9 +135,12 @@ public class LazySpinAnalysis {
 		os.write("          applyPrSwapToState(&temp, i, j);\n");
 		os.write("          if(less_then(&temp, &min_now))\n");
 		os.write("          {\n");
+		os.write("            unsigned char t;\n");
 		os.write("            changed = 1;\n");
 		os.write("            memcpy(&min_now, &temp, vsize);\n");
-		os.write("            swap((*p)->p_vector[i], (*p)->p_vector[j]);\n");
+		os.write("            t = (*p)->p_vector[i];\n");
+		os.write("            (*p)->p_vector[i] = (*p)->p_vector[j];\n");
+		os.write("            (*p)->p_vector[j] = t;\n");
 		os.write("          }\n");
 		os.write("        }\n");
 		os.write("      }\n");
