@@ -3,13 +3,12 @@ package src.symmreducer;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import src.etch.env.TypeEntry;
 import src.etch.types.ArrayType;
 import src.etch.types.ByteType;
 import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
-import src.symmextractor.StaticChannelDiagramExtractor;
+import src.symmextractor.PidAwareChecker;
 import src.symmextractor.types.PidType;
 
 public class PidIndexedArrayReference extends SensitiveVariableReference {
@@ -28,7 +27,7 @@ public class PidIndexedArrayReference extends SensitiveVariableReference {
 	}
 	
 	public static List<PidIndexedArrayReference> getSensitivelyIndexedArrayReferences(
-			String name, VisibleType type, String referencePrefix, StaticChannelDiagramExtractor typeInfo) {
+			String name, VisibleType type, String referencePrefix, PidAwareChecker typeInfo) {
 
 		List<PidIndexedArrayReference> result = new ArrayList<PidIndexedArrayReference>();
 		if (ArrayType.isArray(type)) {

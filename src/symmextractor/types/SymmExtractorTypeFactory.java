@@ -13,13 +13,13 @@ import src.etch.types.SimpleType;
 import src.etch.types.Type;
 import src.etch.types.TypeFactory;
 import src.etch.types.VisibleType;
-import src.symmextractor.SymmetryChecker;
+import src.symmextractor.PidAwareChecker;
 
 public class SymmExtractorTypeFactory implements TypeFactory {
 
 	public NumericType generateTypeForNumericLiteral(long val) {
 
-		if(val>=0 && val<=SymmetryChecker.numberOfRunningProcesses()) {
+		if(val>=0 && val<=PidAwareChecker.numberOfRunningProcesses()) {
 
 			if(val==0 || val==1) {
 				return new PidSensitiveBitType(true,true);

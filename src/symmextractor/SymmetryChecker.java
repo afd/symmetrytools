@@ -1,15 +1,15 @@
 package src.symmextractor;
 
 
-import src.etch.checker.Checker;
+import java.util.List;
+
+import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
-import src.etch.typeinference.ConstraintSet;
 import src.etch.types.ArrayType;
 import src.etch.types.Type;
 import src.etch.types.VisibleType;
 import src.promela.NodeHelper;
 import src.promela.node.AArrayIvar;
-import src.promela.node.AArrayref;
 import src.promela.node.AAtomicCompoundStmnt;
 import src.promela.node.AChannelIvarassignment;
 import src.promela.node.ACompoundShiftExpr;
@@ -25,13 +25,9 @@ import src.promela.node.ANotUnExpr;
 import src.promela.node.AOneActive;
 import src.promela.node.AOneModules;
 import src.promela.node.AOneSequence;
-import src.promela.node.APidConst;
-import src.promela.node.APidTypename;
 import src.promela.node.AProctype;
-import src.promela.node.ARecordVarref;
 import src.promela.node.ARunFactor;
 import src.promela.node.ASingleIvar;
-import src.promela.node.ASingleVarref;
 import src.promela.node.AStatementStep;
 import src.promela.node.Node;
 import src.promela.node.PCompoundStmnt;
@@ -53,9 +49,8 @@ import src.symmextractor.error.NoInitError;
 import src.symmextractor.error.PidIndexedArrayWithWrongLengthError;
 import src.symmextractor.types.PidLiteralCandidate;
 import src.symmextractor.types.PidType;
-import src.symmextractor.types.SymmExtractorTypeFactory;
 
-public class SymmetryChecker extends Checker {
+public class SymmetryChecker extends PidAwareChecker {
 
 	private String currentProctypeName;
 
@@ -63,10 +58,8 @@ public class SymmetryChecker extends Checker {
 
 	private int numberOfLinesInSourceFile;
 
-	private static int noProcesses;
-
 	public SymmetryChecker(int numberOfLinesInSourceFile) {
-		super(new SymmExtractorTypeFactory(), new ConstraintSet(new PidSensitiveUnifier()));
+		super();
 		this.numberOfLinesInSourceFile = numberOfLinesInSourceFile;
 	}
 	
@@ -167,7 +160,7 @@ public class SymmetryChecker extends Checker {
 
 		AInit init = (AInit) module.getInit();
 
-		noProcesses = 0;
+		setNumberOfRunningProcesses(0);
 
 		if(!isAtomicStatement(init.getSequence())) {
 			addError(init.getInittok(),new BadlyFormedInitError());
@@ -181,12 +174,12 @@ public class SymmetryChecker extends Checker {
 		for( ; statementsWithinAtomic instanceof AManySequence; statementsWithinAtomic = nextInSequence(statementsWithinAtomic)) {
 			
 			if(!isRunStatement(((AManySequence)statementsWithinAtomic).getStep())) {
-				if(noProcesses==0) {
+				if(numberOfRunningProcesses() == 0) {
 					addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
 				}
 				return;
 			} else {
-				noProcesses++;
+				setNumberOfRunningProcesses(numberOfRunningProcesses()+1);
 				// We used to do setOut(getRunStatement(     ), new PidType);
 				// However, this doesn't seem necessary.
 			}
@@ -195,12 +188,12 @@ public class SymmetryChecker extends Checker {
 		assert(statementsWithinAtomic instanceof AOneSequence);
 
 		if(!isRunStatement(((AOneSequence)statementsWithinAtomic).getStep())) {
-			if(noProcesses==0) {
+			if(numberOfRunningProcesses()==0) {
 				addError(((AInit)module.getInit()).getInittok(),new BadlyFormedInitError());
 			}
 			return;
 		} else {
-			noProcesses++;
+			setNumberOfRunningProcesses(numberOfRunningProcesses()+1);
 			// We used to do setOut(getRunStatement(     ), new PidType);
 			// However, this doesn't seem necessary.
 		}
@@ -252,24 +245,17 @@ public class SymmetryChecker extends Checker {
 		return statementsWithinAtomic;
 	}
 	
-	private Type getArrayIndexType(PVarref node) {
-		if(node instanceof ASingleVarref) {
-			return getOutType(((AArrayref) ((ASingleVarref)node).getArrayref()).getOrExpr());
-		}
-		return getOutType(((AArrayref) ((ARecordVarref)node).getArrayref()).getOrExpr());
-	}
-
 	@Override
 	protected void dealWithArrayIndex(PVarref node, VisibleType t) {
 		if (getArrayIndexType(node) != null) {
-			if(getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(noProcesses+1) && ((ArrayType)t).getLength()!=0) {
+			if(getArrayIndexType(node) instanceof PidType && ((ArrayType)t).getLength()!=(numberOfRunningProcesses()+1) && ((ArrayType)t).getLength()!=0) {
 				// The length of a pid-indexed array should be n+1, where n is the number of running processes.
 				// This is so that it can be indexed by the process identifiers 1, 2, ... , n.  Unfortunately, index
 				// 0 is usually wasted (unless the init process uses it).
 				// We don't add an error if the length is zero.  An error has either already
 				// been reported about this, or the length has been set to zero by default as
 				// there was an error with the initialiser.
-				addError(NodeHelper.getNameFromVaribableReference(node), new PidIndexedArrayWithWrongLengthError(NodeHelper.getNameFromVaribableReference(node).getText(),((ArrayType)t).getLength(),noProcesses));
+				addError(NodeHelper.getNameFromVaribableReference(node), new PidIndexedArrayWithWrongLengthError(NodeHelper.getNameFromVaribableReference(node).getText(),((ArrayType)t).getLength(),numberOfRunningProcesses()));
 				((ArrayType)t).zeroLength(); // Do this so that the error will not be reported again
 			}
 			postSubtypingConstraint(getArrayIndexType(node), ((ArrayType) t)
@@ -277,20 +263,13 @@ public class SymmetryChecker extends Checker {
 		}
 	}
 	
-	public void outAPidTypename(APidTypename node) {
-		setOut(node, new PidType());
-	}
-	
-	protected boolean suitableTypeForArrayIndex(Type exprType) {
-		return super.suitableTypeForArrayIndex(exprType) || exprType.isSubtype(new PidType());
-	}
-	
-	public void outAPidConst(APidConst node) {
-		setOut(node, new PidType());
-	}
-
-	public static int numberOfRunningProcesses() {
-		return noProcesses;
+	@Override
+	protected void checkNumericOperationOnNumericTypes(Node node,
+			Token operation, VisibleType leftType, VisibleType rightType) {
+		super.checkNumericOperationOnNumericTypes(node, operation, leftType, rightType);
+		if (getOut(node) instanceof Type) {
+			setNotPidLiteral((Type)getOut(node));
+		}
 	}
 
 	public void outACompoundShiftExpr(ACompoundShiftExpr node) {
@@ -306,21 +285,24 @@ public class SymmetryChecker extends Checker {
 			setNotPidLiteral((VisibleType)getOut(node));
 		}
 	}
-	
-	protected void checkNumericOperationOnNumericTypes(Node node,
-			Token operation, VisibleType leftType, VisibleType rightType) {
-		super.checkNumericOperationOnNumericTypes(node, operation, leftType, rightType);
-		if (getOut(node) instanceof Type) {
-			setNotPidLiteral((Type)getOut(node));
-		}
-	}
 
 	public static void setNotPidLiteral(Type t) {
 		if(t instanceof PidLiteralCandidate) {
 			((PidLiteralCandidate)t).setNotPidLiteral();
 		}
 	}
-	
+
+	@Override
+	public List<String> getProctypeNames() {
+		assert(false);
+		return null;
+	}
+
+	@Override
+	public List<ProcessEntry> getProcessEntries() {
+		assert(false);
+		return null;
+	}
 	
 }
 

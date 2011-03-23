@@ -990,7 +990,7 @@ public class Checker extends InlineProcessor {
 		}
 	}
 
-	private boolean checkForNotNumericError(VisibleType t, Token operator, int nature, String variableName) {
+	protected boolean checkForNotNumericError(VisibleType t, Token operator, int nature, String variableName) {
 		if (t != null) {
 			if (!isNumeric(t)) {
 				addError(operator, new NotNumericError(t, operator
@@ -1265,7 +1265,7 @@ public class Checker extends InlineProcessor {
 		return t instanceof ChanType;
 	}
 
-	private boolean isNumeric(VisibleType t) {
+	protected final boolean isNumeric(VisibleType t) {
 		return t instanceof NumericType;
 	}
 

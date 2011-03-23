@@ -8,6 +8,7 @@ import src.etch.types.ArrayType;
 import src.etch.types.ChanType;
 import src.etch.types.RecordType;
 import src.etch.types.VisibleType;
+import src.symmextractor.PidAwareChecker;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.types.PidType;
 
@@ -29,7 +30,7 @@ public class SensitiveVariableReference {
 		return reference;
 	}
 
-	public static List<SensitiveVariableReference> getSensitiveVariableReferences(String varName, VisibleType varType, String prefix, StaticChannelDiagramExtractor typeInfo) {
+	public static List<SensitiveVariableReference> getSensitiveVariableReferences(String varName, VisibleType varType, String prefix, PidAwareChecker typeInfo) {
 		List<SensitiveVariableReference> result = new ArrayList<SensitiveVariableReference>();
 		if (PidType.isPid(varType) || ChanType.isChan(varType)) {
 			result

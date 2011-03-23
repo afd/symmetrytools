@@ -2,6 +2,7 @@ package src.symmreducer;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -325,7 +326,7 @@ public class SwapVectorizer {
 		out.write("}\n\n");
 	}
 
-	public void writeProcessSwaps(FileWriter out, String one, String two) throws IOException {
+	public void writeProcessSwaps(OutputStreamWriter out, String one, String two) throws IOException {
 
 		if(numberOfPidReferencesToSwap > 0) {
 		
@@ -361,7 +362,7 @@ public class SwapVectorizer {
 
 	}
 
-	public void writeChannelSwaps(FileWriter out) throws IOException {
+	public void writeChannelSwaps(OutputStreamWriter out) throws IOException {
 
 		if(numberOfChannelReferencesToSwap > 0) {
 			out.write("   " + TopSpin.vectorTarget.getVectorUnsignedCharTypename() + " x;\n");
@@ -398,7 +399,7 @@ public class SwapVectorizer {
 	}
 
 	
-	public void swapTwoProcesses(FileWriter out, int oneProcessId, String one, String two) throws IOException {
+	public void swapTwoProcesses(OutputStreamWriter out, int oneProcessId, String one, String two) throws IOException {
 		out.write("      {\n");
 		if(numberOfPidVariablesForProcess[oneProcessId] > 0) {
 			swapIdComponents(out, one, two, numberOfPidVariablesForProcess[oneProcessId], "pid_temps", "process_ids", "first_process_id_for_process");
@@ -410,7 +411,7 @@ public class SwapVectorizer {
 	}
 
 	
-	public void swapTwoChannels(FileWriter out, int oneChannelId, String one, String two) throws IOException {
+	public void swapTwoChannels(OutputStreamWriter out, int oneChannelId, String one, String two) throws IOException {
 		out.write("      {\n");
 		if(numberOfPidVariablesForChannel[oneChannelId] > 0) {
 			swapIdComponents(out, one, two, numberOfPidVariablesForChannel[oneChannelId], "pid_temps", "process_ids", "first_process_id_for_channel");
@@ -421,7 +422,7 @@ public class SwapVectorizer {
 		out.write("      }\n");
 	}
 
-	private void swapIdComponents(FileWriter out, String one, String two, int numberOfIdVariables, String tempName, String id_array, String first_id_array) throws IOException {
+	private void swapIdComponents(OutputStreamWriter out, String one, String two, int numberOfIdVariables, String tempName, String id_array, String first_id_array) throws IOException {
 		out.write("         uchar " + tempName + "[" + numberOfIdVariables + "];\n");
 		out.write("         memcpy((char*)" + tempName + ", (char*)(&(s->" + id_array + "[" + first_id_array + "[" + one + "]])), " + numberOfIdVariables + "*sizeof(uchar));\n");
 		out.write("         memcpy((char*)(&(s->" + id_array + "[" + first_id_array + "[" + one + "]])), (char*)(&(s->" + id_array + "[" + first_id_array + "[" + two + "]]))," + numberOfIdVariables + "*sizeof(uchar));\n");

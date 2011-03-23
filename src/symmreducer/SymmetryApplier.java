@@ -2,6 +2,7 @@ package src.symmreducer;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class SymmetryApplier {
 
 	private FileWriter symmetryGroupFile;
 
-	private FileWriter permutationFile;
+	private OutputStreamWriter permutationFile;
 	
 	public SymmetryApplier(String specification,
 			StaticChannelDiagramExtractor typeInfo, String groupGenerators) {
@@ -144,6 +145,10 @@ public class SymmetryApplier {
 				// with, include all the symmetry stuff
 				out.write("/* ADDED FOR SYMMETRY */\n\n");
 
+				if (!usingMarkers()) {
+					out.write("#include \"group.h\"\n\n");
+				}
+				
 				writePreprocessorMacros(out);
 
 				if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
@@ -157,7 +162,7 @@ public class SymmetryApplier {
 				
 				if (Config.getBooleanOption(BooleanOption.TRANSPOSITIONS)) {
 
-					writeApplyPrSwapToState();
+					new PidSwapper(typeInfo, permutationFile, 1, swapVectorizer).writeApplyPrSwapToState(stateType);
 
 					if (!usingMarkers()) {
 						writeApplyChSwapToState();
@@ -836,105 +841,9 @@ public class SymmetryApplier {
 		permutationFile.write("}\n\n");
 	}
 
-	private void writeApplyPrSwapToState() throws IOException {
-		permutationFile.write("void applyPrSwapToState(" + stateType + " *s, int a, int b) {\n");
-		permutationFile.write("   uchar tempPid;\n");
-		permutationFile.write("   int slot;\n");
 
-		if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
-			swapVectorizer.writeProcessSwaps(permutationFile, "a", "b");
-		} else {
-			swapGlobalPidVariables(permutationFile,"a","b");
-			swapLocalPidVariables(permutationFile, "a", "b");
-			swapPidReferencesInChannels(permutationFile, "a", "b");
-		}
-		swapProcesses(permutationFile);
-		permutationFile.write("}\n\n");
-	}
 
-	private void swapGlobalPidVariables(FileWriter fw, String one, String two) throws IOException {
-		Map<String, EnvEntry> globalVariables = typeInfo.getGlobalVariables();
-
-		String referencePrefix = "s->";
-
-		for (String name : globalVariables.keySet()) {
-			EnvEntry entry = globalVariables.get(name);
-			if ((entry instanceof VarEntry)
-					&& !(((VarEntry) entry).isHidden() || entry instanceof ChannelEntry)) {
-
-				if (!(Config.strategy() == Strategy.APPROXMARKERS)) {
-					for (SensitiveVariableReference reference : SensitiveVariableReference.getSensitiveVariableReferences(
-							name, ((VarEntry) entry).getType(), referencePrefix, typeInfo)) {
-						assert(PidType.isPid(reference.getType()));
-						fw.write("   if(" + reference
-								+ "==" + one + ") {\n");
-						fw.write("      " + reference
-								+ " = b;\n");
-						fw.write("   } else if(" + reference
-								+ "==" + two + ") {\n");
-						fw.write("      " + reference
-								+ " = " + one + ";\n");
-						fw.write("   }\n");
-					}
-				}
-
-				for (PidIndexedArrayReference reference : PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
-						name, ((VarEntry) entry).getType(), referencePrefix, typeInfo)) {
-					assert(((ArrayType) reference.getType())
-							.getIndexType() instanceof VisibleType);
-					assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
-							.getIndexType()));
-					fw.write("   {\n");
-					fw.write("       " + ((ArrayType) reference.getType()).getElementType().spinRepresentation() + " temp;\n");
-					fw.write("       temp = " + reference
-							+ "[" + one + "];\n");
-					fw.write("       " + reference + "[" + one + "] = "
-							+ reference + "[" + two + "];\n");
-					fw.write("       " + reference
-							+ "[" + two + "] = temp;\n");
-					fw.write("   }\n");
-				}
-			}
-		}
-	}
-
-	private void swapLocalPidVariables(FileWriter fw, String one, String two) throws IOException {
-		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
-
-			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
-
-				assert(PidType.isPid(reference.getType())
-						|| ChanType.isChan(reference.getType()));
-				if (PidType.isPid(reference.getType())) {
-					writeln(fw, applySwapToSensitiveReference(reference.toString(), one, two));
-				}
-			}
-
-			for (PidIndexedArrayReference reference : typeInfo.sensitivelyIndexedArraysForProcess(j)) {
-
-				assert(((ArrayType) reference.getType())
-						.getIndexType() instanceof VisibleType);
-				assert(PidType.isPid((VisibleType) ((ArrayType) reference.getType())
-						.getIndexType()));
-				fw.write("   {\n");
-				fw.write("       " + ((ArrayType) reference.getType()).getElementType().spinRepresentation() + " temp;\n");
-				fw
-						.write("       temp = " + reference
-								+ "[" + one + "];\n");
-				fw.write("       " + reference + "[" + one + "] = "
-						+ reference + "[" + two + "];\n");
-				fw
-						.write("       " + reference
-								+ "[" + two + "] = temp;\n");
-				fw.write("   }\n");
-			}
-
-			fw.write("\n");
-		}
-
-	}
-
-	private String applySwapToSensitiveReference(String reference, String one, String two) throws IOException {
+	protected static String applySwapToSensitiveReference(String reference, String one, String two) throws IOException {
 		return "   if(" + reference + "==" + one + ") {\n" + 
 		       "   " + reference + " = " + two + ";\n" + 
 		       "   } else if(" + reference + "==" + two + ") {\n" +
@@ -942,7 +851,7 @@ public class SymmetryApplier {
 		       "   }\n";
 	}
 
-	private void swapChannelReferencesInChannels(FileWriter fw) throws IOException {
+	private void swapChannelReferencesInChannels(OutputStreamWriter fw) throws IOException {
 		for (int i = 0; i < typeInfo.getNoStaticChannels(); i++) {
 
 			ChanType type = (ChanType) ((ChannelEntry) typeInfo
@@ -971,35 +880,8 @@ public class SymmetryApplier {
 
 	}
 
-	private void swapPidReferencesInChannels(FileWriter fw, String one, String two) throws IOException {
 
-		for (int i = 0; i < typeInfo.getNoStaticChannels(); i++) {
-
-			ChanType type = (ChanType) ((ChannelEntry) typeInfo
-					.getEnvEntry((String) typeInfo.getStaticChannelNames().get(
-							i))).getType();
-
-			List<VisibleType> flattenedFieldTypes = TypeFlattener.flatten(type
-					.getMessageType(), typeInfo);
-
-			if (PidType.containsPidType(flattenedFieldTypes)) {
-				fw.write("   for(slot=0; slot<((Q" + (i + 1) + " *)QSEG(s," + i
-						+ "))->Qlen; slot++) {\n");
-
-				for (int j = 0; j < flattenedFieldTypes.size(); j++) {
-					if (PidType.isPid(flattenedFieldTypes.get(j))) {
-
-						writeln(fw, applySwapToSensitiveReference("((Q" + (i + 1) + " *)QSEG(s," + i + "))->contents[slot].fld" + j, one, two));
-						
-					}
-				}
-				fw.write("   }\n");
-			}
-		}
-
-	}
-
-	private void swapProctypeLocalChannelVariables(FileWriter fw) throws IOException {
+	private void swapProctypeLocalChannelVariables(OutputStreamWriter fw) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
 			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
@@ -1018,12 +900,8 @@ public class SymmetryApplier {
 		}
 	}
 
-	private void writePreprocessorMacros(FileWriter out) throws IOException {
-		
-		if (!usingMarkers()) {
-			out.write("#include \"group.h\"\n\n");
-		}
-		
+	public static void writePreprocessorMacros(OutputStreamWriter out) throws IOException {
+				
 		writeln(out, "#define SEG(state,pid) (((uchar *)state)+proc_offset[pid])");
 		writeln(out, "#define QSEG(state,cid) (((uchar *)state)+q_offset[cid])");
 		writeln(out, "#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var");
@@ -1461,41 +1339,7 @@ public class SymmetryApplier {
 		return "((P" + typeInfo.proctypeId(proctypeName) + " *)SEG(" + stateVariable + "," + processId + "))->";
 	}
 
-	private void swapProcesses(FileWriter fw) throws IOException {
-		for (int j = 1; j < typeInfo.getProcessEntries().size(); j++) {
-			String proctypeName = ((ProcessEntry) typeInfo.getProcessEntries()
-					.get(j)).getProctypeName();
-			int proctypeIdentifier = typeInfo.proctypeId(proctypeName);
-			fw.write("   if(a==" + j + ") {\n");
-			swapTwoProcesses(fw, proctypeIdentifier, "a", "b");
-
-			if(Config.getBooleanOption(BooleanOption.VECTORISE)) {
-				swapVectorizer.swapTwoProcesses(fw, j, "a", "b");
-			}
-
-			fw.write("      return;\n");
-			fw.write("   }\n\n");
-		}
-		
-	}
-
-	private void swapTwoProcesses(FileWriter fw, int proctypeIdentifier, String one, String two) throws IOException {
-		fw.write("      P" + proctypeIdentifier + " temp;\n");
-		fw.write("      memcpy(&temp,SEG(s," + one + "),sizeof(P"
-				+ proctypeIdentifier + "));\n");
-		fw.write("      memcpy(SEG(s," + one + "),SEG(s," + two + "),sizeof(P"
-				+ proctypeIdentifier + "));\n");
-		fw.write("      memcpy(SEG(s," + two + "),&temp,sizeof(P"
-				+ proctypeIdentifier + "));\n");
-		fw.write("      tempPid = VAR(s," + one + ",_pid,P" + proctypeIdentifier
-				+ ");\n");
-		fw.write("      VAR(s," + one + ",_pid,P" + proctypeIdentifier
-				+ ") = VAR(s," + two + ",_pid,P" + proctypeIdentifier + ");\n");
-		fw.write("      VAR(s," + two + ",_pid,P" + proctypeIdentifier
-				+ ") = tempPid;\n");
-	}
-
-	private void swapChannels(FileWriter fw) throws IOException {
+	private void swapChannels(OutputStreamWriter fw) throws IOException {
 		for (int j = 0; j < typeInfo.getNoStaticChannels(); j++) {
 			int chantypeIdentifier = j + 1;
 			fw.write("   if(a==" + j + ") {\n");
@@ -1523,7 +1367,7 @@ public class SymmetryApplier {
 		}
 	}
 
-	private static void writeln(FileWriter fw, String s) throws IOException {
+	protected static void writeln(OutputStreamWriter fw, String s) throws IOException {
 		fw.write(s + "\n");
 	}
 

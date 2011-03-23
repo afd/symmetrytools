@@ -58,14 +58,6 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	public int getNoStaticChannels() {
 		return staticChannelNames.size();
 	}
-
-	public int proctypeId(String proctypeName) {
-		return getProctypeNames().indexOf(proctypeName);
-	}
-	
-	public Map<String, EnvEntry> getGlobalVariables() {
-		return getEnv().getTopEntries();
-	}
 	
 	public List<ChannelEntry> getDistinctChannelSignatures() {
 		return Collections.unmodifiableList(distinctChannelSignatures);
@@ -346,41 +338,9 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 		return Collections.unmodifiableList(processEntries);
 	}
 
-	public ProctypeEntry getProctypeEntryForProcess(int j) {
-		return (ProctypeEntry)getEnvEntry(processEntries.get(j).getProctypeName());
-	}
-
 	public ProctypeEntry getProctypeEntryFromProctypeName(String proctypeName) {
 		return (ProctypeEntry)getEnvEntry(proctypeName);
 	}
 	
-	
-	public List<SensitiveVariableReference> sensitiveVariableReferencesForProcess(int j) {
-
-		List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
-
-		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(s," + j + "))->";
-		
-		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
-			referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
-					entry.getKey(), entry.getValue(), referencePrefix, this));
-		}
-		return referencesToPermute;
-	}
-
-	public List<PidIndexedArrayReference> sensitivelyIndexedArraysForProcess(int j) {
-		List<PidIndexedArrayReference> sensitivelyIndexedArrays = new ArrayList<PidIndexedArrayReference>();
-
-		String referencePrefix = "((P" + proctypeId((getProcessEntries().get(j)).getProctypeName())
-		+ " *)SEG(s," + j + "))->";
-		
-		for (Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
-
-			sensitivelyIndexedArrays
-					.addAll(PidIndexedArrayReference.getSensitivelyIndexedArrayReferences(
-							entry.getKey(), entry.getValue(), referencePrefix, this));
-		}
-		return sensitivelyIndexedArrays;
-	}
 	
 }
