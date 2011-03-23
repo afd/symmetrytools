@@ -104,7 +104,10 @@ public class LazySpinAnalysis {
 		PidSwapper pidSwapper = new PidSwapper(repGenerator, os, 0, null);
 		pidSwapper.writeApplyPrSwapToState("State");
 		
-		os.write("int same_cell(State* s, int i, int j);\n\n");
+		os.write("int same_cell(State* s, int i, int j)\n");
+		os.write("{\n");
+		os.write("  return part_same_cell(s->_prt, i, j);\n");
+		os.write("}\n\n");
 
 		os.write("int less_than(State* s, State* t)\n");
 		os.write("{\n");
@@ -112,10 +115,11 @@ public class LazySpinAnalysis {
 		os.write("}\n\n");
 
 		os.write("\n");
-		os.write("State* rep(State* orig)\n");
+		os.write("State* rep(State* orig, Perm** p)\n");
 		os.write("{\n");
 		os.write("  int i, j, changed;\n");
 		os.write("  State temp;\n");
+		os.write("  *p = perm_id(orig->_nr_pr);\n");
 		os.write("  memcpy(&min_now, orig, vsize); // Representative first set to be original state\n");
 		os.write("  changed = 1;\n");
 		os.write("  while(changed)\n");
@@ -133,6 +137,7 @@ public class LazySpinAnalysis {
 		os.write("          {\n");
 		os.write("            changed = 1;\n");
 		os.write("            memcpy(&min_now, &temp, vsize);\n");
+		os.write("            swap((*p)->p_vector[i], (*p)->p_vector[j]);\n");
 		os.write("          }\n");
 		os.write("        }\n");
 		os.write("      }\n");
