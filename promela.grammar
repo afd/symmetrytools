@@ -265,8 +265,8 @@ Productions
    {compound} compound_stmnt ;
    
   compound_stmnt =
-   {atomic} atomic l_brace sequence r_brace |
-   {dstep} d_step l_brace sequence r_brace |
+   {atomic} atomic preserves? l_brace sequence r_brace |
+   {dstep} d_step preserves? l_brace sequence r_brace |
    {braces} l_brace sequence r_brace ;
       
   simple_stmnt =

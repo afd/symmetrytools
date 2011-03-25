@@ -25,6 +25,8 @@ import src.symmreducer.SensitiveVariableReference;
 
 public abstract class PidAwareChecker extends Checker {
 
+	public static boolean HACK_FOR_SPIN_2011 = false;
+	
 	private static int noProcesses = -1;
 
 	public PidAwareChecker() {
@@ -80,6 +82,11 @@ public abstract class PidAwareChecker extends Checker {
 		List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
 
 		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(s," + j + "))->";
+		
+		if(HACK_FOR_SPIN_2011)
+		{
+			referencePrefix += "_1_";
+		}
 		
 		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
 			referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(

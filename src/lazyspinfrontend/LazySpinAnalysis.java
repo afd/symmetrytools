@@ -18,6 +18,7 @@ import src.promela.lexer.LexerException;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
+import src.symmextractor.PidAwareChecker;
 import src.symmreducer.PidSwapper;
 import src.symmreducer.SymmetryApplier;
 import src.utilities.BooleanOption;
@@ -31,6 +32,8 @@ public class LazySpinAnalysis {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
+		
+		PidAwareChecker.HACK_FOR_SPIN_2011 = true;
 		
 		if(args.length != 1)
 		{
@@ -133,7 +136,7 @@ public class LazySpinAnalysis {
 		os.write("        {\n");
 		os.write("          memcpy(&temp, &min_now, vsize);\n");
 		os.write("          applyPrSwapToState(&temp, i, j);\n");
-		os.write("          if(less_then(&temp, &min_now))\n");
+		os.write("          if(less_than(&temp, &min_now))\n");
 		os.write("          {\n");
 		os.write("            unsigned char t;\n");
 		os.write("            changed = 1;\n");
