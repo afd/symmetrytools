@@ -27,6 +27,6 @@ LazySpinAnalysis.jar: $(CLASS_FILES)
 	javac $<
 
 clean:
-	@rm -f $(COMPILED_CLASS_FILES) TopSPIN.jar TopSPINTests.jar
+	@rm -f $(COMPILED_CLASS_FILES) TopSPIN.jar TopSPINTests.jar LazySpinAnalysis.jar
 
 #################################################
