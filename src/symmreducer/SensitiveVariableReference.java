@@ -12,22 +12,10 @@ import src.symmextractor.PidAwareChecker;
 import src.symmextractor.StaticChannelDiagramExtractor;
 import src.symmextractor.types.PidType;
 
-public class SensitiveVariableReference {
-
-	private String reference;
-	private VisibleType type;
-	
-	SensitiveVariableReference(String reference, VisibleType type) {
-		this.reference = reference;
-		this.type = type;
-	}
+public class SensitiveVariableReference extends VariableReference {
 		
-	public VisibleType getType() {
-		return type;
-	}
-	
-	public String toString() {
-		return reference;
+	SensitiveVariableReference(String reference, VisibleType type) {
+		super(reference, type);
 	}
 
 	public static List<SensitiveVariableReference> getSensitiveVariableReferences(String varName, VisibleType varType, String prefix, PidAwareChecker typeInfo) {
@@ -36,12 +24,18 @@ public class SensitiveVariableReference {
 			result
 					.add(new SensitiveVariableReference(prefix + varName,
 							varType));
-		} else if (ArrayType.isArray(varType)) {
+			return result;
+		}
+		
+		if (ArrayType.isArray(varType)) {
 			for (int i = 0; i < ((ArrayType) varType).getLength(); i++) {
 				result.addAll(getSensitiveVariableReferences(varName + "[" + i
 						+ "]", ((ArrayType) varType).getElementType(), prefix, typeInfo));
 			}
-		} else if (RecordType.isRecord(varType)) {
+			return result;
+		}
+		
+		if (RecordType.isRecord(varType)) {
 			TypeEntry typeEntry = (TypeEntry) typeInfo
 					.getEnvEntry(((RecordType) varType).name());
 			for (String fieldName : typeEntry.getFieldNames()) {
@@ -49,6 +43,7 @@ public class SensitiveVariableReference {
 						typeEntry.getFieldType(fieldName), prefix + varName
 								+ ".", typeInfo));
 			}
+			return result;
 		}
 
 		return result;
@@ -78,8 +73,8 @@ public class SensitiveVariableReference {
 				result.addAll(getInsensitiveVariableReferences(varName + "["
 						+ i + "]", ((ArrayType) varType).getElementType(),
 						typeInfo, prefix));
-				return result;
 			}
+			return result;
 		}
 
 		if (RecordType.isRecord(varType)) {

@@ -10,6 +10,7 @@ import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.typeinference.ConstraintSet;
+import src.etch.types.ByteType;
 import src.etch.types.Type;
 import src.etch.types.VisibleType;
 import src.promela.node.AArrayref;
@@ -20,6 +21,7 @@ import src.promela.node.ASingleVarref;
 import src.promela.node.PVarref;
 import src.symmextractor.types.PidType;
 import src.symmextractor.types.SymmExtractorTypeFactory;
+import src.symmreducer.InsensitiveVariableReference;
 import src.symmreducer.PidIndexedArrayReference;
 import src.symmreducer.SensitiveVariableReference;
 
@@ -109,5 +111,30 @@ public abstract class PidAwareChecker extends Checker {
 		}
 		return sensitivelyIndexedArrays;
 	}
+
+	public List<InsensitiveVariableReference> insensitiveVariableReferencesForProcess(int j) {
+
+		List<InsensitiveVariableReference> result = new ArrayList<InsensitiveVariableReference>();
+
+		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(s," + j + "))->";
+		
+		result.add(new InsensitiveVariableReference(referencePrefix + "_p", new ByteType()));
+				
+		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
+
+			String name = entry.getKey();
+
+			if(HACK_FOR_SPIN_2011)
+			{
+				name = "ADD_LOCAL_VARIABLE_PREFIX(" + name + ")";
+			}
+			
+			result.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences(
+					name, entry.getValue(), referencePrefix, this));
+		}
+		return result;
+	}
+	
+	
 	
 }
