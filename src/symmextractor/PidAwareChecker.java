@@ -42,9 +42,27 @@ public abstract class PidAwareChecker extends Checker {
 	public ProctypeEntry getProctypeEntryForProcess(int j) {
 		return (ProctypeEntry)getEnvEntry(getProcessEntries().get(j).getProctypeName());
 	}
+	
+	public ProctypeEntry getProctypeEntryFromName(String name) {
+		return (ProctypeEntry)getEnvEntry(name);
+	}
 
 	public int proctypeId(String proctypeName) {
 		return getProctypeNames().indexOf(proctypeName);
+	}
+
+	public int proctypeId(ProctypeEntry proctype) {
+		String proctypeName = null;
+		for(String name : env.getTopEntries().keySet())
+		{
+			if(env.getTopEntries().get(name) == proctype)
+			{
+				proctypeName = name;
+				break;
+			}
+		}
+		assert(null != proctypeName);
+		return proctypeId(proctypeName);
 	}
 	
 	public Map<String, EnvEntry> getGlobalVariables() {
@@ -112,15 +130,15 @@ public abstract class PidAwareChecker extends Checker {
 		return sensitivelyIndexedArrays;
 	}
 
-	public List<InsensitiveVariableReference> insensitiveVariableReferencesForProcess(int j) {
+	public List<InsensitiveVariableReference> insensitiveVariableReferencesForProcess(ProctypeEntry proctype, String processId, String stateName) {
 
 		List<InsensitiveVariableReference> result = new ArrayList<InsensitiveVariableReference>();
 
-		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(s," + j + "))->";
+		String referencePrefix = "((P" + proctypeId(proctype) + " *)SEG(" + stateName + "," + processId + "))->";
 		
 		result.add(new InsensitiveVariableReference(referencePrefix + "_p", new ByteType()));
 				
-		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
+		for(Entry<String,VisibleType> entry : proctype.variableNameTypePairs()) {
 
 			String name = entry.getKey();
 
@@ -133,6 +151,11 @@ public abstract class PidAwareChecker extends Checker {
 					name, entry.getValue(), referencePrefix, this));
 		}
 		return result;
+	}
+
+	
+	public List<InsensitiveVariableReference> insensitiveVariableReferencesForProcess(int j, String stateName) {
+		return insensitiveVariableReferencesForProcess(getProctypeEntryForProcess(j), String.valueOf(j), stateName);
 	}
 	
 	
