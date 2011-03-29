@@ -26,8 +26,6 @@ import src.symmreducer.PidIndexedArrayReference;
 import src.symmreducer.SensitiveVariableReference;
 
 public abstract class PidAwareChecker extends Checker {
-
-	public static boolean HACK_FOR_SPIN_2011 = false;
 	
 	private static int noProcesses = -1;
 
@@ -102,12 +100,7 @@ public abstract class PidAwareChecker extends Checker {
 		List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
 
 		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(s," + j + "))->";
-		
-		if(HACK_FOR_SPIN_2011)
-		{
-			referencePrefix += "_1_";
-		}
-		
+				
 		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
 			referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
 					entry.getKey(), entry.getValue(), referencePrefix, this));
@@ -139,16 +132,8 @@ public abstract class PidAwareChecker extends Checker {
 		result.add(new InsensitiveVariableReference(referencePrefix + "_p", new ByteType()));
 				
 		for(Entry<String,VisibleType> entry : proctype.variableNameTypePairs()) {
-
-			String name = entry.getKey();
-
-			if(HACK_FOR_SPIN_2011)
-			{
-				name = "ADD_LOCAL_VARIABLE_PREFIX(" + name + ")";
-			}
-			
 			result.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences(
-					name, entry.getValue(), referencePrefix, this));
+					entry.getKey(), entry.getValue(), referencePrefix, this));
 		}
 		return result;
 	}

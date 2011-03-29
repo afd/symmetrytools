@@ -2,7 +2,6 @@ package src.lazyspinfrontend;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PushbackReader;
@@ -12,7 +11,6 @@ import java.util.Map;
 
 import src.etch.checker.Check;
 import src.etch.checker.Checker;
-import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
 import src.etch.env.ProctypeEntry;
 import src.etch.env.VarEntry;
@@ -31,14 +29,11 @@ import src.promela.parser.ParserException;
 import src.symmextractor.PidAwareChecker;
 import src.symmextractor.types.PidType;
 import src.symmreducer.InsensitiveVariableReference;
-import src.symmreducer.PidIndexedArrayReference;
 import src.symmreducer.PidSwapper;
-import src.symmreducer.SensitiveVariableReference;
 import src.symmreducer.SymmetryApplier;
 import src.utilities.BooleanOption;
 import src.utilities.Config;
 import src.utilities.ProgressPrinter;
-import src.utilities.Strategy;
 
 public class LazySpinAnalysis {
 
@@ -50,9 +45,7 @@ public class LazySpinAnalysis {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		
-		PidAwareChecker.HACK_FOR_SPIN_2011 = true;
-		
+				
 		if(args.length < 1 || args.length > 3)
 		{
 			System.out.println("Error - usage: LazySpinAnalysis [full,markers] <file>");
@@ -134,6 +127,8 @@ public class LazySpinAnalysis {
 		
 		os.write("#define " + N + " " + LazySpinChecker.numberOfRunningProcesses() + "\n\n");
 		os.write("State min_now; // Global state used as target for state canonization\n\n");
+		os.write("State tmp_now; // Global state used as temp during state canonization\n\n");
+		os.write("Perm  tmp_perm; // Permutation associated with tmp_now during state canonization\n\n");
 
 		SymmetryApplier.writePreprocessorMacros(os);
 		
@@ -142,14 +137,20 @@ public class LazySpinAnalysis {
 		
 		writeSameCell(os);
 
-		writeLessThan(repGenerator, os);
-
 		if(FULL_REDUCTION)
 		{
+			writeLessThanBetweenProcesses(repGenerator, os);
 			writeEquallyInsensitive(repGenerator, os);
+		} else {
+			writeLessThanBetweenStates(repGenerator, os);
 		}
 		
-		writeRep(os, N);
+		if(FULL_REDUCTION)
+		{
+			writeRepFull(os, N);
+		} else {
+			writeRepMemcpy(os, N);
+		}
 
 		writeSymHash(repGenerator, os);
 
@@ -157,13 +158,10 @@ public class LazySpinAnalysis {
 		
 	}
 
-	private static void writeEquallyInsensitive(LazySpinChecker repGenerator,
-			OutputStreamWriter os) throws IOException {
-		os.write("int equally_insensitive(State* s, int i, int j)\n");
-		os.write("{\n");
-		
-		os.write("  /* Id-insensitive local variables first */\n");
-		
+
+
+	private static ProctypeEntry getTheSingleProctypeEntry(
+			LazySpinChecker repGenerator) {
 		ProctypeEntry theProctypeEntry = null;
 		for(EnvEntry entry : repGenerator.getEnv().getTopEntries().values())
 		{
@@ -173,6 +171,19 @@ public class LazySpinAnalysis {
 				break;
 			}
 		}
+		return theProctypeEntry;
+	}
+
+	interface RelationWriter
+	{
+		String writeRelation(List<InsensitiveVariableReference> referencesI, List<InsensitiveVariableReference> referencesJ, int index);
+	}
+		
+	private static void writeInsensitiveComparison(LazySpinChecker repGenerator, OutputStreamWriter os, RelationWriter rw) throws IOException
+	{
+		os.write("  /* Id-insensitive local variables first */\n");
+		
+		ProctypeEntry theProctypeEntry = getTheSingleProctypeEntry(repGenerator);
 		assert(null != theProctypeEntry);
 		
 		List<InsensitiveVariableReference> insensitiveVarReferencesForI = repGenerator.insensitiveVariableReferencesForProcess(theProctypeEntry, "i", "s");
@@ -180,7 +191,7 @@ public class LazySpinAnalysis {
 
 		assert(insensitiveVarReferencesForI.size() == insensitiveVarReferencesForJ.size());
 		for(int ref = 0; ref < insensitiveVarReferencesForI.size(); ref++) {
-			os.write("  if((" + insensitiveVarReferencesForI.get(ref) + ") != (" + insensitiveVarReferencesForJ.get(ref) + ")) return 0;\n");
+			os.write(rw.writeRelation(insensitiveVarReferencesForI, insensitiveVarReferencesForJ, ref));
 		}
 		
 		os.write("  /* Id-insensitive global array indices second */\n");
@@ -204,75 +215,174 @@ public class LazySpinAnalysis {
 
 		for(int ref = 0; ref < insensitiveGlobalPidIndexedArrayElementsForI.size(); ref++)
 		{
-			os.write("  if((" + insensitiveGlobalPidIndexedArrayElementsForI.get(ref) + ") != (" + insensitiveGlobalPidIndexedArrayElementsForJ.get(ref) + ")) return 0;\n");
+			os.write(rw.writeRelation(insensitiveGlobalPidIndexedArrayElementsForI, insensitiveGlobalPidIndexedArrayElementsForJ, ref));
 		}
-
+		
+	}
+	
+	private static void writeEquallyInsensitive(LazySpinChecker repGenerator,
+			OutputStreamWriter os) throws IOException {
+		os.write("int equally_insensitive(State* s, int i, int j)\n");
+		os.write("{\n");
+		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
+			public String writeRelation(
+					List<InsensitiveVariableReference> referencesI, List<InsensitiveVariableReference> referencesJ, int index) {
+				return "  if((" + referencesI.get(index) + ") != (" + referencesJ.get(index) + ")) return 0;\n";
+			}
+		});
 		os.write("  return 1;\n");
-					
 		os.write("}\n\n");		
 	}
-
-	private static void writeLessThan(LazySpinChecker repGenerator, OutputStreamWriter os) throws IOException {
-		os.write("int less_than(State* s, State* t)\n");
+	
+	private static void writeLessThanBetweenProcesses(LazySpinChecker repGenerator, OutputStreamWriter os) throws IOException {
+		os.write("int less_than_between_processes(State* s, int i, int j)\n");
 		os.write("{\n");
-		
-		if(FULL_REDUCTION)
-		{
-			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
-				os.write("  /* Check process " + i + "*/\n");
-				os.write("  /* Id-insensitive local variables first */\n");
-				List<InsensitiveVariableReference> insensitiveVarReferencesInS = repGenerator.insensitiveVariableReferencesForProcess(i, "s");
-				List<InsensitiveVariableReference> insensitiveVarReferencesInT = repGenerator.insensitiveVariableReferencesForProcess(i, "t");
-				assert(insensitiveVarReferencesInS.size() == insensitiveVarReferencesInT.size());
-				for(int ref = 0; ref < insensitiveVarReferencesInS.size(); ref++)
-				{
-					os.write("  if((" + insensitiveVarReferencesInS.get(ref) + ") < (" + insensitiveVarReferencesInT.get(ref) + ")) return 1;\n");
-					os.write("  if((" + insensitiveVarReferencesInS.get(ref) + ") > (" + insensitiveVarReferencesInT.get(ref) + ")) return 0;\n");
-				}
-				os.write("  /* Id-insensitive global array indices second */\n");
-				Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
-
-				List<InsensitiveVariableReference> insensitiveGlobalPidIndexedArrayElementsInS = new ArrayList<InsensitiveVariableReference>();
-				List<InsensitiveVariableReference> insensitiveGlobalPidIndexedArrayElementsInT = new ArrayList<InsensitiveVariableReference>();
-
-				for(String name : globalVariables.keySet()) {
-					EnvEntry entry = globalVariables.get(name);
-					if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && ((VarEntry)entry).getType() instanceof ArrayType &&
-							PidType.isPid((VisibleType)((ArrayType)(((VarEntry)entry).getType())).getIndexType())) {
-						String prefixS = "s->" + name + "[" + i + "]";
-						String prefixT = "t->" + name + "[" + i + "]";
-						insensitiveGlobalPidIndexedArrayElementsInS.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixS, repGenerator));
-						insensitiveGlobalPidIndexedArrayElementsInT.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixT, repGenerator));
-					}
-				}
-
-				assert(insensitiveGlobalPidIndexedArrayElementsInS.size() == insensitiveGlobalPidIndexedArrayElementsInT.size());
-
-				for(int ref = 0; ref < insensitiveGlobalPidIndexedArrayElementsInS.size(); ref++)
-				{
-					os.write("  if((" + insensitiveGlobalPidIndexedArrayElementsInS.get(ref) + ") < (" + insensitiveGlobalPidIndexedArrayElementsInT.get(ref) + ")) return 1;\n");
-					os.write("  if((" + insensitiveGlobalPidIndexedArrayElementsInS.get(ref) + ") > (" + insensitiveGlobalPidIndexedArrayElementsInT.get(ref) + ")) return 0;\n");
-				}
-				
-				
+		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
+			public String writeRelation(
+					List<InsensitiveVariableReference> referencesI, List<InsensitiveVariableReference> referencesJ, int index) {
+				return "  if((" + referencesI.get(index) + ") < (" + referencesJ.get(index) + ")) return 1;\n" +
+						"  if((" + referencesI.get(index) + ") > (" + referencesJ.get(index) + ")) return 0;\n";
 			}
-
-			os.write("  return 0;\n");
-			
-		} else {
-			os.write("  return memcmp(s, t, vsize) < 0;\n");
-		}
-		
+		});
+		os.write("  return 0;\n");
 		os.write("}\n\n");
 	}
 
-	private static void writeRep(OutputStreamWriter os, final String N)
+	private static void writeLessThanBetweenStates(LazySpinChecker repGenerator, OutputStreamWriter os) throws IOException {
+		os.write("int less_than_between_states(State* s, State* t)\n");
+		os.write("{\n");
+		os.write("  return memcmp(s, t, vsize) < 0;\n");
+		os.write("}\n\n");
+	}
+		
+	private static void writeRepFull(OutputStreamWriter os, final String N)
+	throws IOException {
+		os.write("int num_blocks;\n");
+		os.write("int block_start[" + N + "], block_size[" + N + "];\n");
+		os.write("\n");
+		os.write("void permute_blocks(int block, int start, int size, Perm* alpha);\n");
+		os.write("void swap_in_block(int block, int p1, int p2, Perm* alpha);\n");
+		os.write("\n");
+		os.write("void swap_in_block(int block, int p1, int p2, Perm* alpha) {\n");
+		os.write("  /* apply transposition p1 <-> p2 */\n");
+		os.write("  applyPrSwapToState(&tmp_now, p1, p2);\n");
+		os.write("  if(alpha) {\n");
+		os.write("    unsigned char t;\n");
+		os.write("    t = tmp_perm.p_vector[p1];\n");
+		os.write("    tmp_perm.p_vector[p1] = tmp_perm.p_vector[p2];\n");
+		os.write("    tmp_perm.p_vector[p2] = t;\n");
+		os.write("  }\n");
+		os.write("  if (memcmp(&tmp_now, &min_now, vsize) < 0) {\n");
+		os.write("    memcpy(&min_now, &tmp_now, vsize);\n");
+		os.write("    if(alpha) {\n");
+		os.write("      memcpy(alpha->p_vector, tmp_perm.p_vector, alpha->n_indices);\n");
+		os.write("    }\n");
+		os.write("  }\n");
+		os.write("  /* permute the next block */\n");
+		os.write("  if (++block < num_blocks)\n");
+		os.write("    permute_blocks(block, block_start[block], block_size[block], alpha);\n");
+		os.write("}\n");
+		os.write("\n");
+		os.write("void permute_blocks(int block, int start, int size, Perm* alpha)\n");
+		os.write("{\n");
+		os.write("  int i, p, offset, pos[size], dir[size];\n");
+		os.write("  /* go to the last block */\n");
+		os.write("  if(++block < num_blocks)\n");
+		os.write("  {\n");
+		os.write("    permute_blocks(block, block_start[block], block_size[block], alpha);\n");
+		os.write("  }\n");
+		os.write("  block--;\n");
+		os.write("  for (i = 0; i < size; i++) {\n");
+		os.write("    pos[i] = 1; dir[i] = 1;\n");
+		os.write("  }\n");
+		os.write("  pos[size-1] = 0;\n");
+		os.write("  i = 0;\n");
+		os.write("  while (i < size-1) {\n");
+		os.write("    for (i = offset = 0; pos[i] == size-i; i++) {\n");
+		os.write("      pos[i] = 1; dir[i] = !dir[i];\n");
+		os.write("      if (dir[i]) offset++;\n");
+		os.write("    }\n");
+		os.write("    if (i < size-1) {\n");
+		os.write("      p = offset-1 + (dir[i] ? pos[i] : size-i-pos[i]);\n");
+		os.write("      pos[i]++;\n");
+		os.write("      swap_in_block(block, p, p+1, alpha);\n");
+		os.write("    }\n");
+		os.write("  }\n");
+		os.write("}\n");
+		os.write("\n");
+		os.write("\n");
+		os.write("State* rep(State* orig, Perm* alpha)\n");
+		os.write("{\n");
+		os.write("  int i, j, changed, current_block_start;\n");
+		os.write("  if(alpha) perm_set_to_id(alpha);\n");
+		os.write("  memcpy(&min_now, orig, vsize); // Representative first set to be original state\n");
+		os.write("\n\n");
+		os.write("  /* First, we normalise the state */\n");
+		os.write("  changed = 1;\n");
+		os.write("  while(changed)\n");
+		os.write("  {\n");
+		os.write("    changed = 0;\n");
+		os.write("    for(i = 0; i < " + N + "-1; i++)\n");		
+		os.write("    {\n");
+		os.write("      for(j = i+1; j < " + N + "; j++)\n");		
+		os.write("      {\n");
+		os.write("        if(same_cell(&min_now, i, j) && less_than_between_processes(&min_now, j, i))\n");		
+		os.write("        {\n");
+		os.write("          applyPrSwapToState(&min_now, i, j);\n");
+		os.write("          changed = 1;\n");
+		os.write("          if(alpha) {\n");
+		os.write("            unsigned char t;\n");
+		os.write("            t = alpha->p_vector[i];\n");
+		os.write("            alpha->p_vector[i] = alpha->p_vector[j];\n");
+		os.write("            alpha->p_vector[j] = t;\n");
+		os.write("          }\n");
+		os.write("        }\n");
+		os.write("      }\n");
+		os.write("    }\n");
+		os.write("  }\n\n");
+		os.write("  /* The state is now normalized.  We must now canonize it */\n");
+		os.write("\n");
+		os.write("  /* In preparation for this, we copy the current minimal state into a temporary state */\n");
+		os.write("  /* We will apply lots of permutations to this temporary state, and update the minimum along the way */\n");
+		os.write("  memcpy(&tmp_now, &min_now, vsize);\n");
+		os.write("  /* In addition, we need to track the permutation associated with tmp_now as we apply permutations to it */\n");
+		os.write("  /* Initially, this permutation is the one we have computed for min_now */\n");
+		os.write("  if(alpha) tmp_perm = mk_perm(alpha);\n");
+		os.write("\n");
+		os.write("  num_blocks = 0;\n");
+		os.write("  current_block_start = 0;\n");
+		os.write("  while(current_block_start < " + N + ")\n");
+		os.write("  {\n");
+		os.write("    int current_block_size = 1;\n");
+		os.write("    while(((current_block_start+current_block_size) < " + N + ") && same_cell(&min_now, current_block_start, current_block_start + current_block_size) && equally_insensitive(&min_now, current_block_start, current_block_start + current_block_size))\n");
+		os.write("    {\n");
+		os.write("      current_block_size++;\n");
+		os.write("    }\n");
+		os.write("    if(current_block_size > 1)\n");
+		os.write("    {\n");
+		os.write("      block_start[num_blocks] = current_block_start;\n");
+		os.write("      block_size[num_blocks] = current_block_size;\n");
+		os.write("      num_blocks++;\n");
+		os.write("    }\n");
+		os.write("    current_block_start += current_block_size;\n");
+		os.write("  }\n");
+		os.write("  if(num_blocks > 0)\n");
+		os.write("  {\n");
+		os.write("    permute_blocks(0, block_start[0], block_size[0], alpha);\n");
+		os.write("  }\n");
+		os.write("  if(alpha) permx_free(&tmp_perm);\n");
+		os.write("  return &min_now;\n");
+		os.write("}\n\n");
+	}
+	
+	
+	private static void writeRepMemcpy(OutputStreamWriter os, final String N)
 			throws IOException {
-		os.write("State* rep(State* orig, Perm** p)\n");
+		os.write("State* rep(State* orig, Perm* alpha)\n");
 		os.write("{\n");
 		os.write("  int i, j, changed;\n");
 		os.write("  State temp;\n");
-		os.write("  *p = perm_id(orig->_nr_pr);\n");
+		os.write("  if(alpha) perm_set_to_id(alpha);\n");
 		os.write("  memcpy(&min_now, orig, vsize); // Representative first set to be original state\n");
 		os.write("  changed = 1;\n");
 		os.write("  while(changed)\n");
@@ -286,14 +396,16 @@ public class LazySpinAnalysis {
 		os.write("        {\n");
 		os.write("          memcpy(&temp, &min_now, vsize);\n");
 		os.write("          applyPrSwapToState(&temp, i, j);\n");
-		os.write("          if(less_than(&temp, &min_now))\n");
+		os.write("          if(less_than_between_states(&temp, &min_now))\n");
 		os.write("          {\n");
-		os.write("            unsigned char t;\n");
 		os.write("            changed = 1;\n");
 		os.write("            memcpy(&min_now, &temp, vsize);\n");
-		os.write("            t = (*p)->p_vector[i];\n");
-		os.write("            (*p)->p_vector[i] = (*p)->p_vector[j];\n");
-		os.write("            (*p)->p_vector[j] = t;\n");
+		os.write("            if(alpha) {\n");
+		os.write("              unsigned char t;\n");
+		os.write("              t = alpha->p_vector[i];\n");
+		os.write("              alpha->p_vector[i] = alpha->p_vector[j];\n");
+		os.write("              alpha->p_vector[j] = t;\n");
+		os.write("            }\n");
 		os.write("          }\n");
 		os.write("        }\n");
 		os.write("      }\n");
