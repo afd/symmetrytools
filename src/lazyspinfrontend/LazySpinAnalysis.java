@@ -347,7 +347,7 @@ public class LazySpinAnalysis {
 		os.write("  memcpy(&tmp_now, &min_now, vsize);\n");
 		os.write("  /* In addition, we need to track the permutation associated with tmp_now as we apply permutations to it */\n");
 		os.write("  /* Initially, this permutation is the one we have computed for min_now */\n");
-		os.write("  if(alpha) tmp_perm = mk_perm(alpha);\n");
+		os.write("  if(alpha) tmp_perm = perm_copy(alpha);\n");
 		os.write("\n");
 		os.write("  num_blocks = 0;\n");
 		os.write("  current_block_start = 0;\n");
