@@ -168,7 +168,9 @@ public class LazySpinAnalysis {
 
 		os.write("int sym_hash(State* s)\n");
 		os.write("{\n");
-		os.write("  #define SYM_HASH_PRIME 17\n");
+		os.write("  #ifndef SYM_HASH_PRIME\n");
+		os.write("  #define SYM_HASH_PRIME 23\n");
+		os.write("  #endif\n");
 		os.write("  int result = 0;\n\n");
 		
 		List<List<InsensitiveVariableReference>> insensitiveVarReferences = new ArrayList<List<InsensitiveVariableReference>>();
@@ -190,7 +192,7 @@ public class LazySpinAnalysis {
 				os.write("(" + insensitiveVarReferences.get(i).get(ref) + ")");
 			}
 			os.write(";\n");
-			os.write("  result %= SYM_HASH_PRIME;\n");
+			os.write("  result *= SYM_HASH_PRIME;\n");
 		}
 
 		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
@@ -222,7 +224,7 @@ public class LazySpinAnalysis {
 				os.write("(" + insensitiveGlobalPidIndexedArrayElements.get(i).get(ref) + ")");
 			}
 			os.write(";\n");
-			os.write("  result %= SYM_HASH_PRIME;\n");
+			os.write("  result *= SYM_HASH_PRIME;\n");
 		}
 		
 		os.write("\n");
@@ -240,7 +242,7 @@ public class LazySpinAnalysis {
 		
 		for(InsensitiveVariableReference ref : insensitiveGlobals) {
 			os.write("  result += (" + ref + ");\n");
-			os.write("  result %= SYM_HASH_PRIME;\n");
+			os.write("  result *= SYM_HASH_PRIME;\n");
 		}
 			
 		os.write("\n");
