@@ -527,7 +527,7 @@ public class LazySpinAnalysis {
 				List<InsensitiveVariableReference> insensitiveLocalVariablesForReferencedProcess
 					= repGenerator.insensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), sensitiveLocalVarReferences.get(i).get(ref).toString(), "s");
 				for(InsensitiveVariableReference innerRef : insensitiveLocalVariablesForReferencedProcess) {
-					os.write("*(" + innerRef + ")");
+					os.write("*(" + innerRef + " + 1)");
 				}
 				os.write(")");
 			}
@@ -562,7 +562,7 @@ public class LazySpinAnalysis {
 				List<InsensitiveVariableReference> insensitiveLocalVariablesForReferencedProcess
 					= repGenerator.insensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), sensitiveGlobalPidIndexedArrayElements.get(i).get(ref).toString(), "s");
 				for(InsensitiveVariableReference innerRef : insensitiveLocalVariablesForReferencedProcess) {
-					os.write("*(" + innerRef + ")");
+					os.write("*(" + innerRef + " + 1)");
 				}
 				os.write(")");
 			}
@@ -579,10 +579,10 @@ public class LazySpinAnalysis {
 		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
 			os.write(" + 1");
 			for(int j = 0; j < insensitiveLocalVarReferences.get(i).size(); j++) {
-				os.write("*(" + insensitiveLocalVarReferences.get(i).get(j) + ")");
+				os.write("*(" + insensitiveLocalVarReferences.get(i).get(j) + " + 1)");
 			}
 			for(int j = 0; j < insensitiveGlobalPidIndexedArrayElements.get(i).size(); j++) {
-				os.write("*(" + insensitiveGlobalPidIndexedArrayElements.get(i).get(j) + ")");
+				os.write("*(" + insensitiveGlobalPidIndexedArrayElements.get(i).get(j) + " + 1)");
 			}			
 		}
 		os.write(";\n");
