@@ -26,10 +26,10 @@ import src.promela.lexer.LexerException;
 import src.promela.node.Node;
 import src.promela.parser.Parser;
 import src.promela.parser.ParserException;
-import src.symmextractor.PidAwareChecker;
 import src.symmextractor.types.PidType;
 import src.symmreducer.InsensitiveVariableReference;
 import src.symmreducer.PidSwapper;
+import src.symmreducer.SensitiveVariableReference;
 import src.symmreducer.SymmetryApplier;
 import src.utilities.BooleanOption;
 import src.utilities.Config;
@@ -38,7 +38,6 @@ import src.utilities.ProgressPrinter;
 public class LazySpinAnalysis {
 
 	public static boolean FULL_REDUCTION = false;
-	public static boolean USE_MARKERS = false;
 	
 	/**
 	 * @param args
@@ -48,7 +47,7 @@ public class LazySpinAnalysis {
 				
 		if(args.length < 1 || args.length > 3)
 		{
-			System.out.println("Error - usage: LazySpinAnalysis [full,markers] <file>");
+			System.out.println("Error - usage: LazySpinAnalysis [full] <file>");
 			System.exit(1);
 		}
 		
@@ -57,10 +56,6 @@ public class LazySpinAnalysis {
 		{
 			if(args[argNo].equals("full")) {
 				FULL_REDUCTION = true;
-			} else if(args[argNo].equals("markers")) {
-				USE_MARKERS = true;
-				System.out.println("Symmetry marker support not yet implemented.");
-				System.exit(1);
 			} else {
 				System.out.println("Ignoring unknown option: " + args[argNo]);
 			}
@@ -152,7 +147,7 @@ public class LazySpinAnalysis {
 			writeRepMemcpy(os, N);
 		}
 
-		writeSymHash(repGenerator, os);
+		writeSymHash(repGenerator, os, N);
 
 		os.flush();
 		
@@ -416,31 +411,49 @@ public class LazySpinAnalysis {
 	}
 
 	private static void writeSymHash(LazySpinChecker repGenerator,
-			OutputStreamWriter os) throws IOException {
+			OutputStreamWriter os, String N) throws IOException {
 		os.write("int sym_hash(State* s)\n");
 		os.write("{\n");
+		os.write("  int result = 0;\n\n");
+
+		os.write("#ifdef HASH_FUNCTION_ORIGINAL\n");		
+		writeHashFunctionOriginal(repGenerator, os, N);
+		os.write("#else\n");
+		os.write("#ifdef HASH_FUNCTION_SMC\n");
+		writeHashFunctionSMC(repGenerator, os);
+		os.write("#else\n");
+		os.write("#error Pass -DHASH_FUNCTION_ORIGINAL or -DHASH_FUNCTION_SMC to specify which hash function to use\n");
+		os.write("#endif\n");
+		os.write("#endif\n");
+		os.write("  return result;\n");
+		os.write("}\n\n");
+	}
+
+
+
+	private static void writeHashFunctionOriginal(LazySpinChecker repGenerator,
+			OutputStreamWriter os, String N) throws IOException {
 		os.write("  #ifndef SYM_HASH_PRIME\n");
 		os.write("  #define SYM_HASH_PRIME 23\n");
 		os.write("  #endif\n");
-		os.write("  int result = 0;\n\n");
 		
-		List<List<InsensitiveVariableReference>> insensitiveVarReferences = new ArrayList<List<InsensitiveVariableReference>>();
+		List<List<InsensitiveVariableReference>> insensitiveLocalVarReferences = new ArrayList<List<InsensitiveVariableReference>>();
 		
 		os.write("  /* Contribution from insensitive local variables */\n");
 		
 		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
-			insensitiveVarReferences.add(repGenerator.insensitiveVariableReferencesForProcess(i, "s"));
+			insensitiveLocalVarReferences.add(repGenerator.insensitiveVariableReferencesForProcess(i, "s"));
 		}
 		
-		for(int ref = 0; ref < insensitiveVarReferences.get(0).size(); ref++) {
+		for(int ref = 0; ref < insensitiveLocalVarReferences.get(0).size(); ref++) {
 		
-			assert(!(insensitiveVarReferences.get(0).get(ref).getType() instanceof PidType || insensitiveVarReferences.get(0).get(ref).getType() instanceof ChanType));
+			assert(!(insensitiveLocalVarReferences.get(0).get(ref).getType() instanceof PidType || insensitiveLocalVarReferences.get(0).get(ref).getType() instanceof ChanType));
 			os.write("  result += ");
 			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++)	{
 				if(i > 0) {
 					os.write(" + ");
 				}
-				os.write("(" + insensitiveVarReferences.get(i).get(ref) + ")");
+				os.write("(" + insensitiveLocalVarReferences.get(i).get(ref) + ")");
 			}
 			os.write(";\n");
 			os.write("  result *= SYM_HASH_PRIME;\n");
@@ -495,11 +508,175 @@ public class LazySpinAnalysis {
 			os.write("  result += (" + ref + ");\n");
 			os.write("  result *= SYM_HASH_PRIME;\n");
 		}
+		
+		os.write("#ifdef SYMMETRY_MARKERS_IN_HASHING\n");
+		
+		os.write("  /* Contribution from id-sensitive locals (via symmetry markers) */\n");
+		List<List<SensitiveVariableReference>> sensitiveLocalVarReferences = new ArrayList<List<SensitiveVariableReference>>();
+		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+			sensitiveLocalVarReferences.add(repGenerator.sensitiveVariableReferencesForProcess(i, "s"));
+		}
+		
+		for(int ref = 0; ref < sensitiveLocalVarReferences.get(0).size(); ref++) {
+			os.write("  result += 0");
+			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+				os.write(" + ");
+				os.write("(");
+				os.write(" (" + sensitiveLocalVarReferences.get(i).get(ref) + ") >= " + N + " ? 1 : 1");
+				
+				List<InsensitiveVariableReference> insensitiveLocalVariablesForReferencedProcess
+					= repGenerator.insensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), sensitiveLocalVarReferences.get(i).get(ref).toString(), "s");
+				for(InsensitiveVariableReference innerRef : insensitiveLocalVariablesForReferencedProcess) {
+					os.write("*(" + innerRef + ")");
+				}
+				os.write(")");
+			}
+			os.write(";\n");
+			os.write("  result *= SYM_HASH_PRIME;\n");
+		}
+		
+		List<List<SensitiveVariableReference>> sensitiveGlobalPidIndexedArrayElements = new ArrayList<List<SensitiveVariableReference>>();
+		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+			sensitiveGlobalPidIndexedArrayElements.add(new ArrayList<SensitiveVariableReference>());
+		}
+		
+		os.write("  /* Contribution from id-sensitive elements of pid-indexed arrays (via symmetry markers) */\n");
+		for(String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && ((VarEntry)entry).getType() instanceof ArrayType &&
+					PidType.isPid((VisibleType)((ArrayType)(((VarEntry)entry).getType())).getIndexType())) {
+				for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+					String prefix = "s->" + name + "[" + i + "]";
+					sensitiveGlobalPidIndexedArrayElements.get(i).addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefix, repGenerator));
+				}
+			}
+		}
+		
+		for(int ref = 0; ref < sensitiveGlobalPidIndexedArrayElements.get(0).size(); ref++) {
+			os.write("  result += 0");
+			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+				os.write(" + ");
+				os.write("(");
+				os.write(" (" + sensitiveGlobalPidIndexedArrayElements.get(i).get(ref) + ") >= " + N + " ? 1 : 1");
+				
+				List<InsensitiveVariableReference> insensitiveLocalVariablesForReferencedProcess
+					= repGenerator.insensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), sensitiveGlobalPidIndexedArrayElements.get(i).get(ref).toString(), "s");
+				for(InsensitiveVariableReference innerRef : insensitiveLocalVariablesForReferencedProcess) {
+					os.write("*(" + innerRef + ")");
+				}
+				os.write(")");
+			}
+			os.write(";\n");
+			os.write("  result *= SYM_HASH_PRIME;\n");
+		}
+		
+		
+		os.write("#endif\n\n");
+		
+		os.write("#ifdef SUM_OF_PRODUCTS\n");
+		
+		os.write("  result += 0");
+		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+			os.write(" + 1");
+			for(int j = 0; j < insensitiveLocalVarReferences.get(i).size(); j++) {
+				os.write("*(" + insensitiveLocalVarReferences.get(i).get(j) + ")");
+			}
+			for(int j = 0; j < insensitiveGlobalPidIndexedArrayElements.get(i).size(); j++) {
+				os.write("*(" + insensitiveGlobalPidIndexedArrayElements.get(i).get(j) + ")");
+			}			
+		}
+		os.write(";\n");
+		os.write("  result *= SYM_HASH_PRIME;\n");
+		
+		os.write("#endif\n");
 			
 		os.write("\n");
-		os.write("  return result;\n");
-		os.write("}\n\n");
 	}
+	
+	
+	private static void writeHashFunctionSMC(LazySpinChecker repGenerator,
+			OutputStreamWriter os) throws IOException {
+		os.write("  #ifndef SYM_HASH_PRIME\n");
+		os.write("  #define SYM_HASH_PRIME 11\n");
+		os.write("  #endif\n");
+		os.write("  int multiplier = SYM_HASH_PRIME;\n");
+		
+		List<List<InsensitiveVariableReference>> insensitiveVarReferences = new ArrayList<List<InsensitiveVariableReference>>();
+		
+		os.write("  /* Contribution from insensitive local variables */\n");
+		
+		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+			insensitiveVarReferences.add(repGenerator.insensitiveVariableReferencesForProcess(i, "s"));
+		}
+		
+		for(int ref = 0; ref < insensitiveVarReferences.get(0).size(); ref++) {
+		
+			assert(!(insensitiveVarReferences.get(0).get(ref).getType() instanceof PidType || insensitiveVarReferences.get(0).get(ref).getType() instanceof ChanType));
+			os.write("  result += (");
+			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++)	{
+				if(i > 0) {
+					os.write(" + ");
+				}
+				os.write("(" + insensitiveVarReferences.get(i).get(ref) + ")");
+			}
+			os.write(")*multiplier;\n");
+			os.write("  multiplier *= SYM_HASH_PRIME;\n");
+		}
+
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+
+		List<List<InsensitiveVariableReference>> insensitiveGlobalPidIndexedArrayElements = new ArrayList<List<InsensitiveVariableReference>>();
+		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+			insensitiveGlobalPidIndexedArrayElements.add(new ArrayList<InsensitiveVariableReference>());
+		}
+
+		os.write("\n");
+		os.write("  /* Contribution from global pid-indexed arrays (which are essentially local variables) */\n");
+		for(String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && ((VarEntry)entry).getType() instanceof ArrayType &&
+					PidType.isPid((VisibleType)((ArrayType)(((VarEntry)entry).getType())).getIndexType())) {
+				for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+					String prefix = "s->" + name + "[" + i + "]";
+					insensitiveGlobalPidIndexedArrayElements.get(i).addAll(InsensitiveVariableReference.getInsensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefix, repGenerator));
+				}
+			}
+		}
+		
+		for(int ref = 0; ref < insensitiveGlobalPidIndexedArrayElements.get(0).size(); ref++) {
+			os.write("  result += (");
+			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+				if(i > 0) {
+					os.write(" + ");
+				}
+				os.write("(" + insensitiveGlobalPidIndexedArrayElements.get(i).get(ref) + ")");
+			}
+			os.write(")*multiplier;\n");
+			os.write("  multiplier *= SYM_HASH_PRIME;\n");
+		}
+		
+		os.write("\n");
+		os.write("  /* Contribution from insensitive globals */\n");
+
+		String referencePrefix = "s->";
+		List<InsensitiveVariableReference> insensitiveGlobals = new ArrayList<InsensitiveVariableReference>();
+
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden()) {	
+				insensitiveGlobals.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences(name, ((VarEntry)entry).getType(), referencePrefix, repGenerator));
+			}
+		}
+		
+		for(InsensitiveVariableReference ref : insensitiveGlobals) {
+			os.write("  result += (" + ref + ")*multiplier;\n");
+			os.write("  multiplier *= SYM_HASH_PRIME;\n");
+		}
+			
+		os.write("\n");
+	}
+
+	
 
 	private static void writeSameCell(OutputStreamWriter os) throws IOException {
 		os.write("int same_cell(State* s, int i, int j)\n");

@@ -4,14 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import src.etch.env.ChannelEntry;
-import src.etch.env.EnvEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
-import src.etch.types.VisibleType;
 import src.promela.node.AChannelIvarassignment;
 import src.promela.node.AFifoReceive;
 import src.promela.node.AFifoRecvPoll;
@@ -30,8 +26,6 @@ import src.promela.node.ASortedSend;
 import src.promela.node.PArgLst;
 import src.promela.node.PIvar;
 import src.promela.node.TSeparator;
-import src.symmreducer.PidIndexedArrayReference;
-import src.symmreducer.SensitiveVariableReference;
 import src.utilities.StringHelper;
 
 public class StaticChannelDiagramExtractor extends SymmetryChecker {

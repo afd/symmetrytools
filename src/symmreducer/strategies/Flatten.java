@@ -59,7 +59,7 @@ public class Flatten {
 	private static void writeFlattenSensitiveLocals(FileWriter fw, StaticChannelDiagramExtractor typeInfo) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
-			for (ListIterator<SensitiveVariableReference> iter = typeInfo.sensitiveVariableReferencesForProcess(j).listIterator(); iter
+			for (ListIterator<SensitiveVariableReference> iter = typeInfo.sensitiveVariableReferencesForProcess(j, "s").listIterator(); iter
 					.hasNext();) {
 				SensitiveVariableReference reference = (SensitiveVariableReference) iter
 						.next();

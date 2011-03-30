@@ -687,7 +687,7 @@ public class SymmetryApplier {
 			throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
-			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
+			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j, "s")) {
 
 				fw.write("   " + reference + " = ");
 
@@ -884,7 +884,7 @@ public class SymmetryApplier {
 	private void swapProctypeLocalChannelVariables(OutputStreamWriter fw) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
-			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
+			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j, "s")) {
 
 				assert(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));

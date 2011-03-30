@@ -1,6 +1,5 @@
 package src.symmreducer;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.List;
@@ -101,7 +100,7 @@ public class PidSwapper {
 	private void swapLocalPidVariables(OutputStreamWriter fw, String one, String two) throws IOException {
 		for (int j = 0; j < typeInfo.getProcessEntries().size(); j++) {
 
-			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j)) {
+			for (SensitiveVariableReference reference : typeInfo.sensitiveVariableReferencesForProcess(j, "s")) {
 
 				assert(PidType.isPid(reference.getType())
 						|| ChanType.isChan(reference.getType()));
