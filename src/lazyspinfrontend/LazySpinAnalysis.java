@@ -36,8 +36,6 @@ import src.utilities.Config;
 import src.utilities.ProgressPrinter;
 
 public class LazySpinAnalysis {
-
-	public static boolean FULL_REDUCTION = false;
 	
 	/**
 	 * @param args
@@ -45,24 +43,13 @@ public class LazySpinAnalysis {
 	 */
 	public static void main(String[] args) throws IOException {
 				
-		if(args.length < 1 || args.length > 3)
+		if(args.length != 1)
 		{
-			System.out.println("Error - usage: LazySpinAnalysis [full] <file>");
+			System.out.println("Error - usage: LazySpinAnalysis <file>");
 			System.exit(1);
 		}
-		
-		int argNo;
-		for(argNo = 0; argNo < args.length - 1; argNo++)
-		{
-			if(args[argNo].equals("full")) {
-				FULL_REDUCTION = true;
-			} else {
-				System.out.println("Ignoring unknown option: " + args[argNo]);
-			}
 				
-		}
-		
-		final String sourceName = args[argNo];
+		final String sourceName = args[0];
 
 		Config.resetConfiguration();
 		Config.setUnspecifiedOptionsToDefaultValues();
@@ -132,20 +119,18 @@ public class LazySpinAnalysis {
 		
 		writeSameCell(os);
 
-		if(FULL_REDUCTION)
-		{
-			writeLessThanBetweenProcesses(repGenerator, os);
-			writeEquallyInsensitive(repGenerator, os);
-		} else {
-			writeLessThanBetweenStates(repGenerator, os);
-		}
+		os.write("#ifdef FULL_CANONIZATION\n");
+		writeLessThanBetweenProcesses(repGenerator, os, N);
+		writeEquallyInsensitive(repGenerator, os, N);
+		os.write("#else\n");
+		writeLessThanBetweenStates(repGenerator, os);
+		os.write("#endif\n\n");
 		
-		if(FULL_REDUCTION)
-		{
-			writeRepFull(os, N);
-		} else {
-			writeRepMemcpy(os, N);
-		}
+		os.write("#ifdef FULL_CANONIZATION\n");
+		writeRepFull(os, N);
+		os.write("#else\n");
+		writeRepMemcpy(os, N);
+		os.write("#endif\n\n");
 
 		writeSymHash(repGenerator, os, N);
 
@@ -216,8 +201,8 @@ public class LazySpinAnalysis {
 	}
 	
 	private static void writeEquallyInsensitive(LazySpinChecker repGenerator,
-			OutputStreamWriter os) throws IOException {
-		os.write("int equally_insensitive(State* s, int i, int j)\n");
+			OutputStreamWriter os, String N) throws IOException {
+		os.write("int equally_insensitive_simple(State* s, int i, int j)\n");
 		os.write("{\n");
 		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
 			public String writeRelation(
@@ -226,11 +211,62 @@ public class LazySpinAnalysis {
 			}
 		});
 		os.write("  return 1;\n");
-		os.write("}\n\n");		
+		os.write("}\n\n");
+		
+		os.write("int equally_insensitive(State* s, int i, int j)\n");
+		os.write("{\n");
+		os.write("  if(!equally_insensitive_simple(s, i, j) return 0;\n");
+		os.write("  /* Now follow id-sensitive variables */\n");
+
+		List<SensitiveVariableReference> sensitiveVarReferencesForI = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "i", "s");
+		List<SensitiveVariableReference> sensitiveVarReferencesForJ = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "j", "s");
+		assert(sensitiveVarReferencesForI.size() == sensitiveVarReferencesForJ.size());
+		
+		for(int i = 0; i < sensitiveVarReferencesForI.size(); i++) {
+			SensitiveVariableReference referenceI = sensitiveVarReferencesForI.get(i);
+			SensitiveVariableReference referenceJ = sensitiveVarReferencesForJ.get(i);
+			writeSensitiveEqualityComparison(os, N, referenceI, referenceJ);
+		}
+
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+		List<SensitiveVariableReference> sensitiveGlobalPidIndexedArrayElementsForI = new ArrayList<SensitiveVariableReference>();
+		List<SensitiveVariableReference> sensitiveGlobalPidIndexedArrayElementsForJ = new ArrayList<SensitiveVariableReference>();
+
+		for(String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && ((VarEntry)entry).getType() instanceof ArrayType &&
+					PidType.isPid((VisibleType)((ArrayType)(((VarEntry)entry).getType())).getIndexType())) {
+				String prefixI = "s->" + name + "[i]";
+				String prefixJ = "s->" + name + "[j]";
+				sensitiveGlobalPidIndexedArrayElementsForI.addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixI, repGenerator));
+				sensitiveGlobalPidIndexedArrayElementsForJ.addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixJ, repGenerator));
+			}
+		}
+
+		assert(sensitiveGlobalPidIndexedArrayElementsForI.size() == sensitiveGlobalPidIndexedArrayElementsForJ.size());
+		
+		for(int i = 0; i < sensitiveGlobalPidIndexedArrayElementsForI.size(); i++) {
+			SensitiveVariableReference referenceI = sensitiveGlobalPidIndexedArrayElementsForI.get(i);
+			SensitiveVariableReference referenceJ = sensitiveGlobalPidIndexedArrayElementsForJ.get(i);
+			writeSensitiveEqualityComparison(os, N, referenceI, referenceJ);
+		}
+		
+		os.write("  return 1;\n");
+		os.write("}\n\n");
+		
 	}
 	
-	private static void writeLessThanBetweenProcesses(LazySpinChecker repGenerator, OutputStreamWriter os) throws IOException {
-		os.write("int less_than_between_processes(State* s, int i, int j)\n");
+	private static void writeSensitiveEqualityComparison(OutputStreamWriter os,
+			String N, SensitiveVariableReference referenceI,
+			SensitiveVariableReference referenceJ) throws IOException {
+		os.write("  if( (" + referenceI + " < " + N + ") && (" + referenceJ + " >= " + N + ") ) return 0;\n");
+		os.write("  if( (" + referenceI + " >= " + N + ") && (" + referenceJ + " < " + N + ") ) return 0;\n");
+		os.write("  if( (" + referenceI + " >= " + N + ") && (" + referenceJ + " >= " + N + ") && (" + referenceI + " != " + referenceJ + ") ) return 0;\n");
+		os.write("  if( (" + referenceI + " < " + N + ") && (" + referenceJ + " < " + N + ") && !equally_insensitive_simple(s, " + referenceI + ", " + referenceJ + ") ) return 0;\n");
+	}
+
+	private static void writeLessThanBetweenProcesses(LazySpinChecker repGenerator, OutputStreamWriter os, String N) throws IOException {
+		os.write("int less_than_between_processes_simple(State* s, int i, int j)\n");
 		os.write("{\n");
 		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
 			public String writeRelation(
@@ -241,6 +277,48 @@ public class LazySpinAnalysis {
 		});
 		os.write("  return 0;\n");
 		os.write("}\n\n");
+		
+		os.write("int less_than_between_processes(State* s, int i, int j)\n");
+		os.write("{\n");
+		os.write("  if(less_than_between_processes_simple(s, i, j) return 1;\n");
+		os.write("  if(less_than_between_processes_simple(s, j, i) return 0;\n");
+		os.write("  /* Now follow id-sensitive variables */\n");
+		
+		List<SensitiveVariableReference> sensitiveVarReferencesForI = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "i", "s");
+		List<SensitiveVariableReference> sensitiveVarReferencesForJ = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "j", "s");
+		assert(sensitiveVarReferencesForI.size() == sensitiveVarReferencesForJ.size());
+		
+		for(int i = 0; i < sensitiveVarReferencesForI.size(); i++) {
+			SensitiveVariableReference referenceI = sensitiveVarReferencesForI.get(i);
+			SensitiveVariableReference referenceJ = sensitiveVarReferencesForJ.get(i);
+			writeSensitiveLessThanComparison(os, N, referenceI, referenceJ);
+		}
+
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+		List<SensitiveVariableReference> sensitiveGlobalPidIndexedArrayElementsForI = new ArrayList<SensitiveVariableReference>();
+		List<SensitiveVariableReference> sensitiveGlobalPidIndexedArrayElementsForJ = new ArrayList<SensitiveVariableReference>();
+
+		for(String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && ((VarEntry)entry).getType() instanceof ArrayType &&
+					PidType.isPid((VisibleType)((ArrayType)(((VarEntry)entry).getType())).getIndexType())) {
+				String prefixI = "s->" + name + "[i]";
+				String prefixJ = "s->" + name + "[j]";
+				sensitiveGlobalPidIndexedArrayElementsForI.addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixI, repGenerator));
+				sensitiveGlobalPidIndexedArrayElementsForJ.addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixJ, repGenerator));
+			}
+		}
+
+		assert(sensitiveGlobalPidIndexedArrayElementsForI.size() == sensitiveGlobalPidIndexedArrayElementsForJ.size());
+		
+		for(int i = 0; i < sensitiveGlobalPidIndexedArrayElementsForI.size(); i++) {
+			SensitiveVariableReference referenceI = sensitiveGlobalPidIndexedArrayElementsForI.get(i);
+			SensitiveVariableReference referenceJ = sensitiveGlobalPidIndexedArrayElementsForJ.get(i);
+			writeSensitiveLessThanComparison(os, N, referenceI, referenceJ);
+		}
+		
+		os.write("  return 0;\n");
+		os.write("}\n\n");
 	}
 
 	private static void writeLessThanBetweenStates(LazySpinChecker repGenerator, OutputStreamWriter os) throws IOException {
@@ -249,7 +327,18 @@ public class LazySpinAnalysis {
 		os.write("  return memcmp(s, t, vsize) < 0;\n");
 		os.write("}\n\n");
 	}
-		
+
+	private static void writeSensitiveLessThanComparison(OutputStreamWriter os,
+			String N, SensitiveVariableReference referenceI,
+			SensitiveVariableReference referenceJ) throws IOException {
+		os.write("  if( (" + referenceI + " < " + N + ") && (" + referenceJ + " >= " + N + ") ) return 1;\n");
+		os.write("  if( (" + referenceI + " >= " + N + ") && (" + referenceJ + " < " + N + ") ) return 0;\n");
+		os.write("  if( (" + referenceI + " >= " + N + ") && (" + referenceJ + " >= " + N + ") && (" + referenceI + " < " + referenceJ + ") ) return 1;\n");
+		os.write("  if( (" + referenceI + " >= " + N + ") && (" + referenceJ + " >= " + N + ") && (" + referenceI + " > " + referenceJ + ") ) return 0;\n");
+		os.write("  if( (" + referenceI + " < " + N + ") && (" + referenceJ + " < " + N + ") && less_than_between_processes_simple(s, " + referenceI + ", " + referenceJ + ") ) return 1;\n");
+		os.write("  if( (" + referenceI + " < " + N + ") && (" + referenceJ + " < " + N + ") && less_than_between_processes_simple(s, " + referenceJ + ", " + referenceI + ") ) return 0;\n");
+	}
+	
 	private static void writeRepFull(OutputStreamWriter os, final String N)
 	throws IOException {
 		os.write("int num_blocks;\n");
@@ -417,9 +506,15 @@ public class LazySpinAnalysis {
 		os.write("  int result = 0;\n\n");
 
 		os.write("#ifdef HASH_FUNCTION_ORIGINAL\n");		
+		os.write("#ifdef HASH_FUNCTION_SMC\n");	
+		os.write("#error Multiple hashing functions specified!\n");
+		os.write("#endif\n");
 		writeHashFunctionOriginal(repGenerator, os, N);
 		os.write("#else\n");
 		os.write("#ifdef HASH_FUNCTION_SMC\n");
+		os.write("#ifdef HASH_FUNCTION_ORIGINAL\n");	
+		os.write("#error Multiple hashing functions specified!\n");
+		os.write("#endif\n");
 		writeHashFunctionSMC(repGenerator, os);
 		os.write("#else\n");
 		os.write("#error Pass -DHASH_FUNCTION_ORIGINAL or -DHASH_FUNCTION_SMC to specify which hash function to use\n");

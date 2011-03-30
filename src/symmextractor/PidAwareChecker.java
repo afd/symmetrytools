@@ -95,17 +95,21 @@ public abstract class PidAwareChecker extends Checker {
 		return super.suitableTypeForArrayIndex(exprType) || exprType.isSubtype(new PidType());
 	}
 
-	public List<SensitiveVariableReference> sensitiveVariableReferencesForProcess(int j, String stateName) {
+	public List<SensitiveVariableReference> sensitiveVariableReferencesForProcess(ProctypeEntry proctype, String processId, String stateName) {
 
 		List<SensitiveVariableReference> referencesToPermute = new ArrayList<SensitiveVariableReference>();
 
-		String referencePrefix = "((P" + proctypeId(getProcessEntries().get(j).getProctypeName()) + " *)SEG(" + stateName + "," + j + "))->";
+		String referencePrefix = "((P" + proctypeId(proctype) + " *)SEG(" + stateName + "," + processId + "))->";
 				
-		for(Entry<String,VisibleType> entry : getProctypeEntryForProcess(j).variableNameTypePairs()) {
+		for(Entry<String,VisibleType> entry : proctype.variableNameTypePairs()) {
 			referencesToPermute.addAll(SensitiveVariableReference.getSensitiveVariableReferences(
 					entry.getKey(), entry.getValue(), referencePrefix, this));
 		}
 		return referencesToPermute;
+	}
+
+	public List<SensitiveVariableReference> sensitiveVariableReferencesForProcess(int j, String stateName) {
+		return sensitiveVariableReferencesForProcess(getProctypeEntryForProcess(j), String.valueOf(j), stateName);
 	}
 
 	public List<PidIndexedArrayReference> sensitivelyIndexedArraysForProcess(int j) {
