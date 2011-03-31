@@ -215,7 +215,7 @@ public class LazySpinAnalysis {
 		
 		os.write("int equally_insensitive(State* s, int i, int j)\n");
 		os.write("{\n");
-		os.write("  if(!equally_insensitive_simple(s, i, j) return 0;\n");
+		os.write("  if(!equally_insensitive_simple(s, i, j)) return 0;\n");
 		os.write("  /* Now follow id-sensitive variables */\n");
 
 		List<SensitiveVariableReference> sensitiveVarReferencesForI = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "i", "s");
@@ -227,7 +227,7 @@ public class LazySpinAnalysis {
 			SensitiveVariableReference referenceJ = sensitiveVarReferencesForJ.get(i);
 			writeSensitiveEqualityComparison(os, N, referenceI, referenceJ);
 		}
-
+		
 		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
 		List<SensitiveVariableReference> sensitiveGlobalPidIndexedArrayElementsForI = new ArrayList<SensitiveVariableReference>();
 		List<SensitiveVariableReference> sensitiveGlobalPidIndexedArrayElementsForJ = new ArrayList<SensitiveVariableReference>();
@@ -250,6 +250,8 @@ public class LazySpinAnalysis {
 			SensitiveVariableReference referenceJ = sensitiveGlobalPidIndexedArrayElementsForJ.get(i);
 			writeSensitiveEqualityComparison(os, N, referenceI, referenceJ);
 		}
+		
+		
 		
 		os.write("  return 1;\n");
 		os.write("}\n\n");
@@ -280,8 +282,8 @@ public class LazySpinAnalysis {
 		
 		os.write("int less_than_between_processes(State* s, int i, int j)\n");
 		os.write("{\n");
-		os.write("  if(less_than_between_processes_simple(s, i, j) return 1;\n");
-		os.write("  if(less_than_between_processes_simple(s, j, i) return 0;\n");
+		os.write("  if(less_than_between_processes_simple(s, i, j)) return 1;\n");
+		os.write("  if(less_than_between_processes_simple(s, j, i)) return 0;\n");
 		os.write("  /* Now follow id-sensitive variables */\n");
 		
 		List<SensitiveVariableReference> sensitiveVarReferencesForI = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "i", "s");
@@ -342,19 +344,20 @@ public class LazySpinAnalysis {
 	private static void writeRepFull(OutputStreamWriter os, final String N)
 	throws IOException {
 		os.write("int num_blocks;\n");
-		os.write("int block_start[" + N + "], block_size[" + N + "];\n");
-		os.write("\n");
-		os.write("void permute_blocks(int block, int start, int size, Perm* alpha);\n");
+		os.write("int block_size[" + N + "];\n");
+		os.write("int block_mapping[" + N + "][" + N + "];\n");
+		os.write("int dealt_with_process[" + N + "];\n\n");
+		os.write("void permute_blocks(int block, Perm* alpha);\n");
 		os.write("void swap_in_block(int block, int p1, int p2, Perm* alpha);\n");
 		os.write("\n");
 		os.write("void swap_in_block(int block, int p1, int p2, Perm* alpha) {\n");
 		os.write("  /* apply transposition p1 <-> p2 */\n");
-		os.write("  applyPrSwapToState(&tmp_now, p1, p2);\n");
+		os.write("  applyPrSwapToState(&tmp_now, block_mapping[block][p1], block_mapping[block][p2]);\n");
 		os.write("  if(alpha) {\n");
 		os.write("    unsigned char t;\n");
-		os.write("    t = tmp_perm.p_vector[p1];\n");
-		os.write("    tmp_perm.p_vector[p1] = tmp_perm.p_vector[p2];\n");
-		os.write("    tmp_perm.p_vector[p2] = t;\n");
+		os.write("    t = tmp_perm.p_vector[block_mapping[block][p1]];\n");
+		os.write("    tmp_perm.p_vector[block_mapping[block][p1]] = tmp_perm.p_vector[block_mapping[block][p2]];\n");
+		os.write("    tmp_perm.p_vector[block_mapping[block][p2]] = t;\n");
 		os.write("  }\n");
 		os.write("  if (memcmp(&tmp_now, &min_now, vsize) < 0) {\n");
 		os.write("    memcpy(&min_now, &tmp_now, vsize);\n");
@@ -364,30 +367,30 @@ public class LazySpinAnalysis {
 		os.write("  }\n");
 		os.write("  /* permute the next block */\n");
 		os.write("  if (++block < num_blocks)\n");
-		os.write("    permute_blocks(block, block_start[block], block_size[block], alpha);\n");
+		os.write("    permute_blocks(block, alpha);\n");
 		os.write("}\n");
 		os.write("\n");
-		os.write("void permute_blocks(int block, int start, int size, Perm* alpha)\n");
+		os.write("void permute_blocks(int block, Perm* alpha)\n");
 		os.write("{\n");
-		os.write("  int i, p, offset, pos[size], dir[size];\n");
+		os.write("  int i, p, offset, pos[block_size[block]], dir[block_size[block]];\n");
 		os.write("  /* go to the last block */\n");
 		os.write("  if(++block < num_blocks)\n");
 		os.write("  {\n");
-		os.write("    permute_blocks(block, block_start[block], block_size[block], alpha);\n");
+		os.write("    permute_blocks(block, alpha);\n");
 		os.write("  }\n");
 		os.write("  block--;\n");
-		os.write("  for (i = 0; i < size; i++) {\n");
+		os.write("  for (i = 0; i < block_size[block]; i++) {\n");
 		os.write("    pos[i] = 1; dir[i] = 1;\n");
 		os.write("  }\n");
-		os.write("  pos[size-1] = 0;\n");
+		os.write("  pos[block_size[block]-1] = 0;\n");
 		os.write("  i = 0;\n");
-		os.write("  while (i < size-1) {\n");
-		os.write("    for (i = offset = 0; pos[i] == size-i; i++) {\n");
+		os.write("  while (i < block_size[block]-1) {\n");
+		os.write("    for (i = offset = 0; pos[i] == block_size[block]-i; i++) {\n");
 		os.write("      pos[i] = 1; dir[i] = !dir[i];\n");
 		os.write("      if (dir[i]) offset++;\n");
 		os.write("    }\n");
-		os.write("    if (i < size-1) {\n");
-		os.write("      p = offset-1 + (dir[i] ? pos[i] : size-i-pos[i]);\n");
+		os.write("    if (i < block_size[block]-1) {\n");
+		os.write("      p = offset-1 + (dir[i] ? pos[i] : block_size[block]-i-pos[i]);\n");
 		os.write("      pos[i]++;\n");
 		os.write("      swap_in_block(block, p, p+1, alpha);\n");
 		os.write("    }\n");
@@ -397,7 +400,7 @@ public class LazySpinAnalysis {
 		os.write("\n");
 		os.write("State* rep(State* orig, Perm* alpha)\n");
 		os.write("{\n");
-		os.write("  int i, j, changed, current_block_start;\n");
+		os.write("  int i, j, changed, current_cell_start;\n");
 		os.write("  if(alpha) perm_set_to_id(alpha);\n");
 		os.write("  memcpy(&min_now, orig, vsize); // Representative first set to be original state\n");
 		os.write("\n\n");
@@ -434,26 +437,35 @@ public class LazySpinAnalysis {
 		os.write("  if(alpha) tmp_perm = perm_copy(alpha);\n");
 		os.write("\n");
 		os.write("  num_blocks = 0;\n");
-		os.write("  current_block_start = 0;\n");
-		os.write("  while(current_block_start < " + N + ")\n");
+		os.write("  for(i = 0; i < " + N + "; i++) dealt_with_process[i] = 0;\n");
+		os.write("  current_cell_start = 0;\n");
+		os.write("  while(current_cell_start < " + N + ")\n");
 		os.write("  {\n");
-		os.write("    int current_block_size = 1;\n");
-		os.write("    while(((current_block_start+current_block_size) < " + N + ") && same_cell(&min_now, current_block_start, current_block_start + current_block_size) && equally_insensitive(&min_now, current_block_start, current_block_start + current_block_size))\n");
-		os.write("    {\n");
-		os.write("      current_block_size++;\n");
+		os.write("    int process_index;\n");
+		os.write("    int current_block_start = current_cell_start;\n");
+		os.write("    num_blocks++;\n");
+		os.write("    block_size[num_blocks-1] = 1;\n");
+		os.write("    block_mapping[num_blocks-1][0] = current_cell_start;\n");
+		os.write("    for(process_index = current_cell_start + 1; process_index < " + N + "; process_index++) {\n");
+		os.write("      if(!same_cell(&min_now, current_cell_start, process_index)) {\n");
+		os.write("        process_index++;\n");
+		os.write("      } else if(equally_insensitive(&min_now, current_block_start, process_index)) {\n");
+		os.write("        dealt_with_process[process_index] = 1;\n");
+		os.write("        block_size[num_blocks-1]++;\n");
+		os.write("        block_mapping[num_blocks-1][block_size[num_blocks-1]-1] = process_index;\n");
+		os.write("      } else {\n");
+		os.write("        dealt_with_process[process_index] = 1;\n");
+		os.write("        current_block_start = process_index;\n");
+		os.write("        num_blocks++;\n");
+		os.write("        block_size[num_blocks-1] = 1;\n");
+		os.write("        block_mapping[num_blocks-1][0] = process_index;\n");
+		os.write("      }\n");
 		os.write("    }\n");
-		os.write("    if(current_block_size > 1)\n");
-		os.write("    {\n");
-		os.write("      block_start[num_blocks] = current_block_start;\n");
-		os.write("      block_size[num_blocks] = current_block_size;\n");
-		os.write("      num_blocks++;\n");
-		os.write("    }\n");
-		os.write("    current_block_start += current_block_size;\n");
-		os.write("  }\n");
-		os.write("  if(num_blocks > 0)\n");
-		os.write("  {\n");
-		os.write("    permute_blocks(0, block_start[0], block_size[0], alpha);\n");
-		os.write("  }\n");
+		os.write("    do {\n");
+		os.write("      current_cell_start++;\n");
+		os.write("    } while(current_cell_start < " + N + " && !dealt_with_process[current_cell_start]);\n");
+		os.write("  }\n\n");
+		os.write("  permute_blocks(0, alpha);\n");
 		os.write("  if(alpha) permx_free(&tmp_perm);\n");
 		os.write("  return &min_now;\n");
 		os.write("}\n\n");
