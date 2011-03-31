@@ -30,7 +30,6 @@ import src.symmextractor.types.PidType;
 import src.symmreducer.InsensitiveVariableReference;
 import src.symmreducer.PidSwapper;
 import src.symmreducer.SensitiveVariableReference;
-import src.symmreducer.SymmetryApplier;
 import src.utilities.BooleanOption;
 import src.utilities.Config;
 import src.utilities.ProgressPrinter;
@@ -112,7 +111,7 @@ public class LazySpinAnalysis {
 		os.write("State tmp_now; // Global state used as temp during state canonization\n\n");
 		os.write("Perm  tmp_perm; // Permutation associated with tmp_now during state canonization\n\n");
 
-		SymmetryApplier.writePreprocessorMacros(os);
+		writePreprocessorMacros(os);
 		
 		PidSwapper pidSwapper = new PidSwapper(repGenerator, os, 0, null);
 		pidSwapper.writeApplyPrSwapToState("State");
@@ -136,6 +135,13 @@ public class LazySpinAnalysis {
 
 		os.flush();
 		
+	}
+
+
+
+	private static void writePreprocessorMacros(OutputStreamWriter os) throws IOException {
+		os.write("#define SEG(state,pid) (((uchar *)state)+proc_offset[pid+BASE])\n");
+		os.write("#define VAR(state,pid,var,type) ((type *)SEG(state,pid))->var\n");
 	}
 
 
