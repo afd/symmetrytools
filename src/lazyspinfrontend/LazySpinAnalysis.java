@@ -106,6 +106,7 @@ public class LazySpinAnalysis {
 		
 		final String N = "LAZYSPIN_NUM_PROCESSES";
 		
+
 		os.write("#define " + N + " " + LazySpinChecker.numberOfRunningProcesses() + "\n\n");
 		os.write("State min_now; // Global state used as target for state canonization\n\n");
 		os.write("State tmp_now; // Global state used as temp during state canonization\n\n");
@@ -119,6 +120,15 @@ public class LazySpinAnalysis {
 		writeSameCell(os);
 
 		os.write("#ifdef FULL_CANONIZATION\n");
+
+		os.write("#ifndef SORT_ON_PC\n");		
+		os.write("#ifndef SORT_ON_ALL_INSENSITIVE\n");		
+		os.write("#ifndef SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE\n");
+		os.write("#error Define one of SORT_ON_PC, SORT_ON_ALL_INSENSITIVE, SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE\n");
+		os.write("#endif\n");  
+		os.write("#endif\n");
+		os.write("#endif\n");
+
 		writeLessThanBetweenProcesses(repGenerator, os, N);
 		writeEquallyInsensitive(repGenerator, os, N);
 		os.write("#else\n");
@@ -276,6 +286,13 @@ public class LazySpinAnalysis {
 	private static void writeLessThanBetweenProcesses(LazySpinChecker repGenerator, OutputStreamWriter os, String N) throws IOException {
 		os.write("int less_than_between_processes_simple(State* s, int i, int j)\n");
 		os.write("{\n");
+
+
+		os.write("#ifdef SORT_ON_PC\n");
+		os.write("  if((((P0 *)SEG(s,i))->_p) < (((P0 *)SEG(s,j))->_p)) return 1;\n");
+		os.write("  if((((P0 *)SEG(s,i))->_p) > (((P0 *)SEG(s,j))->_p)) return 0;\n");
+		os.write("#else\n");
+
 		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
 			public String writeRelation(
 					List<InsensitiveVariableReference> referencesI, List<InsensitiveVariableReference> referencesJ, int index) {
@@ -283,6 +300,9 @@ public class LazySpinAnalysis {
 						"  if((" + referencesI.get(index) + ") > (" + referencesJ.get(index) + ")) return 0;\n";
 			}
 		});
+
+		os.write("#endif\n");
+
 		os.write("  return 0;\n");
 		os.write("}\n\n");
 		
@@ -290,6 +310,9 @@ public class LazySpinAnalysis {
 		os.write("{\n");
 		os.write("  if(less_than_between_processes_simple(s, i, j)) return 1;\n");
 		os.write("  if(less_than_between_processes_simple(s, j, i)) return 0;\n");
+
+		os.write("#ifdef SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE\n");
+
 		os.write("  /* Now follow id-sensitive variables */\n");
 		
 		List<SensitiveVariableReference> sensitiveVarReferencesForI = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "i", "s");
@@ -324,6 +347,8 @@ public class LazySpinAnalysis {
 			SensitiveVariableReference referenceJ = sensitiveGlobalPidIndexedArrayElementsForJ.get(i);
 			writeSensitiveLessThanComparison(os, N, referenceI, referenceJ);
 		}
+
+		os.write("#endif\n");
 		
 		os.write("  return 0;\n");
 		os.write("}\n\n");
