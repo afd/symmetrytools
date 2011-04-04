@@ -125,21 +125,21 @@ public class LazySpinAnalysis {
 		os.write("#ifndef SORT_ON_ALL_INSENSITIVE\n");		
 		os.write("#ifndef SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE\n");
 		os.write("#error Define one of SORT_ON_PC, SORT_ON_ALL_INSENSITIVE, SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE\n");
-		os.write("#endif\n");  
-		os.write("#endif\n");
-		os.write("#endif\n");
+		os.write("#endif /* SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE */\n");  
+		os.write("#endif /* SORT_ON_ALL_INSENSITIVE */\n");
+		os.write("#endif /* SORT_ON_PC */\n");
 
 		writeLessThanBetweenProcesses(repGenerator, os, N);
 		writeEquallyInsensitive(repGenerator, os, N);
-		os.write("#else\n");
+		os.write("#else /* FULL_CANONIZATION */\n");
 		writeLessThanBetweenStates(repGenerator, os);
-		os.write("#endif\n\n");
+		os.write("#endif /* FULL_CANONIZATION */\n\n");
 		
 		os.write("#ifdef FULL_CANONIZATION\n");
 		writeRepFull(os, repGenerator, N);
-		os.write("#else\n");
+		os.write("#else /* FULL_CANONIZATION */\n");
 		writeRepMemcpy(os, N);
-		os.write("#endif\n\n");
+		os.write("#endif /* FULL_CANONIZATION */\n\n");
 
 		writeSymHash(repGenerator, os, N);
 
@@ -224,7 +224,7 @@ public class LazySpinAnalysis {
 		os.write("#ifdef SORT_ON_PC\n");
 		os.write("  if((((P0 *)SEG(s,i))->_p) != (((P0 *)SEG(s,j))->_p)) return 0;\n");
 		
-		os.write("#else\n");
+		os.write("#else /* SORT_ON_PC */\n");
 		
 		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
 			public String writeRelation(
@@ -233,7 +233,7 @@ public class LazySpinAnalysis {
 			}
 		});
 		
-		os.write("#endif\n");
+		os.write("#endif /* SORT_ON_PC */\n");
 		
 		os.write("  return 1;\n");
 		os.write("}\n\n");
@@ -279,7 +279,7 @@ public class LazySpinAnalysis {
 			writeSensitiveEqualityComparison(os, N, referenceI, referenceJ);
 		}
 		
-		os.write("#endif\n");
+		os.write("#endif /* SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE */\n");
 		
 		os.write("  return 1;\n");
 		os.write("}\n\n");
@@ -303,7 +303,7 @@ public class LazySpinAnalysis {
 		os.write("#ifdef SORT_ON_PC\n");
 		os.write("  if((((P0 *)SEG(s,i))->_p) < (((P0 *)SEG(s,j))->_p)) return 1;\n");
 		os.write("  if((((P0 *)SEG(s,i))->_p) > (((P0 *)SEG(s,j))->_p)) return 0;\n");
-		os.write("#else\n");
+		os.write("#else /* SORT_ON_PC */\n");
 
 		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
 			public String writeRelation(
@@ -313,7 +313,7 @@ public class LazySpinAnalysis {
 			}
 		});
 
-		os.write("#endif\n");
+		os.write("#endif /* SORT_ON_PC */\n");
 
 		os.write("  return 0;\n");
 		os.write("}\n\n");
@@ -360,7 +360,7 @@ public class LazySpinAnalysis {
 			writeSensitiveLessThanComparison(os, N, referenceI, referenceJ);
 		}
 
-		os.write("#endif\n");
+		os.write("#endif /* SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE */\n");
 		
 		os.write("  return 0;\n");
 		os.write("}\n\n");
@@ -445,8 +445,8 @@ public class LazySpinAnalysis {
 		os.write("{\n");
 		os.write("  int i, j, changed, current_cell_start;\n");
 		os.write("#ifdef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
-		os.write("  int distinguished_by_global_reference[" + N + "]\n");
-		os.write("#ifdef ENDIF\n");		
+		os.write("  int distinguished_by_global_reference[" + N + "];\n");
+		os.write("#endif /* NORMALIZE_ID_SENSITIVE_GLOBALS */\n");		
 		os.write("  if(alpha) perm_set_to_id(alpha);\n");
 		os.write("  memcpy(&min_now, orig, vsize); // Representative first set to be original state\n");
 		os.write("\n\n");
@@ -476,8 +476,9 @@ public class LazySpinAnalysis {
 		os.write("\n");
 		os.write("#ifdef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
 		os.write("  {\n");
-		os.write("    int normalization_map[" + N + "]\n");
-		os.write("    int reverse_normalization_map[" + N + "]\n");
+		os.write("    int normalization_map[" + N + "];\n");
+		os.write("    int reverse_normalization_map[" + N + "];\n");
+		os.write("    int index;\n");
 		os.write("    for(i = 0; i < " + N + "; i++) {\n");
 		os.write("      normalization_map[i] = " + N + ";\n");
 		os.write("      reverse_normalization_map[i] = " + N + ";\n");
@@ -488,18 +489,19 @@ public class LazySpinAnalysis {
 		List<SensitiveVariableReference> sensitiveGlobals = new ArrayList<SensitiveVariableReference>();
 		for (String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
-			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden()) {	
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && 
+					(!(((VarEntry)entry).getType() instanceof ArrayType) || !(((ArrayType)((VarEntry)entry).getType()).getIndexType() instanceof PidType)
+					)) {
 				sensitiveGlobals.addAll(SensitiveVariableReference.getSensitiveVariableReferences(name, ((VarEntry)entry).getType(), "min_now.", repGenerator));
 			}
 		}
 		
 		for(SensitiveVariableReference name : sensitiveGlobals) {
-			os.write("    if(min_now." + name + " < " + N + " && normalization_map[min_now." + name + "] == " + N + ") {\n");
-			os.write("      int index\n");
-			os.write("      for(index = 0; index <= s->" + name + "; index++) {");
-			os.write("        if(reverse_normalization_map[index] == " + N + " && equally_insensitive(&min_now, index, min_now." + name + "])) {\n");
-			os.write("          normalization_map[min_now." + name + "] = index;\n");
-			os.write("          reverse_normalization_map[index] = min_now." + name + ";\n");
+			os.write("    if(" + name + " < " + N + " && normalization_map[" + name + "] == " + N + ") {\n");
+			os.write("      for(index = 0; index <= " + name + "; index++) {\n");
+			os.write("        if(reverse_normalization_map[index] == " + N + " && equally_insensitive(&min_now, index, " + name + ")) {\n");
+			os.write("          normalization_map[" + name + "] = index;\n");
+			os.write("          reverse_normalization_map[index] = " + name + ";\n");
 			os.write("	        distinguished_by_global_reference[index] = 1;\n");
 			os.write("          break;\n");
 			os.write("        }\n");
@@ -520,19 +522,19 @@ public class LazySpinAnalysis {
 		os.write("        }\n");
 		os.write("      }\n");
 		os.write("    }\n");
-		os.write("  }\n");
 		os.write("\n");
-		os.write("  Perm beta;\n");
-		os.write("  beta = mk_perm(" + N + ");\n");
-		os.write("  for(index = 0; index < " + N + "; index++) {\n");
-		os.write("    beta.p_vector[index] = normalization_map[index];\n");
+		os.write("    Perm beta;\n");
+		os.write("    beta = perm_mk(" + N + ");\n");
+		os.write("    for(index = 0; index < " + N + "; index++) {\n");
+		os.write("      beta.p_vector[index] = normalization_map[index];\n");
+		os.write("    }\n");
+		os.write("    apply_perm(&min_now, &min_now, &beta);\n");
+		os.write("    if(alpha) {\n");
+		os.write("       alpha = perm_app_in_place(alpha, &beta);\n");
+		os.write("    }\n");
+		os.write("    permx_free(&beta);\n");
 		os.write("  }\n");
-		os.write("  apply_to_state(&min_now, &beta);\n");
-		os.write("  if(alpha) {\n");
-		os.write("     alpha = compose(alpha, &beta);\n");
-		os.write("  }\n");
-		os.write("  permx_free(&beta);\n");
-		os.write("#endif\n");
+		os.write("#endif /* NORMALIZE_ID_SENSITIVE_GLOBALS */\n");
 		os.write("\n");
 		
 		if(hasIdSensitiveLocals(repGenerator) || hasIdSensitiveGlobals(repGenerator)) {
@@ -558,6 +560,7 @@ public class LazySpinAnalysis {
 			os.write("    num_blocks++;\n");
 			os.write("    block_size[num_blocks-1] = 1;\n");
 			os.write("    block_mapping[num_blocks-1][0] = current_cell_start;\n");
+			os.write("    dealt_with_process[current_cell_start] = 1;\n");
 			os.write("    for(process_index = current_cell_start + 1; process_index < " + N + "; process_index++) {\n");
 			os.write("      if(!same_cell(&min_now, current_cell_start, process_index)) {\n");
 			os.write("        process_index++;\n");
@@ -579,7 +582,7 @@ public class LazySpinAnalysis {
 			os.write("    }\n");
 			os.write("    do {\n");
 			os.write("      current_cell_start++;\n");
-			os.write("    } while(current_cell_start < " + N + " && !dealt_with_process[current_cell_start]);\n");
+			os.write("    } while(current_cell_start < " + N + " && dealt_with_process[current_cell_start]);\n");
 			os.write("  }\n\n");
 			os.write("  permute_blocks(0, alpha);\n");
 			if(!hasIdSensitiveLocals(repGenerator)) {
@@ -596,7 +599,9 @@ public class LazySpinAnalysis {
 		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
 		for (String name : globalVariables.keySet()) {
 			EnvEntry entry = globalVariables.get(name);
-			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden()) {	
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && 
+					(!(((VarEntry)entry).getType() instanceof ArrayType) || !(((ArrayType)((VarEntry)entry).getType()).getIndexType() instanceof PidType)
+					)) {
 				if(!SensitiveVariableReference.getSensitiveVariableReferences(
 						name, ((VarEntry)entry).getType(), "min_now.", repGenerator).isEmpty()) {
 					return true;
@@ -658,18 +663,18 @@ public class LazySpinAnalysis {
 		os.write("#ifdef HASH_FUNCTION_ORIGINAL\n");		
 		os.write("#ifdef HASH_FUNCTION_SMC\n");	
 		os.write("#error Multiple hashing functions specified!\n");
-		os.write("#endif\n");
+		os.write("#endif /* HASH_FUNCTION_SMC */\n");
+		os.write("#endif /* HASH_FUNCTION_ORIGINAL */\n");
+
+		os.write("#ifdef HASH_FUNCTION_ORIGINAL\n");		
 		writeHashFunctionOriginal(repGenerator, os, N);
-		os.write("#else\n");
+		os.write("#else /* HASH_FUNCTION_ORIGINAL */\n");
 		os.write("#ifdef HASH_FUNCTION_SMC\n");
-		os.write("#ifdef HASH_FUNCTION_ORIGINAL\n");	
-		os.write("#error Multiple hashing functions specified!\n");
-		os.write("#endif\n");
 		writeHashFunctionSMC(repGenerator, os);
-		os.write("#else\n");
+		os.write("#else /* HASH_FUNCTION_SMC */\n");
 		os.write("#error Pass -DHASH_FUNCTION_ORIGINAL or -DHASH_FUNCTION_SMC to specify which hash function to use\n");
-		os.write("#endif\n");
-		os.write("#endif\n");
+		os.write("#endif /* HASH_FUNCTION_SMC */\n");
+		os.write("#endif /* HASH_FUNCTION_ORIGINAL */\n");
 		os.write("  return result;\n");
 		os.write("}\n\n");
 	}
@@ -680,7 +685,7 @@ public class LazySpinAnalysis {
 			OutputStreamWriter os, String N) throws IOException {
 		os.write("  #ifndef SYM_HASH_PRIME\n");
 		os.write("  #define SYM_HASH_PRIME 23\n");
-		os.write("  #endif\n");
+		os.write("  #endif /* SYM_HASH_PRIME */\n");
 		
 		List<List<InsensitiveVariableReference>> insensitiveLocalVarReferences = new ArrayList<List<InsensitiveVariableReference>>();
 		
@@ -816,7 +821,7 @@ public class LazySpinAnalysis {
 		}
 		
 		
-		os.write("#endif\n\n");
+		os.write("#endif /* SYMMETRY_MARKERS_IN_HASHING */\n\n");
 		
 		os.write("#ifdef SUM_OF_PRODUCTS\n");
 		
@@ -833,7 +838,7 @@ public class LazySpinAnalysis {
 		os.write(";\n");
 		os.write("  result *= SYM_HASH_PRIME;\n");
 		
-		os.write("#endif\n");
+		os.write("#endif /* SUM_OF_PRODUCTS */\n");
 			
 		os.write("\n");
 	}
@@ -843,7 +848,7 @@ public class LazySpinAnalysis {
 			OutputStreamWriter os) throws IOException {
 		os.write("  #ifndef SYM_HASH_PRIME\n");
 		os.write("  #define SYM_HASH_PRIME 11\n");
-		os.write("  #endif\n");
+		os.write("  #endif /* SYM_HASH_PRIME */\n");
 		os.write("  int multiplier = SYM_HASH_PRIME;\n");
 		
 		List<List<InsensitiveVariableReference>> insensitiveVarReferences = new ArrayList<List<InsensitiveVariableReference>>();
