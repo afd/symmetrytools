@@ -136,7 +136,7 @@ public class LazySpinAnalysis {
 		os.write("#endif\n\n");
 		
 		os.write("#ifdef FULL_CANONIZATION\n");
-		writeRepFull(os, N);
+		writeRepFull(os, repGenerator, N);
 		os.write("#else\n");
 		writeRepMemcpy(os, N);
 		os.write("#endif\n\n");
@@ -220,18 +220,30 @@ public class LazySpinAnalysis {
 			OutputStreamWriter os, String N) throws IOException {
 		os.write("int equally_insensitive_simple(State* s, int i, int j)\n");
 		os.write("{\n");
+		
+		os.write("#ifdef SORT_ON_PC\n");
+		os.write("  if((((P0 *)SEG(s,i))->_p) != (((P0 *)SEG(s,j))->_p)) return 0;\n");
+		
+		os.write("#else\n");
+		
 		writeInsensitiveComparison(repGenerator, os, new RelationWriter() {
 			public String writeRelation(
 					List<InsensitiveVariableReference> referencesI, List<InsensitiveVariableReference> referencesJ, int index) {
 				return "  if((" + referencesI.get(index) + ") != (" + referencesJ.get(index) + ")) return 0;\n";
 			}
 		});
+		
+		os.write("#endif\n");
+		
 		os.write("  return 1;\n");
 		os.write("}\n\n");
 		
 		os.write("int equally_insensitive(State* s, int i, int j)\n");
 		os.write("{\n");
 		os.write("  if(!equally_insensitive_simple(s, i, j)) return 0;\n");
+		
+		os.write("#ifdef SORT_ON_ALL_INSENSITIVE_PLUS_EXPANDED_SENSITIVE\n");
+		
 		os.write("  /* Now follow id-sensitive variables */\n");
 
 		List<SensitiveVariableReference> sensitiveVarReferencesForI = repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "i", "s");
@@ -267,7 +279,7 @@ public class LazySpinAnalysis {
 			writeSensitiveEqualityComparison(os, N, referenceI, referenceJ);
 		}
 		
-		
+		os.write("#endif\n");
 		
 		os.write("  return 1;\n");
 		os.write("}\n\n");
@@ -372,7 +384,7 @@ public class LazySpinAnalysis {
 		os.write("  if( (" + referenceI + " < " + N + ") && (" + referenceJ + " < " + N + ") && less_than_between_processes_simple(s, " + referenceJ + ", " + referenceI + ") ) return 0;\n");
 	}
 	
-	private static void writeRepFull(OutputStreamWriter os, final String N)
+	private static void writeRepFull(OutputStreamWriter os, LazySpinChecker repGenerator, final String N)
 	throws IOException {
 		os.write("int num_blocks;\n");
 		os.write("int block_size[" + N + "];\n");
@@ -432,6 +444,9 @@ public class LazySpinAnalysis {
 		os.write("State* rep(State* orig, Perm* alpha)\n");
 		os.write("{\n");
 		os.write("  int i, j, changed, current_cell_start;\n");
+		os.write("#ifdef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
+		os.write("  int distinguished_by_global_reference[" + N + "]\n");
+		os.write("#ifdef ENDIF\n");		
 		os.write("  if(alpha) perm_set_to_id(alpha);\n");
 		os.write("  memcpy(&min_now, orig, vsize); // Representative first set to be original state\n");
 		os.write("\n\n");
@@ -458,51 +473,143 @@ public class LazySpinAnalysis {
 		os.write("      }\n");
 		os.write("    }\n");
 		os.write("  }\n\n");
-		os.write("  /* The state is now normalized.  We must now canonize it */\n");
 		os.write("\n");
-		os.write("  /* In preparation for this, we copy the current minimal state into a temporary state */\n");
-		os.write("  /* We will apply lots of permutations to this temporary state, and update the minimum along the way */\n");
-		os.write("  memcpy(&tmp_now, &min_now, vsize);\n");
-		os.write("  /* In addition, we need to track the permutation associated with tmp_now as we apply permutations to it */\n");
-		os.write("  /* Initially, this permutation is the one we have computed for min_now */\n");
-		os.write("  if(alpha) tmp_perm = perm_copy(alpha);\n");
-		os.write("\n");
-		os.write("  num_blocks = 0;\n");
-		os.write("  for(i = 0; i < " + N + "; i++) dealt_with_process[i] = 0;\n");
-		os.write("  current_cell_start = 0;\n");
-		os.write("  while(current_cell_start < " + N + ")\n");
+		os.write("#ifdef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
 		os.write("  {\n");
-		os.write("    int process_index;\n");
-		os.write("    int current_block_start = current_cell_start;\n");
-		os.write("    num_blocks++;\n");
-		os.write("    block_size[num_blocks-1] = 1;\n");
-		os.write("    block_mapping[num_blocks-1][0] = current_cell_start;\n");
-		os.write("    for(process_index = current_cell_start + 1; process_index < " + N + "; process_index++) {\n");
-		os.write("      if(!same_cell(&min_now, current_cell_start, process_index)) {\n");
-		os.write("        process_index++;\n");
-		os.write("      } else if(equally_insensitive(&min_now, current_block_start, process_index)) {\n");
-		os.write("        dealt_with_process[process_index] = 1;\n");
-		os.write("        block_size[num_blocks-1]++;\n");
-		os.write("        block_mapping[num_blocks-1][block_size[num_blocks-1]-1] = process_index;\n");
-		os.write("      } else {\n");
-		os.write("        dealt_with_process[process_index] = 1;\n");
-		os.write("        current_block_start = process_index;\n");
-		os.write("        num_blocks++;\n");
-		os.write("        block_size[num_blocks-1] = 1;\n");
-		os.write("        block_mapping[num_blocks-1][0] = process_index;\n");
+		os.write("    int normalization_map[" + N + "]\n");
+		os.write("    int reverse_normalization_map[" + N + "]\n");
+		os.write("    for(i = 0; i < " + N + "; i++) {\n");
+		os.write("      normalization_map[i] = " + N + ";\n");
+		os.write("      reverse_normalization_map[i] = " + N + ";\n");
+		os.write("      distinguished_by_global_reference[i] = 0;\n");
+		os.write("    }\n");
+
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+		List<SensitiveVariableReference> sensitiveGlobals = new ArrayList<SensitiveVariableReference>();
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden()) {	
+				sensitiveGlobals.addAll(SensitiveVariableReference.getSensitiveVariableReferences(name, ((VarEntry)entry).getType(), "min_now.", repGenerator));
+			}
+		}
+		
+		for(SensitiveVariableReference name : sensitiveGlobals) {
+			os.write("    if(min_now." + name + " < " + N + " && normalization_map[min_now." + name + "] == " + N + ") {\n");
+			os.write("      int index\n");
+			os.write("      for(index = 0; index <= s->" + name + "; index++) {");
+			os.write("        if(reverse_normalization_map[index] == " + N + " && equally_insensitive(&min_now, index, min_now." + name + "])) {\n");
+			os.write("          normalization_map[min_now." + name + "] = index;\n");
+			os.write("          reverse_normalization_map[index] = min_now." + name + ";\n");
+			os.write("	        distinguished_by_global_reference[index] = 1;\n");
+			os.write("          break;\n");
+			os.write("        }\n");
+			os.write("      }\n");
+			os.write("    }\n");
+		}
+
+		os.write("    /* Find a place in normalization map for variables not referred to by any global */\n");
+		os.write("    for(index = 0; index < " + N + "; index++) {\n");
+		os.write("      if(normalization_map[index] == " + N + ") {\n");
+		os.write("        int index2;\n");
+		os.write("        for(index2 = 0; index2 < " + N + "; index2++) {\n");
+		os.write("          if(reverse_normalization_map[index2] == " + N + " && equally_insensitive(&min_now, index, index2)) {\n");
+		os.write("            normalization_map[index] = index2;\n");
+		os.write("            reverse_normalization_map[index2] = index;\n");
+		os.write("            break;\n");
+		os.write("          }\n");
+		os.write("        }\n");
 		os.write("      }\n");
 		os.write("    }\n");
-		os.write("    do {\n");
-		os.write("      current_cell_start++;\n");
-		os.write("    } while(current_cell_start < " + N + " && !dealt_with_process[current_cell_start]);\n");
-		os.write("  }\n\n");
-		os.write("  permute_blocks(0, alpha);\n");
+		os.write("  }\n");
+		os.write("\n");
+		os.write("  Perm beta;\n");
+		os.write("  beta = mk_perm(" + N + ");\n");
+		os.write("  for(index = 0; index < " + N + "; index++) {\n");
+		os.write("    beta.p_vector[index] = normalization_map[index];\n");
+		os.write("  }\n");
+		os.write("  apply_to_state(&min_now, &beta);\n");
+		os.write("  if(alpha) {\n");
+		os.write("     alpha = compose(alpha, &beta);\n");
+		os.write("  }\n");
+		os.write("  permx_free(&beta);\n");
+		os.write("#endif\n");
+		os.write("\n");
+		
+		if(hasIdSensitiveLocals(repGenerator) || hasIdSensitiveGlobals(repGenerator)) {
+			if(!hasIdSensitiveLocals(repGenerator)) {
+				os.write("#ifndef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
+			}
+			os.write("  /* The state is now normalized.  We must now canonize it */\n");
+			os.write("\n");
+			os.write("  /* In preparation for this, we copy the current minimal state into a temporary state */\n");
+			os.write("  /* We will apply lots of permutations to this temporary state, and update the minimum along the way */\n");
+			os.write("  memcpy(&tmp_now, &min_now, vsize);\n");
+			os.write("  /* In addition, we need to track the permutation associated with tmp_now as we apply permutations to it */\n");
+			os.write("  /* Initially, this permutation is the one we have computed for min_now */\n");
+			os.write("  if(alpha) tmp_perm = perm_copy(alpha);\n");
+			os.write("\n");
+			os.write("  num_blocks = 0;\n");
+			os.write("  for(i = 0; i < " + N + "; i++) dealt_with_process[i] = 0;\n");
+			os.write("  current_cell_start = 0;\n");
+			os.write("  while(current_cell_start < " + N + ")\n");
+			os.write("  {\n");
+			os.write("    int process_index;\n");
+			os.write("    int current_block_start = current_cell_start;\n");
+			os.write("    num_blocks++;\n");
+			os.write("    block_size[num_blocks-1] = 1;\n");
+			os.write("    block_mapping[num_blocks-1][0] = current_cell_start;\n");
+			os.write("    for(process_index = current_cell_start + 1; process_index < " + N + "; process_index++) {\n");
+			os.write("      if(!same_cell(&min_now, current_cell_start, process_index)) {\n");
+			os.write("        process_index++;\n");
+			os.write("      } else if(\n");
+			os.write("#ifdef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
+			os.write("            !distinguished_by_global_reference[process_index] &&\n");
+			os.write("#endif\n");
+			os.write("            equally_insensitive(&min_now, current_block_start, process_index)) {\n");
+			os.write("        dealt_with_process[process_index] = 1;\n");
+			os.write("        block_size[num_blocks-1]++;\n");
+			os.write("        block_mapping[num_blocks-1][block_size[num_blocks-1]-1] = process_index;\n");
+			os.write("      } else {\n");
+			os.write("        dealt_with_process[process_index] = 1;\n");
+			os.write("        current_block_start = process_index;\n");
+			os.write("        num_blocks++;\n");
+			os.write("        block_size[num_blocks-1] = 1;\n");
+			os.write("        block_mapping[num_blocks-1][0] = process_index;\n");
+			os.write("      }\n");
+			os.write("    }\n");
+			os.write("    do {\n");
+			os.write("      current_cell_start++;\n");
+			os.write("    } while(current_cell_start < " + N + " && !dealt_with_process[current_cell_start]);\n");
+			os.write("  }\n\n");
+			os.write("  permute_blocks(0, alpha);\n");
+			if(!hasIdSensitiveLocals(repGenerator)) {
+				os.write("#endif /* NORMALIZE_ID_SENSITIVE_GLOBALS */\n");
+			}
+		}
 		os.write("  if(alpha) permx_free(&tmp_perm);\n");
 		os.write("  return &min_now;\n");
 		os.write("}\n\n");
 	}
 	
 	
+	private static boolean hasIdSensitiveGlobals(LazySpinChecker repGenerator) {
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden()) {	
+				if(!SensitiveVariableReference.getSensitiveVariableReferences(
+						name, ((VarEntry)entry).getType(), "min_now.", repGenerator).isEmpty()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasIdSensitiveLocals(LazySpinChecker repGenerator) {
+		return !repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "", "").isEmpty();
+	}
+
 	private static void writeRepMemcpy(OutputStreamWriter os, final String N)
 			throws IOException {
 		os.write("State* rep(State* orig, Perm* alpha)\n");
