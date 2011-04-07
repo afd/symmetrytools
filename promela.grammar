@@ -427,5 +427,6 @@ Productions
     {number} number |
     {name} name |
     {bar} bitor |
-    {dotdot} dotdot;
+    {dotdot} dotdot |
+    {colon} colon;
     
