@@ -612,7 +612,26 @@ public class LazySpinAnalysis {
 	}
 
 	private static boolean hasIdSensitiveLocals(LazySpinChecker repGenerator) {
-		return !repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "", "").isEmpty();
+		
+		/* TODO: needs to be refined to take in e.g. pid-indexed arrays in global stuctures */
+
+		if(!repGenerator.sensitiveVariableReferencesForProcess(getTheSingleProctypeEntry(repGenerator), "", "").isEmpty()) {
+			return true;
+		}
+		
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && 
+					(((VarEntry)entry).getType() instanceof ArrayType) && 
+					(((ArrayType)((VarEntry)entry).getType()).getIndexType() instanceof PidType) &&
+					(((ArrayType)((VarEntry)entry).getType()).getElementType() instanceof PidType)) {
+				return true;
+			}
+		}
+		
+		return false;
+		
 	}
 
 	private static void writeRepMemcpy(OutputStreamWriter os, final String N)

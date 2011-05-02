@@ -128,6 +128,7 @@ Tokens
     
     /* Lazy-spin */
     preservestok = 'preserves';
+    initparttok = 'initpart';
     dotdot = '..';
 
     /* New tokens for template approach */
@@ -171,7 +172,8 @@ Productions
    {init} init |		/* init process - max 1 per model */
    {never} never |		/* never claim - max 1 per model */
    {trace} trace |		/* event trace - max 1 per model */
-   {inline} inline ;
+   {inline} inline |
+   {partition} initialpartition; /* Lazy SPIN addition */
 
   proctype =
    active? proctypetok name l_parenthese param_lst? r_parenthese priority? enabler? l_brace sequence r_brace ;
@@ -421,12 +423,21 @@ Productions
   /* Lazy-spin extensions */
   
   preserves =
-    preservestok l_bracket preserves_item+ r_bracket ;
+    preservestok partition ;
+
+  partition =
+    l_bracket preserves_item+ r_bracket ;
+    
+  initialpartition =
+    initparttok assign partition ;
     
   preserves_item =
     {number} number |
     {name} name |
     {bar} bitor |
+    {comma} comma |
     {dotdot} dotdot |
+    {minus} minus |
+    {plus} plus |
     {colon} colon;
-    
+
