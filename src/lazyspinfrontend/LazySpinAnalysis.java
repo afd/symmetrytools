@@ -105,7 +105,10 @@ public class LazySpinAnalysis {
 		OutputStreamWriter os = new OutputStreamWriter(System.out);		
 		
 		final String N = "LAZYSPIN_NUM_PROCESSES";
-		
+
+		os.write("#ifdef SANITY_CHECK\n");
+		os.write("#include <assert.h>\n");
+		os.write("#endif /* SANITY_CHECK */\n\n");
 
 		os.write("#define " + N + " " + LazySpinChecker.numberOfRunningProcesses() + "\n\n");
 		os.write("State min_now; // Global state used as target for state canonization\n\n");
@@ -964,6 +967,7 @@ public class LazySpinAnalysis {
 	private static void writeSanityCheck(LazySpinChecker repGenerator,
 			OutputStreamWriter os, String N) throws IOException {
 		os.write("\n");
+		os.write("#ifdef SANITY_CHECK\n");
 		os.write("int sanityCheckEquivalentStates(State* s, State* t) {\n");
 		os.write("  /* Tests whether s and t satisfy same symmetric invariants, returns 1 iff they do.\n");
 		os.write("     If they do not, they cannot be equivalent.\n");
@@ -1106,7 +1110,8 @@ public class LazySpinAnalysis {
 		
 		os.write("  return 1;\n");
 		
-		os.write("}\n\n");
+		os.write("}\n");
+		os.write("#endif /* SANITY_CHECK */\n\n");
 	}
 
 
