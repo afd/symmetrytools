@@ -1035,8 +1035,8 @@ public class LazySpinAnalysis {
 		os.write("      id_count_t[index] = 0;\n");
 		os.write("    }\n");
 		for(int i = 0; i < sensitiveGlobalsS.size(); i++) {
-			os.write("    assert(" + sensitiveGlobalsS.get(i) + " >= 0 && " + sensitiveGlobalsS.get(i) + " <= " + N + ");\n");
-			os.write("    assert(" + sensitiveGlobalsT.get(i) + " >= 0 && " + sensitiveGlobalsT.get(i) + " <= " + N + ");\n");
+			os.write("    assert(" + sensitiveGlobalsS.get(i) + " <= " + N + ");\n");
+			os.write("    assert(" + sensitiveGlobalsT.get(i) + " <= " + N + ");\n");
 			os.write("    id_count_s[" + sensitiveGlobalsS.get(i) + "]++;\n");
 			os.write("    id_count_t[" + sensitiveGlobalsT.get(i) + "]++;\n");
 		}
@@ -1089,8 +1089,8 @@ public class LazySpinAnalysis {
 			os.write("      id_count_t[index] = 0;\n");
 			os.write("    }\n");
 			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
-				os.write("    assert(" + sensitiveVarReferencesS.get(i).get(ref) + " >= 0 && " + sensitiveVarReferencesS.get(i).get(ref) + " <= " + N + ");\n");
-				os.write("    assert(" + sensitiveVarReferencesT.get(i).get(ref) + " >= 0 && " + sensitiveVarReferencesT.get(i).get(ref) + " <= " + N + ");\n");
+				os.write("    assert(" + sensitiveVarReferencesS.get(i).get(ref) + " <= " + N + ");\n");
+				os.write("    assert(" + sensitiveVarReferencesT.get(i).get(ref) + " <= " + N + ");\n");
 				os.write("    id_count_s[" + sensitiveVarReferencesS.get(i).get(ref) + "]++;\n");
 				os.write("    id_count_t[" + sensitiveVarReferencesT.get(i).get(ref) + "]++;\n");
 			}
