@@ -1018,7 +1018,7 @@ public class LazySpinAnalysis {
 		
 		os.write("  /* Id sensitive variables must agree on undefinedness */\n");
 		for(int i = 0; i < sensitiveGlobalsS.size(); i++) {
-			os.write("  if( ((" + sensitiveGlobalsS.get(i) + ") == " + N + " && (" + sensitiveGlobalsT.get(i) + ") != " + N + ") || ((" + sensitiveGlobalsS.get(i) + ") == UNDEFINED && (" + sensitiveGlobalsT.get(i) + ") != UNDEFINED) ) return 0;\n");
+			os.write("  if( ((" + sensitiveGlobalsS.get(i) + ") == " + N + " && (" + sensitiveGlobalsT.get(i) + ") != " + N + ") || ((" + sensitiveGlobalsS.get(i) + ") == " + N + " && (" + sensitiveGlobalsT.get(i) + ") != " + N + ") ) return 0;\n");
 		}
 		
 		os.write("\n");
