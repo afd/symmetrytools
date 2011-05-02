@@ -143,9 +143,15 @@ public class LazySpinAnalysis {
 
 		writeSymHash(repGenerator, os, N);
 
+		writeSanityCheck(repGenerator, os, N);
+		
+		
 		os.flush();
 		
 	}
+
+
+
 
 
 
@@ -952,6 +958,173 @@ public class LazySpinAnalysis {
 		os.write("{\n");
 		os.write("  return part_same_cell(s->_prt, i, j);\n");
 		os.write("}\n\n");
+	}
+
+
+	private static void writeSanityCheck(LazySpinChecker repGenerator,
+			OutputStreamWriter os, String N) throws IOException {
+		os.write("\n");
+		os.write("int sanityCheckEquivalentStates(State* s, State* t) {\n");
+		os.write("  /* Tests whether s and t satisfy same symmetric invariants, returns 1 iff they do.\n");
+		os.write("     If they do not, they cannot be equivalent.\n");
+		os.write("  */\n");
+		os.write("\n");
+		os.write("  /* The states should have the same hash code */\n");
+		os.write("  if(sym_hash(s) != sym_hash(t)) return 0;\n");
+		os.write("\n");
+		os.write("  /* Id-insensitive global variables should all be the same */\n");
+		os.write("  /* Contribution from insensitive globals */\n");
+
+		Map<String, EnvEntry> globalVariables = repGenerator.getGlobalVariables();
+		
+		String referencePrefixS = "s->";
+		String referencePrefixT = "t->";
+		List<InsensitiveVariableReference> insensitiveGlobalsS = new ArrayList<InsensitiveVariableReference>();
+		List<InsensitiveVariableReference> insensitiveGlobalsT = new ArrayList<InsensitiveVariableReference>();
+
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden()) {	
+				insensitiveGlobalsS.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences(name, ((VarEntry)entry).getType(), referencePrefixS, repGenerator));
+				insensitiveGlobalsT.addAll(InsensitiveVariableReference.getInsensitiveVariableReferences(name, ((VarEntry)entry).getType(), referencePrefixT, repGenerator));
+			}
+		}
+		
+		for(int i = 0; i < insensitiveGlobalsS.size(); i++) {
+			os.write("  if(" + insensitiveGlobalsS.get(i) + " != " + insensitiveGlobalsT.get(i) + ") return 0;\n");
+		}
+		
+		os.write("\n");
+		os.write("  /* Id-sensitive variable pair (i,j) should be distinct in s iff it is distinct in t */\n");
+
+		List<SensitiveVariableReference> sensitiveGlobalsS = new ArrayList<SensitiveVariableReference>();
+		List<SensitiveVariableReference> sensitiveGlobalsT = new ArrayList<SensitiveVariableReference>();
+		for (String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && 
+					(!(((VarEntry)entry).getType() instanceof ArrayType) || !(((ArrayType)((VarEntry)entry).getType()).getIndexType() instanceof PidType)
+					)) {
+				sensitiveGlobalsS.addAll(SensitiveVariableReference.getSensitiveVariableReferences(name, ((VarEntry)entry).getType(), referencePrefixS, repGenerator));
+				sensitiveGlobalsT.addAll(SensitiveVariableReference.getSensitiveVariableReferences(name, ((VarEntry)entry).getType(), referencePrefixT, repGenerator));
+			}
+		}
+		
+		for(int i = 0; i < sensitiveGlobalsS.size()-1; i++) {
+			for(int j = i + 1; j < sensitiveGlobalsS.size(); j++) {
+				os.write("  if( ((" + sensitiveGlobalsS.get(i) + ") == (" + sensitiveGlobalsS.get(j) + ") && (" + sensitiveGlobalsT.get(i) + ") != (" + sensitiveGlobalsT.get(j) + "))\n" +
+						 "   || ((" + sensitiveGlobalsS.get(i) + ") != (" + sensitiveGlobalsS.get(j) + ") && (" + sensitiveGlobalsT.get(i) + ") == (" + sensitiveGlobalsT.get(j) + ")) ) return 0;\n");
+			}
+		}
+		
+		os.write("  /* Id sensitive variables must agree on undefinedness */\n");
+		for(int i = 0; i < sensitiveGlobalsS.size(); i++) {
+			os.write("  if( ((" + sensitiveGlobalsS.get(i) + ") == " + N + " && (" + sensitiveGlobalsT.get(i) + ") != " + N + ") || ((" + sensitiveGlobalsS.get(i) + ") == UNDEFINED && (" + sensitiveGlobalsT.get(i) + ") != UNDEFINED) ) return 0;\n");
+		}
+		
+		os.write("\n");
+		os.write("  /* Id-sensitive variables should refer to same number of distinct processes in s and t */\n");
+		os.write("  {\n");
+		os.write("    unsigned int id_count_s[" + N + " + 1];\n");
+		os.write("    unsigned int id_count_t[" + N + " + 1];\n");
+		os.write("    unsigned int index;\n");
+		os.write("    unsigned int index2;\n");
+		os.write("    unsigned int best_index;\n");
+		os.write("    unsigned int temp;\n");
+		os.write("    for(index = 0; index <= " + N + "; index++) {\n");
+		os.write("      id_count_s[index] = 0;\n");
+		os.write("      id_count_t[index] = 0;\n");
+		os.write("    }\n");
+		for(int i = 0; i < sensitiveGlobalsS.size(); i++) {
+			os.write("    assert(" + sensitiveGlobalsS.get(i) + " >= 0 && " + sensitiveGlobalsS.get(i) + " <= " + N + ");\n");
+			os.write("    assert(" + sensitiveGlobalsT.get(i) + " >= 0 && " + sensitiveGlobalsT.get(i) + " <= " + N + ");\n");
+			os.write("    id_count_s[" + sensitiveGlobalsS.get(i) + "]++;\n");
+			os.write("    id_count_t[" + sensitiveGlobalsT.get(i) + "]++;\n");
+		}
+		// Now sort both
+		writeSort(os, "id_count_s", N);
+		writeSort(os, "id_count_t", N);
+		os.write("    for(index = 0; index <= " + N + "; index++) {\n");
+		os.write("      if(id_count_s[index] != id_count_t[index]) return 0;\n");
+		os.write("    }\n");
+		os.write("  }\n");
+
+			
+		os.write("\n");
+		os.write("  /* There should be the same number of processes with local state A in both s and t (for each A) */\n");
+		os.write("  /* This is a bit more intricate to check; omitted for now.  We can add it if necessary */\n");
+		os.write("\n");
+		os.write("  /* Id-sensitive local variable x should refer to the same number of distinct process in s and t, when counted across processes */\n");
+
+		
+		List<List<SensitiveVariableReference>> sensitiveVarReferencesS = new ArrayList<List<SensitiveVariableReference>>();
+		List<List<SensitiveVariableReference>> sensitiveVarReferencesT = new ArrayList<List<SensitiveVariableReference>>();
+		for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+			sensitiveVarReferencesS.add(repGenerator.sensitiveVariableReferencesForProcess(i, "s"));
+			sensitiveVarReferencesT.add(repGenerator.sensitiveVariableReferencesForProcess(i, "t"));
+		}
+
+		for(String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && ((VarEntry)entry).getType() instanceof ArrayType &&
+					PidType.isPid((VisibleType)((ArrayType)(((VarEntry)entry).getType())).getIndexType())) {
+				for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+					String prefixS = "s->" + name + "[" + i + "]";
+					String prefixT = "t->" + name + "[" + i + "]";
+					sensitiveVarReferencesS.get(i).addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixS, repGenerator));
+					sensitiveVarReferencesT.get(i).addAll(SensitiveVariableReference.getSensitiveVariableReferences("", ((ArrayType)((VarEntry)entry).getType()).getElementType(), prefixT, repGenerator));
+				}
+			}
+		}
+		
+		for(int ref = 0; ref < sensitiveVarReferencesS.get(0).size(); ref++) {
+			os.write("  {\n");
+			os.write("    unsigned int id_count_s[" + N + " + 1];\n");
+			os.write("    unsigned int id_count_t[" + N + " + 1];\n");
+			os.write("    unsigned int index;\n");
+			os.write("    unsigned int index2;\n");
+			os.write("    unsigned int best_index;\n");
+			os.write("    unsigned int temp;\n");
+			os.write("    for(index = 0; index <= " + N + "; index++) {\n");
+			os.write("      id_count_s[index] = 0;\n");
+			os.write("      id_count_t[index] = 0;\n");
+			os.write("    }\n");
+			for(int i = 0; i < LazySpinChecker.numberOfRunningProcesses(); i++) {
+				os.write("    assert(" + sensitiveVarReferencesS.get(i).get(ref) + " >= 0 && " + sensitiveVarReferencesS.get(i).get(ref) + " <= " + N + ");\n");
+				os.write("    assert(" + sensitiveVarReferencesT.get(i).get(ref) + " >= 0 && " + sensitiveVarReferencesT.get(i).get(ref) + " <= " + N + ");\n");
+				os.write("    id_count_s[" + sensitiveVarReferencesS.get(i).get(ref) + "]++;\n");
+				os.write("    id_count_t[" + sensitiveVarReferencesT.get(i).get(ref) + "]++;\n");
+			}
+			// Now sort both
+			writeSort(os, "id_count_s", N);
+			writeSort(os, "id_count_t", N);
+			os.write("    for(index = 0; index <= " + N + "; index++) {\n");
+			os.write("      if(id_count_s[index] != id_count_t[index]) return 0;\n");
+			os.write("    }\n");
+			os.write("  }\n");
+		
+		}
+		
+		os.write("  return 1;\n");
+		
+		os.write("}\n\n");
+	}
+
+
+
+
+
+
+	private static void writeSort(OutputStreamWriter os, String array, String N)
+			throws IOException {
+		os.write("    for(index = 0; index < " + N + "; index++) {\n");
+		os.write("      best_index = index;\n");
+		os.write("      for(index2 = index+1; index2 <= " + N + "; index2++) {\n");
+		os.write("        if(" + array + "[index2] < " + array + "[best_index]) best_index = index2;\n");
+		os.write("      }\n");
+		os.write("      temp = " + array + "[index];\n");
+		os.write("      " + array + "[index] = " + array + "[best_index];\n");
+		os.write("      " + array + "[best_index] = temp;\n");
+		os.write("    }\n");
 	}
 
 }
