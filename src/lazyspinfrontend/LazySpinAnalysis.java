@@ -108,6 +108,7 @@ public class LazySpinAnalysis {
 
 		os.write("#ifdef SANITY_CHECK\n");
 		os.write("#include <assert.h>\n");
+		os.write("void apply_perm(State* dest, State* src, Perm* prm);\n");
 		os.write("#endif /* SANITY_CHECK */\n\n");
 
 		os.write("#define " + N + " " + LazySpinChecker.numberOfRunningProcesses() + "\n\n");
@@ -227,6 +228,7 @@ public class LazySpinAnalysis {
 	
 	private static void writeEquallyInsensitive(LazySpinChecker repGenerator,
 			OutputStreamWriter os, String N) throws IOException {
+		writeStaticInline(os);
 		os.write("int equally_insensitive_simple(State* s, int i, int j)\n");
 		os.write("{\n");
 		
@@ -247,6 +249,7 @@ public class LazySpinAnalysis {
 		os.write("  return 1;\n");
 		os.write("}\n\n");
 		
+		writeStaticInline(os);
 		os.write("int equally_insensitive(State* s, int i, int j)\n");
 		os.write("{\n");
 		os.write("  if(!equally_insensitive_simple(s, i, j)) return 0;\n");
@@ -294,6 +297,18 @@ public class LazySpinAnalysis {
 		os.write("}\n\n");
 		
 	}
+
+
+
+
+
+
+	private static void writeStaticInline(OutputStreamWriter os)
+			throws IOException {
+		os.write("#ifdef __GNUC__\n");
+		os.write("static inline\n");
+		os.write("#endif\n");
+	}
 	
 	private static void writeSensitiveEqualityComparison(OutputStreamWriter os,
 			String N, SensitiveVariableReference referenceI,
@@ -305,6 +320,7 @@ public class LazySpinAnalysis {
 	}
 
 	private static void writeLessThanBetweenProcesses(LazySpinChecker repGenerator, OutputStreamWriter os, String N) throws IOException {
+		writeStaticInline(os);
 		os.write("int less_than_between_processes_simple(State* s, int i, int j)\n");
 		os.write("{\n");
 
@@ -327,6 +343,7 @@ public class LazySpinAnalysis {
 		os.write("  return 0;\n");
 		os.write("}\n\n");
 		
+		writeStaticInline(os);
 		os.write("int less_than_between_processes(State* s, int i, int j)\n");
 		os.write("{\n");
 		os.write("  if(less_than_between_processes_simple(s, i, j)) return 1;\n");
@@ -376,6 +393,7 @@ public class LazySpinAnalysis {
 	}
 
 	private static void writeLessThanBetweenStates(LazySpinChecker repGenerator, OutputStreamWriter os) throws IOException {
+		writeStaticInline(os);
 		os.write("int less_than_between_states(State* s, State* t)\n");
 		os.write("{\n");
 		os.write("  return memcmp(s, t, vsize) < 0;\n");
@@ -399,7 +417,9 @@ public class LazySpinAnalysis {
 		os.write("int block_size[" + N + "];\n");
 		os.write("int block_mapping[" + N + "][" + N + "];\n");
 		os.write("int dealt_with_process[" + N + "];\n\n");
+		writeStaticInline(os);
 		os.write("void permute_blocks(int block, Perm* alpha);\n");
+		writeStaticInline(os);
 		os.write("void swap_in_block(int block, int p1, int p2, Perm* alpha);\n");
 		os.write("\n");
 		os.write("void swap_in_block(int block, int p1, int p2, Perm* alpha) {\n");
@@ -422,6 +442,7 @@ public class LazySpinAnalysis {
 		os.write("    permute_blocks(block, alpha);\n");
 		os.write("}\n");
 		os.write("\n");
+		writeStaticInline(os);
 		os.write("void permute_blocks(int block, Perm* alpha)\n");
 		os.write("{\n");
 		os.write("  int i, p, offset, pos[block_size[block]], dir[block_size[block]];\n");
@@ -450,7 +471,13 @@ public class LazySpinAnalysis {
 		os.write("}\n");
 		os.write("\n");
 		os.write("\n");
-		os.write("State* rep(State* orig, Perm* alpha)\n");
+		os.write("State*\n");
+		os.write("#ifdef SANITY_CHECK\n");
+		os.write("rep_inner\n");
+		os.write("#else\n");
+		os.write("rep\n");
+		os.write("#endif /* SANITY_CHECK */\n");
+		os.write("(State* orig, Perm* alpha)\n");
 		os.write("{\n");
 		os.write("  int i, j, changed, current_cell_start;\n");
 		os.write("#ifdef NORMALIZE_ID_SENSITIVE_GLOBALS\n");
@@ -599,8 +626,65 @@ public class LazySpinAnalysis {
 			}
 		}
 		os.write("  if(alpha) permx_free(&tmp_perm);\n");
+		
+		os.write("#ifdef SANITY_CHECK\n");
+		os.write("  sanityCheckEquivalentStates(orig, &min_now);\n");
+		os.write("  if(alpha) {\n");
+		os.write("    State temp_state;\n");
+		os.write("    apply_perm(&temp_state, orig, alpha);\n");
+		os.write("  }\n");
+		os.write("#endif\n");
+		
 		os.write("  return &min_now;\n");
 		os.write("}\n\n");
+		
+		os.write("#ifdef SANITY_CHECK\n");
+		os.write("State* rep(State* orig, Perm* alpha) {\n");
+		os.write("  State the_rep;\n");
+		os.write("  State tmp;\n");
+		os.write("  int i, p, offset, size = orig->_prt->n_indices, t;\n");
+		os.write("  int pos[size], dir[size];\n");
+		os.write("  int found_the_rep_in_orbit = 0;\n");
+		os.write("  Perm prm = perm_mk(size);\n");
+		os.write("  rep_inner(orig, alpha); /* put representative in min_now */\n");
+		os.write("  memcpy(&the_rep, &min_now, vsize);\n");
+
+		os.write("  memcpy((char*) &tmp, (char*) orig, vsize);\n");
+		
+		os.write("  if(memcmp(orig, &the_rep, vsize) == 0) found_the_rep_in_orbit = 1;\n");
+
+		os.write("  for (i = 0; i < size; i++) {\n");
+		os.write("    pos[i] = 1; dir[i] = 1;\n");
+		os.write("    prm.p_vector[i] = i;\n");
+		os.write("  }\n");
+		os.write("  pos[size - 1] = 0;\n");
+		os.write("  i = 0;\n");
+		os.write("  while (i < size - 1) {\n");
+		os.write("    for (i = offset = 0; pos[i] == size - i; i++) {\n");
+		os.write("      pos[i] = 1; dir[i] = !dir[i];\n");
+		os.write("      if (dir[i]) {\n");
+		os.write("        offset++;\n");
+		os.write("      }\n");
+		os.write("    }\n");
+		os.write("    if (i < size - 1) {\n");
+		os.write("	    p = offset - 1 + (dir[i] ? pos[i] : size - i - pos[i]);\n");
+		os.write("      pos[i]++;\n");
+		os.write("      t = prm.p_vector[p + 1];\n");
+		os.write("      prm.p_vector[p + 1] = prm.p_vector[p];\n");
+		os.write("      prm.p_vector[p] = t;\n");
+		os.write("      applyPrSwapToState(&tmp, p, p + 1);\n");
+		os.write("      if(memcmp(&tmp, &the_rep, vsize) == 0) found_the_rep_in_orbit = 1;\n");
+		os.write("      if(part_has_perm(orig->_prt, &prm)) {\n");
+		os.write("        rep_inner(&tmp, NULL);\n");
+		os.write("        assert(memcmp(&min_now, &the_rep, vsize) == 0);\n");
+		os.write("      }\n");
+	    os.write("    }\n");
+	    os.write("  }\n");
+	    os.write("  assert(found_the_rep_in_orbit);\n");
+		os.write("  return rep_inner(orig, alpha);\n");
+		os.write("}\n");
+		os.write("#endif /* SANITY_CHECK */\n");
+		
 	}
 	
 	
@@ -678,6 +762,13 @@ public class LazySpinAnalysis {
 		os.write("      }\n");
 		os.write("    }\n");
 		os.write("  }\n");
+		os.write("#ifdef SANITY_CHECK\n");
+		os.write("  sanityCheckEquivalentStates(orig, &min_now);\n");
+		os.write("  if(alpha) {\n");
+		os.write("    State temp_state;\n");
+		os.write("    apply_perm(&temp_state, orig, alpha);\n");
+		os.write("  }\n");
+		os.write("#endif\n");
 		os.write("  return &min_now;\n");
 		os.write("}\n\n");
 	}
@@ -957,6 +1048,7 @@ public class LazySpinAnalysis {
 	
 
 	private static void writeSameCell(OutputStreamWriter os) throws IOException {
+		writeStaticInline(os);
 		os.write("int same_cell(State* s, int i, int j)\n");
 		os.write("{\n");
 		os.write("  return part_same_cell(s->_prt, i, j);\n");
