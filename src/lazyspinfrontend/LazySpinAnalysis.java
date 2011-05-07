@@ -794,6 +794,12 @@ public class LazySpinAnalysis {
 		os.write("#error Pass -DHASH_FUNCTION_ORIGINAL or -DHASH_FUNCTION_SMC to specify which hash function to use\n");
 		os.write("#endif /* HASH_FUNCTION_SMC */\n");
 		os.write("#endif /* HASH_FUNCTION_ORIGINAL */\n");
+		os.write("\n");
+		os.write("#ifndef SAFETY\n");
+		os.write("  /* Contribution from the never claim */\n");
+		os.write("  result += ((P1 *)(((uchar *)s)+proc_offset[0]))->_p;\n");
+		os.write("  result *= SYM_HASH_PRIME;\n");
+		os.write("#endif\n");
 		os.write("  return result;\n");
 		os.write("}\n\n");
 	}
@@ -938,6 +944,17 @@ public class LazySpinAnalysis {
 			os.write(";\n");
 			os.write("  result *= SYM_HASH_PRIME;\n");
 		}
+		
+		os.write("  /* Contribution from id-sensitive globals (via symmetry markers) */\n");
+		// TODO - fix this up to deal with arbitrary id-sensitive references, not just plain variables
+		for(String name : globalVariables.keySet()) {
+			EnvEntry entry = globalVariables.get(name);
+			if(entry instanceof VarEntry && !((VarEntry)entry).isHidden() && PidType.isPid(((VarEntry)entry).getType())) {
+				os.write("  result += ( (s->" + name + ") >= " + N + " ? 1 : (((P0 *)SEG(s,s->" + name + "))->_p + 1));\n");
+				os.write("  result *= SYM_HASH_PRIME;\n");
+			}
+		}
+		
 		
 		
 		os.write("#endif /* SYMMETRY_MARKERS_IN_HASHING */\n\n");
