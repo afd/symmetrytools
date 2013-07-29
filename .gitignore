@@ -1,4 +1,6 @@
 *.class
+src/promela
 GRIP/src/symmetricprism
 *~
+Etch.jar
 GRIP/GRIP.jar
