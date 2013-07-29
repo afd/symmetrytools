@@ -66,15 +66,15 @@ With this option Etch will report errors if a variable is assigned an expression
 Etch requires the C preprocessor, cpp.  If you are using Cygwin under Windows, then cpp.exe may be a symbolic link.  If this is the case then you need to run Etch with the option: -cpp <link target>, where <link target> is the target for the symbolic link, given in Windows form.  So, for example, if cpp.exe is a link to /etc/alternatives/cpp.exe, you should use the option -cpp C:\\cygwin\\etc\\alternatives\\cpp.exe.  This is a limitation of Etch which the designers hope to fix in a future release.
 
 
-
 Source code
 -----------
 
-You can check out the source code for Etch as follows:
+The source code for Etch is available as part of the symmetrytools git repository, which you can get at:
 
-svn co svn://edison.comlab.ox.ac.uk/symmetrytools/trunk TopSPIN
+https://github.com/afd/symmetrytools.git
 
-This checks out the complete TopSPIN symmetry reduction package, of which Etch is a component.  Look in src/etch for the Etch source code.
+See README_Etch.txt in the repository for instructions on how to build Etch from source.
+
 
 Acknowledgement
 ---------------
