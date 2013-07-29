@@ -18,7 +18,7 @@ GRIP.jar: $(CLASS_FILES)
 	jar cmf manifest.txt $@ $(COMPILED_CLASS_FILES) $(DATA_FILES) && echo "GRIP.jar built successfully."
 
 %.class: %.java
-	javac $<
+	javac -cp .. $<
 
 clean:
 	@rm -f $(COMPILED_CLASS_FILES) GRIP.jar
