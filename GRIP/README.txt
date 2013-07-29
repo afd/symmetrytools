@@ -1,6 +1,10 @@
 Compiling GRIP from source
 ==========================
 
+Prerequisites:
+* Java Development Kit (Java 6 or newer should suffice)
+* make
+
 - Download SableCC version 3.6 from the SableCC web page:
   http://sablecc.org
 
