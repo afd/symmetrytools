@@ -99,9 +99,9 @@ public class GRIP {
 			
 		if(logicInputFile!=null) {
 			System.out.println("\nTranslating properties: \"" + logicInputFile + "\"");
-			System.out.println("Can't access source file " + logicInputFile);
-			System.exit(1);
 			
+			scanner = new Lexer(new PushbackReader(new BufferedReader(
+					new FileReader(logicInputFile)), 1024));
 			parser = new Parser(scanner);
 			Node propertiesAST = parser.parse();
 			if (optimise) {
