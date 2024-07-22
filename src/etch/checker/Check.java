@@ -155,8 +155,9 @@ public class Check {
 		BufferedReader br = null;
 		try {
 			
-			String cppCommand = (Config.commandLineSwitchIsSet(CommandLineSwitch.CPP) ? Config.getCommandLineSwitchValue(CommandLineSwitch.CPP) : "cpp") + " ";
-			
+			String cppCommand = (Config.commandLineSwitchIsSet(CommandLineSwitch.CPP) ? Config.getCommandLineSwitchValue(CommandLineSwitch.CPP) : "cpp")
+					+ " -D__TOPSPIN__ ";
+
 			if(Config.isOSWindows()) {
 				cppCommand += "\"";
 			}
@@ -168,6 +169,9 @@ public class Check {
 			}
 			
 			Process cpp = Runtime.getRuntime().exec(cppCommand);
+			if (cpp.exitValue() != 0) {
+				throw new RuntimeException("Error running C preprocessor.");
+			}
 			
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(cpp.getInputStream()));
 			String programForParsing = "";

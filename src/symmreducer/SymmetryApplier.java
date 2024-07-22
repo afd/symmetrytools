@@ -994,7 +994,7 @@ public class SymmetryApplier {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Using SPIN to generate pan files");
 		}
-		CommunicatingProcess.execute("spin", "-a", specification); // Generate pan files.
+		CommunicatingProcess.execute("spin", "-a -D__TOPSPIN__", specification); // Generate pan files.
 
 		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();
