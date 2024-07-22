@@ -16,18 +16,22 @@ public class Tester {
 		Config.TESTING_IN_PROGRESS = true;
 				
 		for(TestCase testCase : testCases) {
+			try {
+				Config.resetConfiguration();
+				Config.initialiseCommandLineSwitches();
+				testCase.run();
 
-			Config.resetConfiguration();
-			Config.initialiseCommandLineSwitches();
-			testCase.run();
+				if (testCase.isPass()) {
+					passes.add(testCase);
+				} else {
+					fails.add(testCase);
+				}
 
-			if(testCase.isPass()) {
-				passes.add(testCase);
-			} else {
-				fails.add(testCase);
+				testCase.displayResult();
+			} catch (Throwable exception) {
+				System.out.println("Testing failed due to an exception");
+				exception.printStackTrace();
 			}
-			
-			testCase.displayResult();
 		}
 		
 		System.out.println("\n");

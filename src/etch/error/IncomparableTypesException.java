@@ -11,7 +11,6 @@ public class IncomparableTypesException extends Exception {
 	private Type right;
 
 	public IncomparableTypesException(Type left, Type right) {
-		assert (! (left instanceof ChanType || right instanceof ChanType));
 		this.left = left;
 		this.right = right;
 	}
