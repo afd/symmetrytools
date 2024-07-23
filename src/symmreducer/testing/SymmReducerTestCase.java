@@ -3,6 +3,9 @@ package src.symmreducer.testing;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import src.TopSpin;
@@ -21,7 +24,6 @@ import src.utilities.AbsentConfigurationFileException;
 import src.utilities.BadConfigurationFileException;
 import src.utilities.BooleanOption;
 import src.utilities.Config;
-import src.utilities.ErrorStreamHandler;
 
 public class SymmReducerTestCase extends SymmExtractorTestCase {
 
@@ -181,29 +183,42 @@ public class SymmReducerTestCase extends SymmExtractorTestCase {
 	}
 
 	private SymmReducerFailTestOutcome compileSympanFiles() {
-		
-		Process gcc;
+		final List<String> commands = new ArrayList<>();
+		commands.add("gcc");
+		commands.add("-O2");
+		commands.add("-o");
+		commands.add(EXECUTABLE);
+		commands.add("sympan.c");
+		commands.add("group.c");
+		if (Config.getBooleanOption(BooleanOption.PARALLELISE)) {
+			commands.add("parallel_symmetry_pthreads.c");
+		}
+		commands.add("-DSAFETY");
+		commands.add("-DNOREDUCE");
+		if (!compilerDirectives.isBlank()) {
+			Collections.addAll(commands, compilerDirectives.split(" "));
+		}
+		ProcessBuilder gccProcessBuilder = new ProcessBuilder(commands);
+		gccProcessBuilder.redirectErrorStream(true);
+		final Process gccProcess;
 		try {
-			String gccCommand = "gcc -O2 -o " + EXECUTABLE + " sympan.c group.c " +
-					(Config.getBooleanOption(BooleanOption.PARALLELISE) ? "parallel_symmetry_pthreads.c " : "")
-					+ "-DSAFETY -DNOREDUCE " + compilerDirectives;
-			
-			System.err.println(gccCommand);
-			gcc = Runtime.getRuntime().exec(gccCommand);
+			System.err.println(gccProcessBuilder.command());
+			gccProcess = gccProcessBuilder.start();
+			final BufferedReader br = new BufferedReader(new InputStreamReader(gccProcess.getInputStream()));
+			String line;
+			while ((line = br.readLine()) != null) {
+				System.err.println(line);
+			}
 		} catch (IOException e1) {
 			return SymmReducerFailTestOutcome.GCCCompilationIOError;
 		}
-
-		ErrorStreamHandler errorHandler = new ErrorStreamHandler(gcc, false);
-		errorHandler.start();
-		
 		try {
-			gcc.waitFor();
+			gccProcess.waitFor();
 		} catch (InterruptedException e) {
 			return SymmReducerFailTestOutcome.GCCCompilationInterrupted;
 		}
 		
-		if(0 != gcc.exitValue()) {
+		if(0 != gccProcess.exitValue()) {
 			return SymmReducerFailTestOutcome.GCCCompilationFailure;
 		}
 
