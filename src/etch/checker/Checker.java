@@ -2,8 +2,10 @@ package src.etch.checker;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import src.etch.env.ChannelEntry;
 import src.etch.env.EnvEntry;
@@ -90,7 +92,12 @@ public class Checker extends InlineProcessor {
 
 	private List<VisibleType> typedefFieldTypes = new ArrayList<VisibleType>();
 
-	private Map<String,List<Integer>> gotoDestinations;
+	// The labels names that are targets of goto statements, with details of the lines at which they
+	// appear.
+	private Map<String,List<Integer>> targetsOfGotoStatements;
+
+	// The labels observed when traversing a proctype.
+	private Set<String> observedLabels;
 
 	public static TypeFactory theFactory = null;
 	
@@ -216,8 +223,11 @@ public class Checker extends InlineProcessor {
 		env.put(ProctypeEntry.initProctypeName,ProctypeEntry.initProctypeEntry);
 		currentProctype = ProctypeEntry.initProctypeEntry;
 		env.openScope();
+		targetsOfGotoStatements = new HashMap<>();
+		observedLabels = new HashSet<>();
 		node.getSequence().apply(this);
 		currentProctype.setLocalVariableTypeInfo(env.getTopEntries());
+		resolveGotos();
 		env.closeScope();
 	}
 	
@@ -340,6 +350,9 @@ public class Checker extends InlineProcessor {
 	
 	public void inALabel(ALabel node) {
 		String name = node.getName().getText();
+		// This serves the purpose of recording that the name is in scope as a goto target for the
+		// enclosing proctype as a whole.
+		observedLabels.add(name);
 		if(nameExists(name)) {
 			/* Maybe this is conservative -- it will give an error if you try to declare
 			 * a label with the same name as a variable.  Not sure whether SPIN would allow
@@ -347,6 +360,8 @@ public class Checker extends InlineProcessor {
 			 */
 			addError(node.getName(), new NameAlreadyUsedError(name,env.get(name)));
 		} else {
+			// This serves the purpose of recording the fact that this name is used in the current
+			// scope.
 			env.put(name, new LabelEntry(node.getName().getLine()));
 		}
 	}
@@ -354,14 +369,14 @@ public class Checker extends InlineProcessor {
 	public void outAGotoSimpleStmnt(AGotoSimpleStmnt node) {
 		String name = node.getName().getText();
 		List<Integer> destinations;
-		if(gotoDestinations.containsKey(name)) {
-			destinations = gotoDestinations.get(name);
+		if(targetsOfGotoStatements.containsKey(name)) {
+			destinations = targetsOfGotoStatements.get(name);
 			destinations.add(node.getName().getLine());
 		} else {
 			destinations = new ArrayList<Integer>();
 			destinations.add(node.getName().getLine());
 		}
-		gotoDestinations.put(name,destinations);
+		targetsOfGotoStatements.put(name,destinations);
 	}
 	
 	
@@ -922,7 +937,8 @@ public class Checker extends InlineProcessor {
 		dealWithEnabler(node);
 		env.openScope();
 
-		gotoDestinations = new HashMap<String,List<Integer>>();
+		targetsOfGotoStatements = new HashMap<>();
+		observedLabels = new HashSet<>();
 
 		dealWithDeclarations(node);
 		
@@ -943,11 +959,12 @@ public class Checker extends InlineProcessor {
 	}
 
 	private void resolveGotos() {
-		for(String labelName : gotoDestinations.keySet()) {
-			EnvEntry entry = env.get(labelName);
-			if(!(entry instanceof LabelEntry)) {
-				for(Integer i : gotoDestinations.get(labelName)) {
-					errorTable.add(i,new JumpToUndefinedLabelError(labelName,entry));
+		for(String labelName : targetsOfGotoStatements.keySet()) {
+			if (!observedLabels.contains(labelName)) {
+				for(Integer i : targetsOfGotoStatements.get(labelName)) {
+					errorTable.add(i,new JumpToUndefinedLabelError(
+							labelName,
+							env.get(labelName)));
 				}
 			}
 		}
