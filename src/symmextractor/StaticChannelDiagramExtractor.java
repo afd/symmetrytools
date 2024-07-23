@@ -9,6 +9,7 @@ import src.etch.env.ChannelEntry;
 import src.etch.env.ProcessEntry;
 import src.etch.env.ProctypeEntry;
 import src.promela.node.AChannelIvarassignment;
+import src.promela.node.AConditionalFactor;
 import src.promela.node.AFifoReceive;
 import src.promela.node.AFifoRecvPoll;
 import src.promela.node.AFifoSend;
@@ -68,6 +69,10 @@ public class StaticChannelDiagramExtractor extends SymmetryChecker {
 	}
 
 	public void caseTSeparator(TSeparator node) {
+		if (node.parent() instanceof AConditionalFactor) {
+			// Do not change "->" to ";" in a conditional expression.
+			return;
+		}
 		node.setText(";");
 	}
 	

@@ -169,10 +169,7 @@ public class Check {
 			}
 			
 			Process cpp = Runtime.getRuntime().exec(cppCommand);
-			if (cpp.exitValue() != 0) {
-				throw new RuntimeException("Error running C preprocessor.");
-			}
-			
+
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(cpp.getInputStream()));
 			String programForParsing = "";
 			String line;
@@ -196,8 +193,10 @@ public class Check {
 			}
 			br = new BufferedReader(new StringReader(programForParsing));
 			
-			cpp.waitFor();
-						
+			if (cpp.waitFor() != 0) {
+				throw new RuntimeException("Error running C preprocessor.");
+			}
+
 		} catch (IOException e) {
 			System.out.println("C preprocessor (cpp) not available - " + Config.TOOL_NAME + " will not work correctly on files which use #define or #include.");
 			System.out.println("If you are using Cygwin under Windows, then perhaps cpp.exe is a symbolic link.  If this is the case then you need to run " + Config.TOOL_NAME + " with the option: -cpp <link target>, where <link target> is the target for the symbolic link, given" +

@@ -34,7 +34,7 @@ public class InlineEntry extends EnvEntry {
 	}
 
 	public String toString() {
-		return "n inline macro";
+		return "inline macro";
 	}
 
 	public String getEntryKind() {
