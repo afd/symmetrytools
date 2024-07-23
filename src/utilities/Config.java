@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 public class Config {
 
@@ -200,14 +199,13 @@ public class Config {
 		String name = null;
 		
 		try {
-			StringTokenizer strtok = new StringTokenizer(line,"=");
-			if(strtok.countTokens()!=2) {
+			final int indexOfEquals = line.indexOf('=');
+			if(indexOfEquals==-1) {
 				System.out.println("Ignoring line " + lineNumber + " of configuration file - it does not have the form option=value.");
 				return;
 			}
-
-			name = StringHelper.trimWhitespace(strtok.nextToken().toUpperCase());
-			String value = StringHelper.trimWhitespace(strtok.nextToken());
+			name = StringHelper.trimWhitespace(line.substring(0, indexOfEquals)).toUpperCase();
+			final String value = StringHelper.trimWhitespace(line.substring(indexOfEquals + 1));
 
 			if(!(processStringOption(name, value) || processBooleanOption(name, value, lineNumber) || 
 					processIntegerOption(name, value, lineNumber) || processStrategyOption(name, value, lineNumber))) {
@@ -389,6 +387,7 @@ public class Config {
 		newStringOption(StringOption.GAP, null, "Config file option - path to the 'gap' program.  Option must be set by user.");
 		newStringOption(StringOption.TARGET, null, "Config file option - target to use for vector and parallel symmetry reduction.  Options are: PC, CELL, POWERPC.");
 		newStringOption(StringOption.SYMMETRYFILE, null, "Config file option - path to the file containing symmetry group generators.  Only set this option if you want to disable automatic symmetry detection in favour of manual specification of symmetry.");
+		newStringOption(StringOption.PREPROCESSOR_DIRECTIVES, null, "Config file option - directives that will be passed to the C preprocessor and to Spin - typically -D options.");
 
 		newBooleanOption(BooleanOption.TRANSPOSITIONS, true, "Config file option - apply group elements as transpositions?");
 		newBooleanOption(BooleanOption.STABILISERCHAIN, true, "Config file option - use stabiliser chain for enumeration?");

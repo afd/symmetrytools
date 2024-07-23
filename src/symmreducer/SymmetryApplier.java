@@ -28,6 +28,7 @@ import src.symmreducer.strategies.Markers;
 import src.symmreducer.strategies.MinimisingSet;
 import src.symmreducer.strategies.StabiliserChainEnumeration;
 import src.utilities.BooleanOption;
+import src.utilities.CommandLineSwitch;
 import src.utilities.CommunicatingProcess;
 import src.utilities.Config;
 import src.utilities.FileManager;
@@ -994,7 +995,9 @@ public class SymmetryApplier {
 			ProgressPrinter.printSeparator();
 			ProgressPrinter.println("Using SPIN to generate pan files");
 		}
-		CommunicatingProcess.execute("spin", "-a -D__TOPSPIN__", specification); // Generate pan files.
+		final String preprocessorDirectives = Config.getStringOption(StringOption.PREPROCESSOR_DIRECTIVES);
+		CommunicatingProcess.execute("spin", "-a " + (preprocessorDirectives != null ? preprocessorDirectives : ""),
+				specification); // Generate pan files.
 
 		if(Config.inVerboseMode()) {
 			ProgressPrinter.printSeparator();

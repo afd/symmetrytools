@@ -38,6 +38,7 @@ import src.utilities.Config;
 import src.utilities.Location;
 import src.utilities.Profile;
 import src.utilities.ProgressPrinter;
+import src.utilities.StringOption;
 
 public class Check {
 
@@ -154,9 +155,10 @@ public class Check {
 
 		BufferedReader br = null;
 		try {
-			
+			final String preprocessorDirectives = Config.getStringOption(StringOption.PREPROCESSOR_DIRECTIVES);
 			String cppCommand = (Config.commandLineSwitchIsSet(CommandLineSwitch.CPP) ? Config.getCommandLineSwitchValue(CommandLineSwitch.CPP) : "cpp")
-					+ " -D__TOPSPIN__ ";
+					+ " "
+					+ (preprocessorDirectives != null ? preprocessorDirectives + " " : "");
 
 			if(Config.isOSWindows()) {
 				cppCommand += "\"";
@@ -167,7 +169,7 @@ public class Check {
 			if(Config.isOSWindows()) {
 				cppCommand += "\"";
 			}
-			
+
 			Process cpp = Runtime.getRuntime().exec(cppCommand);
 
 			BufferedReader cppReader = new BufferedReader(new InputStreamReader(cpp.getInputStream()));
