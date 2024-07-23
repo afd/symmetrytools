@@ -30,6 +30,7 @@ public class Tester {
 				testCase.displayResult();
 			} catch (Throwable exception) {
 				System.out.println("Testing failed due to an exception");
+				fails.add(testCase);
 				exception.printStackTrace();
 			}
 		}
